@@ -8,6 +8,22 @@ import { calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 type Params = { params: Promise<{ id: string }> }
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma exata do `select` abaixo.
+type RdoResumo = {
+  id: string; numero: number; data: Date; status: string
+  climaManha: string | null; climaTarde: string | null; climaNoite: string | null
+  precipitacaoMm: number | null; climaImpacto: string
+  assinaturas: Array<{ status: string }>
+  midias: Array<{ id: string; tipo: string; url: string; nomeArq: string; descricao: string | null }>
+  ocorrencias: Array<{ id: string; tipo: string; descricao: string; resolvida: boolean }>
+  maoDeObra: Array<{ funcaoNome: string; quantidade: number; horaEntrada: string; horaSaida: string; totalHH: number }>
+  equipamentos: Array<{ equipamentoNome: string; quantidade: number; observacao: string | null }>
+  atividadeRegistros: Array<{ id: string; pctAnterior: number; pctAtual: number; deltaHoje: number; atividade: { nome: string } | null }>
+  comentarios: Array<{ id: string; texto: string; criadoEm: Date; autor: { nome: string }; _count: { respostas: number } }>
+}
+type ItemDoRdo = { rdoId: string; rdoNumero: number; rdoData: Date }
+
 export async function GET(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
@@ -29,15 +45,14 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
   const podeGerenciar = podeGerenciarProjeto(acessoProjeto)
 
-  const atividades = await prisma.atividade.findMany({
+  const atividades: Array<{ pctAcumulado: number; dataInicio: Date | null; dataFim: Date | null }> = await prisma.atividade.findMany({
     where:  { etapa: { projetoId } },
     select: { pctAcumulado: true, dataInicio: true, dataFim: true },
   })
-  const totalAtividades = atividades.length
-  const pctReal = calcProgressoPonderado(atividades as any[])
-  const pctPlanejado = calcPctPlanejado(atividades as any[])
+  const pctReal = calcProgressoPonderado(atividades)
+  const pctPlanejado = calcPctPlanejado(atividades)
 
-  const rdos = await prisma.rdo.findMany({
+  const rdos: RdoResumo[] = await prisma.rdo.findMany({
     where: { projetoId },
     select: {
       id: true, numero: true, data: true, status: true,
@@ -65,19 +80,19 @@ export async function GET(req: NextRequest, { params }: Params) {
     orderBy: { data: 'desc' },
   })
 
-  const fotos: any[] = []
-  const videos: any[] = []
-  const anexos: any[] = []
-  const atividadesFeed: any[] = []
-  const ocorrenciasFeed: any[] = []
-  const comentariosFeed: any[] = []
-  const clima: any[] = []
-  const maoDeObraFeed: any[] = []
-  const equipamentosFeed: any[] = []
+  const fotos: Array<ItemDoRdo & { id: string; url: string; nomeArq: string; descricao: string | null }> = []
+  const videos: typeof fotos = []
+  const anexos: typeof fotos = []
+  const atividadesFeed: Array<ItemDoRdo & { id: string; nome: string; pctAnterior: number; pctAtual: number; deltaHoje: number }> = []
+  const ocorrenciasFeed: Array<ItemDoRdo & { id: string; tipo: string; descricao: string; resolvida: boolean }> = []
+  const comentariosFeed: Array<ItemDoRdo & { id: string; texto: string; criadoEm: Date; autorNome: string; totalRespostas: number }> = []
+  const clima: Array<ItemDoRdo & { climaManha: string | null; climaTarde: string | null; climaNoite: string | null; precipitacaoMm: number | null; climaImpacto: string }> = []
+  const maoDeObraFeed: Array<ItemDoRdo & { funcaoNome: string; quantidade: number; horaEntrada: string; horaSaida: string; totalHH: number }> = []
+  const equipamentosFeed: Array<ItemDoRdo & { equipamentoNome: string; quantidade: number; observacao: string | null }> = []
   let ocorrenciasAbertas = 0
   let totalHH = 0
 
-  for (const r of rdos as any[]) {
+  for (const r of rdos) {
     for (const m of r.midias) {
       const item = { id: m.id, url: m.url, nomeArq: m.nomeArq, descricao: m.descricao, rdoId: r.id, rdoNumero: r.numero, rdoData: r.data }
       if (m.tipo === 'FOTO') fotos.push(item)
@@ -119,10 +134,10 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   // Prévia dos RDOs mais recentes para a visão geral (já vem ordenado desc por data)
-  const rdosRecentes = (rdos as any[]).slice(0, 8).map(r => ({
+  const rdosRecentes = rdos.slice(0, 8).map(r => ({
     id: r.id, numero: r.numero, data: r.data, status: r.status,
     assinaturas: r.assinaturas,
-    totalFotos: r.midias.filter((m: any) => m.tipo === 'FOTO').length,
+    totalFotos: r.midias.filter((m) => m.tipo === 'FOTO').length,
   }))
 
   return NextResponse.json({

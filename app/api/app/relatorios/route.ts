@@ -10,6 +10,18 @@ import { prisma } from '@/lib/prisma'
 import { requireAuth, podeVerRelatorios } from '@/lib/auth'
 import { calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotados aqui localmente com a forma real de cada query.
+type GroupByCount = { _count: number }
+type RdoPorStatus = { status: string } & GroupByCount
+type OcorrenciaPorTipo = { tipo: string; _sum: { duracaoMin: number | null } } & GroupByCount
+type Atividade = { pctAcumulado: number; dataInicio: Date | null; dataFim: Date | null; status: string }
+type ProjetoProgresso = { id: string; nome: string; cor: string; etapas: Array<{ atividades: Atividade[] }>; _count: { rdos: number } }
+type HHPorFuncao = { funcaoNome: string; _sum: { totalHH: number | null } }
+type HHPorCategoria = { categoria: string; _sum: { totalHH: number | null; quantidade: number | null } }
+type MidiaStat = { tipo: string; _sum: { tamanhoBytes: number | null } } & GroupByCount
+type RdoDecidido = { enviadoEm: Date | null; atualizadoEm: Date }
+
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
@@ -67,6 +79,20 @@ export async function GET(req: NextRequest) {
     totalUsuarios,
     midiaStats,
     rdosDecididos,
+  ]: [
+    number,
+    RdoPorStatus[],
+    { _sum: { totalHH: number | null } },
+    OcorrenciaPorTipo[],
+    number,
+    ProjetoProgresso[],
+    HHPorFuncao[],
+    HHPorCategoria[],
+    Array<{ data: Date }>,
+    number,
+    number,
+    MidiaStat[],
+    RdoDecidido[],
   ] = await Promise.all([
 
     // Total de RDOs no período
@@ -174,10 +200,10 @@ export async function GET(req: NextRequest) {
   ])
 
   // Calcula progresso de cada projeto
-  const progressoCalculado = progressoPorProjeto.map((proj: any) => {
-    const atividades = proj.etapas.flatMap((e: any) => e.atividades)
-    const pctReal    = calcProgressoPonderado(atividades as any[])
-    const pctPlanejado = calcPctPlanejado(atividades as any[])
+  const progressoCalculado = progressoPorProjeto.map((proj) => {
+    const atividades = proj.etapas.flatMap((e) => e.atividades)
+    const pctReal    = calcProgressoPonderado(atividades)
+    const pctPlanejado = calcPctPlanejado(atividades)
 
     return {
       id:          proj.id,
@@ -191,7 +217,7 @@ export async function GET(req: NextRequest) {
   })
 
   const desvioMedio = progressoCalculado.length
-    ? Math.round(progressoCalculado.reduce((s: number, p: any) => s + p.desvio, 0) / progressoCalculado.length)
+    ? Math.round(progressoCalculado.reduce((s, p) => s + p.desvio, 0) / progressoCalculado.length)
     : 0
 
   // Top 5 projetos com pior desvio (mais negativo = mais atrasado)
@@ -202,7 +228,7 @@ export async function GET(req: NextRequest) {
   // ── Tempo médio de aprovação — enviadoEm até a decisão (atualizadoEm,
   // que só muda de novo quando o RDO vira APROVADO/REJEITADO, já que a
   // edição é bloqueada nesses status) ──────────────────────────────
-  const horasAprovacao = (rdosDecididos as Array<{ enviadoEm: Date | null; atualizadoEm: Date }>)
+  const horasAprovacao = rdosDecididos
     .map(r => (r.atualizadoEm.getTime() - r.enviadoEm!.getTime()) / 3_600_000)
     .filter(h => h >= 0)
 
@@ -221,17 +247,17 @@ export async function GET(req: NextRequest) {
     total: horasAprovacao.filter(h => h >= f.min && h < f.max).length,
   }))
 
-  const aprovados  = rdosPorStatus.find((s: any) => s.status === 'APROVADO')?._count ?? 0
-  const pendentes  = rdosPorStatus.find((s: any) => s.status === 'PENDENTE_APROVACAO')?._count ?? 0
-  const rascunhos  = rdosPorStatus.find((s: any) => s.status === 'RASCUNHO')?._count ?? 0
-  const rejeitados = rdosPorStatus.find((s: any) => s.status === 'REJEITADO')?._count ?? 0
+  const aprovados  = rdosPorStatus.find((s) => s.status === 'APROVADO')?._count ?? 0
+  const pendentes  = rdosPorStatus.find((s) => s.status === 'PENDENTE_APROVACAO')?._count ?? 0
+  const rascunhos  = rdosPorStatus.find((s) => s.status === 'RASCUNHO')?._count ?? 0
+  const rejeitados = rdosPorStatus.find((s) => s.status === 'REJEITADO')?._count ?? 0
   const finalizados = aprovados + rejeitados // enviados que já receberam decisão
   const taxaAprovacao = finalizados > 0 ? Math.round((aprovados / finalizados) * 100) : 0
 
-  const totalFotos  = (midiaStats as any[]).find(m => m.tipo === 'FOTO')?._count ?? 0
-  const totalVideos = (midiaStats as any[]).find(m => m.tipo === 'VIDEO')?._count ?? 0
-  const totalAnexos = (midiaStats as any[]).find(m => m.tipo === 'ARQUIVO')?._count ?? 0
-  const armazenamentoBytes = (midiaStats as any[]).reduce((s, m) => s + Number(m._sum.tamanhoBytes ?? 0), 0)
+  const totalFotos  = midiaStats.find(m => m.tipo === 'FOTO')?._count ?? 0
+  const totalVideos = midiaStats.find(m => m.tipo === 'VIDEO')?._count ?? 0
+  const totalAnexos = midiaStats.find(m => m.tipo === 'ARQUIVO')?._count ?? 0
+  const armazenamentoBytes = midiaStats.reduce((s, m) => s + Number(m._sum.tamanhoBytes ?? 0), 0)
 
   // ── Agrupamento de RDOs ao longo do tempo ──────────────────
   const diasNoIntervalo = Math.max(1, Math.round((dataFim.getTime() - dataInicio.getTime()) / 86_400_000))
@@ -249,7 +275,7 @@ export async function GET(req: NextRequest) {
   }
 
   const buckets = new Map<string, number>()
-  for (const r of rdoDatas as Array<{ data: Date }>) {
+  for (const r of rdoDatas) {
     const chave = chaveBucket(new Date(r.data))
     buckets.set(chave, (buckets.get(chave) ?? 0) + 1)
   }
@@ -281,7 +307,7 @@ export async function GET(req: NextRequest) {
       { status: 'APROVADO',            total: aprovados },
       { status: 'REJEITADO',           total: rejeitados },
     ],
-    ocorrenciasPorTipo: ocorrenciasPorTipo.map((o: any) => ({
+    ocorrenciasPorTipo: ocorrenciasPorTipo.map((o) => ({
       tipo:  o.tipo,
       total: o._count,
       horas: Math.round((Number(o._sum.duracaoMin ?? 0) / 60) * 10) / 10,
@@ -292,11 +318,11 @@ export async function GET(req: NextRequest) {
       amostra:    horasAprovacao.length,
       distribuicao: distribuicaoAprovacao,
     },
-    hhPorFuncao: hhPorFuncao.map((h: any) => ({
+    hhPorFuncao: hhPorFuncao.map((h) => ({
       funcao: h.funcaoNome,
       totalHH: Number(h._sum.totalHH ?? 0),
     })),
-    hhPorCategoria: hhPorCategoria.map((h: any) => ({
+    hhPorCategoria: hhPorCategoria.map((h) => ({
       categoria:    h.categoria,
       totalHH:      Number(h._sum.totalHH ?? 0),
       totalPessoas: Number(h._sum.quantidade ?? 0),
