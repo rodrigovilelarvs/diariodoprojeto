@@ -1,0 +1,800 @@
+// ============================================================
+// DIÁRIO DO PROJETO — schema.prisma
+// Stack: PostgreSQL + Prisma ORM
+// Gerado em: 08/07/2026
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum PlanoTipo {
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+enum TenantStatus {
+  AGUARDANDO // cadastrada, aguardando ativação pelo super-admin
+  ATIVO
+  SUSPENSO
+}
+
+enum UsuarioPerfil {
+  ADMIN         // acesso total à empresa
+  PERSONALIZADO // permissões granulares — ver campos perm* em Usuario/Convite
+}
+
+enum UsuarioStatus {
+  ATIVO
+  INATIVO
+  CONVIDADO // convite enviado, ainda não aceito
+}
+
+enum ProjetoStatus {
+  NAO_INICIADO
+  ATIVO
+  PAUSADO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum RdoStatus {
+  RASCUNHO
+  PENDENTE_APROVACAO
+  APROVADO
+  REJEITADO
+}
+
+enum ClimaCondicao {
+  SOL
+  NUBLADO
+  CHUVA
+  TEMPESTADE
+}
+
+enum ClimaImpacto {
+  NENHUM
+  PARCIAL
+  TOTAL
+}
+
+enum AtividadeStatus {
+  NAO_INICIADA
+  EM_ANDAMENTO
+  CONCLUIDA
+  EM_ATRASO
+}
+
+enum OcorrenciaTipo {
+  ACIDENTE_INCIDENTE
+  ATRASO_MATERIAL
+  PROBLEMA_TECNICO
+  PARALISACAO
+  CONDICAO_CLIMATICA
+  FALTA_MAO_DE_OBRA
+  OUTRO
+}
+
+enum OcorrenciaGravidade {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum MidiaTipo {
+  FOTO
+  VIDEO
+  ARQUIVO
+}
+
+enum MaoDeObraCategoria {
+  DIRETA
+  INDIRETA
+  TERCEIRIZADO
+}
+
+enum EquipamentoTipo {
+  PROPRIO
+  ALUGADO
+  TERCEIRIZADO
+}
+
+enum LogNivel {
+  INFO
+  AVISO
+  ERRO
+  CRITICO
+}
+
+enum LogCategoria {
+  LOGIN
+  RDO
+  USUARIO
+  PLANO
+  EMPRESA
+  ASSINATURA
+  SISTEMA
+}
+
+enum AssinaturaStatus {
+  PENDENTE
+  ASSINADO
+}
+
+enum ProjetoAcessoNivel {
+  VISUALIZAR
+  EDITAR
+  GERENCIAMENTO
+}
+
+enum ProjetoAssinaturaModo {
+  ABERTA // qualquer usuário com permissão de aprovar_rdo pode assinar (comportamento padrão)
+  DEFINIDA // apenas os assinantes pré-definidos (até 3) podem assinar
+}
+
+// ============================================================
+// SUPER ADMIN — Proprietário da plataforma
+// ============================================================
+
+model SuperAdmin {
+  id       String   @id @default(cuid())
+  nome     String
+  email    String   @unique
+  senha    String // hash bcrypt
+  criadoEm DateTime @default(now())
+
+  @@map("super_admins")
+}
+
+// ============================================================
+// TENANT — Empresa cliente
+// ============================================================
+
+model Tenant {
+  id         String       @id @default(cuid())
+  nome       String
+  cnpj       String?      @unique
+  setor      String?
+  cidade     String?
+  uf         String?
+  plano      PlanoTipo    @default(STARTER)
+  status     TenantStatus @default(AGUARDANDO)
+  obsInterna String? // nota privada do super-admin
+
+  // Contato responsável pela conta (autoatendimento, editável pelo admin da empresa)
+  contatoNome     String?
+  contatoEmail    String?
+  contatoTelefone String?
+
+  // Cobrança — data do próximo vencimento/renovação do plano contratado
+  dataVencimentoPlano DateTime?
+
+  // Limites do plano (copiados do Plano no momento da contratação)
+  limiteUsuarios Int @default(3)
+  limiteRdosMes  Int @default(30) // 0 = ilimitado
+  limiteProjetos Int @default(2) // 0 = ilimitado
+
+  ativadoEm    DateTime?
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  // Relações
+  usuarios    Usuario[]
+  projetos    Projeto[]
+  convites    Convite[]
+  logs        LogAuditoria[]
+  planoConfig PlanoConfig?
+
+  @@map("tenants")
+}
+
+// ============================================================
+// PLANO CONFIG — Configuração dos planos (editável pelo super-admin)
+// ============================================================
+
+model PlanoConfig {
+  id                 String    @id @default(cuid())
+  tipo               PlanoTipo @unique
+  precoMensal        Decimal   @default(0) @db.Decimal(10, 2)
+  limiteUsuarios     Int       @default(3)
+  limiteRdosMes      Int       @default(30)
+  limiteProjetos     Int       @default(2)
+  temRelatorios      Boolean   @default(false)
+  temExportPdf       Boolean   @default(true)
+  temApi             Boolean   @default(false)
+  temSuporteDedicado Boolean   @default(false)
+  descricao          String?
+
+  atualizadoEm DateTime @updatedAt
+
+  // Relação inversa (apenas para Enterprise — one-to-one opcional)
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+  tenantId String? @unique
+
+  @@map("planos_config")
+}
+
+// ============================================================
+// USUÁRIO
+// ============================================================
+
+model Usuario {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  nome      String
+  email     String
+  senha     String? // null se ainda não aceitou o convite
+  telefone  String?
+  funcao    String? // cargo/função (ex.: "Engenheiro Civil", "Mestre de obras") — exibido junto ao nome na aprovação e no PDF
+  perfil    UsuarioPerfil @default(PERSONALIZADO)
+  status    UsuarioStatus @default(CONVIDADO)
+  avatarUrl String?
+
+  // Permissões granulares — só têm efeito quando perfil = PERSONALIZADO
+  // (ADMIN sempre tem tudo liberado, independente destas flags)
+  permEmitirRdo         Boolean @default(false)
+  permAprovarRdo        Boolean @default(false)
+  permGerenciarProjetos Boolean @default(false)
+  permGerenciarEquipe   Boolean @default(false)
+  permVerRelatorios     Boolean @default(false)
+  permGerenciarTarefas  Boolean @default(false)
+
+  ultimoAcessoEm DateTime?
+  criadoEm       DateTime  @default(now())
+  atualizadoEm   DateTime  @updatedAt
+
+  // Relações
+  rdosEmitidos           Rdo[]                   @relation("EmissorRdo")
+  assinaturas            Assinatura[]
+  comentarios            Comentario[]
+  rdosAprovacao          RdoAprovacao[]
+  projetosGeridos        Projeto[]               @relation("GestorProjeto")
+  logs                   LogAuditoria[]
+  assinaturaDigital      AssinaturaDigital?
+  preferenciaNotificacao PreferenciaNotificacao?
+  notificacoesFila       NotificacaoFila[]
+  projetoAcessos         ProjetoAcesso[]
+  projetosAssinante1     Projeto[]               @relation("ProjetoAssinante1")
+  projetosAssinante2     Projeto[]               @relation("ProjetoAssinante2")
+  projetosAssinante3     Projeto[]               @relation("ProjetoAssinante3")
+
+  @@unique([tenantId, email])
+  @@map("usuarios")
+}
+
+// ============================================================
+// PREFERÊNCIA DE NOTIFICAÇÃO — por usuário
+// Controla apenas os canais/eventos que já disparam de verdade
+// ============================================================
+
+model PreferenciaNotificacao {
+  id        String  @id @default(cuid())
+  usuarioId String  @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  emailRdoEnviado        Boolean @default(true)
+  emailRdoAprovado       Boolean @default(true)
+  emailRdoRejeitado      Boolean @default(true)
+  emailLembreteDiario    Boolean @default(true)
+  emailContratoVencendo  Boolean @default(true)
+  emailConvitePendente   Boolean @default(true)
+
+  // IMEDIATO manda cada e-mail na hora (comportamento de sempre); DIGEST_DIARIO
+  // acumula na fila (NotificacaoFila) e manda 1 e-mail só à noite com tudo
+  // que aconteceu no dia (cron resumo-diario).
+  modoNotificacao ModoNotificacao @default(IMEDIATO)
+
+  atualizadoEm DateTime @updatedAt
+  criadoEm     DateTime @default(now())
+
+  @@map("preferencias_notificacao")
+}
+
+enum ModoNotificacao {
+  IMEDIATO
+  DIGEST_DIARIO
+}
+
+// Fila de notificações represadas pra quem está no modo "resumo diário" —
+// cada linha é 1 evento que teria virado e-mail imediato; o cron
+// resumo-diario agrupa por usuário, manda 1 e-mail com tudo, e marca
+// enviadoEm. Fica registrado mesmo depois de enviado (não é deletado).
+model NotificacaoFila {
+  id        String    @id @default(cuid())
+  usuarioId String
+  usuario   Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  tipo      String    // mesmo valor do campo de preferência (ex.: "emailRdoAprovado")
+  titulo    String
+  resumo    String
+  link      String?
+
+  criadoEm  DateTime  @default(now())
+  enviadoEm DateTime?
+
+  @@map("notificacoes_fila")
+}
+
+// ============================================================
+// CONVITE
+// ============================================================
+
+model Convite {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  email      String
+  funcao     String?
+  perfil     UsuarioPerfil @default(PERSONALIZADO)
+  token      String        @unique @default(cuid())
+  expiradoEm DateTime
+
+  // Mesmas flags de Usuario — carregam a permissão pretendida até o aceite
+  permEmitirRdo         Boolean @default(false)
+  permAprovarRdo        Boolean @default(false)
+  permGerenciarProjetos Boolean @default(false)
+  permGerenciarEquipe   Boolean @default(false)
+  permVerRelatorios     Boolean @default(false)
+  permGerenciarTarefas  Boolean @default(false)
+
+  aceitoEm DateTime?
+  criadoEm DateTime  @default(now())
+
+  // Última vez que o lembrete de "convite parado" foi enviado — evita
+  // reenviar o aviso a cada disparo diário do cron enquanto ele segue pendente.
+  lembreteEnviadoEm DateTime?
+
+  @@map("convites")
+}
+
+// ============================================================
+// PROJETO
+// ============================================================
+
+model Projeto {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  nome                 String
+  descricao            String?
+  pedidoCompraContrato String? // Pedido de compra ou contrato — referência mostrada no RDO e no PDF
+  empresaContratada    String? // Empresa contratada para execução da obra — mostrada no RDO e no PDF
+  status               ProjetoStatus @default(NAO_INICIADO)
+  grupo                String? // ex: "CAPEX", "Manutenção", "Unidade SP" — texto livre
+  fotoUrl              String? // miniatura exibida na lista/cartões do painel
+  dataInicioContrato   DateTime?
+  dataFimContrato      DateTime?
+  cor                  String        @default("#29B6D8") // cor no painel
+
+  gestorId String?
+  gestor   Usuario? @relation("GestorProjeto", fields: [gestorId], references: [id])
+
+  // Assinaturas exigidas para aprovação de RDOs deste projeto
+  assinaturaModo ProjetoAssinaturaModo @default(ABERTA)
+  assinante1Id   String?
+  assinante1     Usuario?              @relation("ProjetoAssinante1", fields: [assinante1Id], references: [id])
+  assinante2Id   String?
+  assinante2     Usuario?              @relation("ProjetoAssinante2", fields: [assinante2Id], references: [id])
+  assinante3Id   String?
+  assinante3     Usuario?              @relation("ProjetoAssinante3", fields: [assinante3Id], references: [id])
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relações
+  rdos    Rdo[]
+  etapas  Etapa[]
+  acessos ProjetoAcesso[]
+
+  @@map("projetos")
+}
+
+// ============================================================
+// ACESSO AO PROJETO — controla quem pode ver/editar a pasta do projeto
+// Sem nenhum registro para um projeto = visível a todo o tenant (padrão atual)
+// ============================================================
+
+model ProjetoAcesso {
+  id        String  @id @default(cuid())
+  projetoId String
+  projeto   Projeto @relation(fields: [projetoId], references: [id], onDelete: Cascade)
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  nivel ProjetoAcessoNivel @default(VISUALIZAR)
+
+  criadoEm DateTime @default(now())
+
+  @@unique([projetoId, usuarioId])
+  @@map("projeto_acessos")
+}
+
+// ============================================================
+// ETAPA (EAP — nível pai)
+// ============================================================
+
+model Etapa {
+  id        String  @id @default(cuid())
+  projetoId String
+  projeto   Projeto @relation(fields: [projetoId], references: [id], onDelete: Cascade)
+
+  numero String // ex: "1.0", "2.0"
+  nome   String
+  ordem  Int    @default(0)
+
+  criadoEm DateTime @default(now())
+
+  atividades Atividade[]
+
+  @@map("etapas")
+}
+
+// ============================================================
+// ATIVIDADE (EAP — nível filho)
+// ============================================================
+
+model Atividade {
+  id      String @id @default(cuid())
+  etapaId String
+  etapa   Etapa  @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  numero       String // ex: "1.1", "1.2"
+  nome         String
+  status       AtividadeStatus @default(NAO_INICIADA)
+  pctAcumulado Int             @default(0) // % ACUMULADO (0–100)
+  dataInicio   DateTime?
+  dataFim      DateTime?
+  ordem        Int             @default(0)
+
+  atualizadoEm DateTime @updatedAt
+  criadoEm     DateTime @default(now())
+
+  registrosRdo RegistroRdoAtividade[]
+
+  @@map("atividades")
+}
+
+// ============================================================
+// RDO — Registro Diário de Obra
+// ============================================================
+
+model Rdo {
+  id        String  @id @default(cuid())
+  projetoId String
+  projeto   Projeto @relation(fields: [projetoId], references: [id], onDelete: Cascade)
+
+  numero Int // sequencial por projeto
+  data   DateTime  @db.Date
+  status RdoStatus @default(RASCUNHO)
+
+  // Identificação
+  emissorId String
+  emissor   Usuario @relation("EmissorRdo", fields: [emissorId], references: [id])
+
+  // Horários
+  horaInicio     String? // "07:00"
+  horaTermino    String? // "17:00"
+  intervaloHoras Decimal? @db.Decimal(4, 2)
+  totalHoras     Decimal? @db.Decimal(5, 2)
+
+  // Clima
+  climaManha     ClimaCondicao?
+  climaTarde     ClimaCondicao?
+  climaNoite     ClimaCondicao? // turno noturno — opcional, só para obras com turno da noite
+  precipitacaoMm Decimal?       @db.Decimal(6, 2)
+  climaImpacto   ClimaImpacto   @default(NENHUM)
+
+  // Texto livre
+  observacoes String?
+
+  // Quando o RDO saiu de RASCUNHO para PENDENTE_APROVACAO — usado pra medir
+  // o tempo de aprovação (junto com atualizadoEm, no momento em que vira
+  // APROVADO/REJEITADO). Null enquanto em rascunho; resetado ao reabrir.
+  enviadoEm DateTime?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Relações
+  atividadeRegistros RegistroRdoAtividade[]
+  maoDeObra          MaoDeObra[]
+  equipamentos       EquipamentoUso[]
+  ocorrencias        Ocorrencia[]
+  midias             Midia[]
+  comentarios        Comentario[]
+  assinaturas        Assinatura[]
+  aprovacoes         RdoAprovacao[]
+
+  @@unique([projetoId, numero])
+  @@map("rdos")
+}
+
+// ============================================================
+// REGISTRO RDO × ATIVIDADE
+// Guarda o snapshot do % acumulado daquele dia para aquela atividade
+// ============================================================
+
+model RegistroRdoAtividade {
+  id          String     @id @default(cuid())
+  rdoId       String
+  rdo         Rdo        @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+  atividadeId String?
+  atividade   Atividade? @relation(fields: [atividadeId], references: [id])
+
+  pctAnterior Int // % acumulado ANTES deste RDO
+  pctAtual    Int // % acumulado APÓS este RDO  (salvo ao enviar)
+  deltaHoje   Int // pctAtual − pctAnterior
+
+  // Atividade avulsa (quando não vem da EAP)
+  avulsa      Boolean @default(false)
+  avulsaEtapa String?
+  avulsaNome  String?
+
+  criadoEm DateTime @default(now())
+
+  @@unique([rdoId, atividadeId])
+  @@map("registros_rdo_atividade")
+}
+
+// ============================================================
+// MÃO DE OBRA
+// ============================================================
+
+model FuncaoCadastro {
+  id        String             @id @default(cuid())
+  tenantId  String
+  nome      String
+  categoria MaoDeObraCategoria @default(DIRETA)
+
+  criadoEm DateTime @default(now())
+
+  usos MaoDeObra[]
+
+  @@unique([tenantId, nome])
+  @@map("funcoes_cadastro")
+}
+
+model MaoDeObra {
+  id    String @id @default(cuid())
+  rdoId String
+  rdo   Rdo    @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+
+  funcaoCadastroId String?
+  funcaoCadastro   FuncaoCadastro?    @relation(fields: [funcaoCadastroId], references: [id])
+  funcaoNome       String // desnormalizado para histórico
+  categoria        MaoDeObraCategoria @default(DIRETA) // desnormalizado — snapshot da categoria da função no momento do registro
+
+  quantidade  Int
+  horaEntrada String // "07:00"
+  horaSaida   String // "17:00"
+  totalHH     Decimal @db.Decimal(6, 2) // calculado: (saida-entrada) * quantidade
+
+  @@map("mao_de_obra")
+}
+
+// ============================================================
+// EQUIPAMENTO
+// ============================================================
+
+model EquipamentoCadastro {
+  id       String          @id @default(cuid())
+  tenantId String
+  nome     String
+  tipo     EquipamentoTipo @default(PROPRIO)
+
+  criadoEm DateTime @default(now())
+
+  usos EquipamentoUso[]
+
+  @@unique([tenantId, nome])
+  @@map("equipamentos_cadastro")
+}
+
+model EquipamentoUso {
+  id    String @id @default(cuid())
+  rdoId String
+  rdo   Rdo    @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+
+  equipamentoCadastroId String?
+  equipamentoCadastro   EquipamentoCadastro? @relation(fields: [equipamentoCadastroId], references: [id])
+  equipamentoNome       String // desnormalizado
+
+  quantidade Int
+  observacao String?
+
+  @@map("equipamentos_uso")
+}
+
+// ============================================================
+// OCORRÊNCIA
+// ============================================================
+
+model Ocorrencia {
+  id    String @id @default(cuid())
+  rdoId String
+  rdo   Rdo    @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+
+  tipo        String // texto livre — vem do catálogo OcorrenciaTipoCadastro do tenant
+  gravidade   OcorrenciaGravidade @default(MEDIA)
+  horaInicio  String?
+  horaTermino String?
+  duracaoMin  Int? // calculado em minutos
+  descricao   String
+  responsavel String?
+  resolvida   Boolean             @default(false)
+
+  criadoEm DateTime @default(now())
+
+  @@map("ocorrencias")
+}
+
+// ============================================================
+// TIPO DE OCORRÊNCIA — catálogo por tenant (permite cadastrar novos tipos)
+// ============================================================
+
+model OcorrenciaTipoCadastro {
+  id       String   @id @default(cuid())
+  tenantId String
+  nome     String
+  criadoEm DateTime @default(now())
+
+  @@unique([tenantId, nome])
+  @@map("ocorrencia_tipos_cadastro")
+}
+
+// ============================================================
+// MÍDIA (fotos, vídeos, arquivos)
+// ============================================================
+
+model Midia {
+  id    String @id @default(cuid())
+  rdoId String
+  rdo   Rdo    @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+
+  tipo         MidiaTipo
+  nomeArq      String
+  url          String // Supabase Storage URL
+  tamanhoBytes Int?
+  descricao    String?
+  ordem        Int       @default(0)
+
+  criadoEm DateTime @default(now())
+
+  @@map("midias")
+}
+
+// ============================================================
+// COMENTÁRIO
+// ============================================================
+
+model Comentario {
+  id    String @id @default(cuid())
+  rdoId String
+  rdo   Rdo    @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+
+  autorId String
+  autor   Usuario @relation(fields: [autorId], references: [id])
+
+  texto     String
+  parentId  String? // para respostas (@menção)
+  parent    Comentario?  @relation("RespostasComentario", fields: [parentId], references: [id])
+  respostas Comentario[] @relation("RespostasComentario")
+
+  criadoEm  DateTime  @default(now())
+  editadoEm DateTime?
+
+  @@map("comentarios")
+}
+
+// ============================================================
+// ASSINATURA DIGITAL CADASTRADA (template reutilizável)
+// Cada usuário tem UMA assinatura salva — reutilizada em todos os RDOs
+// ============================================================
+
+model AssinaturaDigital {
+  id        String  @id @default(cuid())
+  usuarioId String  @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  imagemUrl    String // Supabase Storage — PNG da assinatura desenhada
+  hashSha256   String // integridade
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  // Assinaturas aplicadas em RDOs
+  usos Assinatura[]
+
+  @@map("assinaturas_digitais")
+}
+
+// ============================================================
+// ASSINATURA — Aplicação da assinatura num RDO específico
+// ============================================================
+
+model Assinatura {
+  id    String @id @default(cuid())
+  rdoId String
+  rdo   Rdo    @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+
+  usuarioId           String
+  usuario             Usuario            @relation(fields: [usuarioId], references: [id])
+  assinaturaDigitalId String?
+  assinaturaDigital   AssinaturaDigital? @relation(fields: [assinaturaDigitalId], references: [id])
+
+  status     AssinaturaStatus @default(PENDENTE)
+  cargo      String // snapshot do cargo no momento da assinatura
+  ipAddress  String?
+  userAgent  String?
+  assinadoEm DateTime?
+
+  criadoEm DateTime @default(now())
+
+  @@unique([rdoId, usuarioId])
+  @@map("assinaturas")
+}
+
+// ============================================================
+// APROVAÇÃO DE RDO (log do fluxo)
+// ============================================================
+
+model RdoAprovacao {
+  id    String @id @default(cuid())
+  rdoId String
+  rdo   Rdo    @relation(fields: [rdoId], references: [id], onDelete: Cascade)
+
+  aprovadorId String
+  aprovador   Usuario @relation(fields: [aprovadorId], references: [id])
+
+  aprovado   Boolean
+  comentario String?
+  aprovadoEm DateTime @default(now())
+
+  @@map("rdos_aprovacao")
+}
+
+// ============================================================
+// LOG DE AUDITORIA
+// Registra tudo — visível para você (super-admin) e para o admin da empresa
+// ============================================================
+
+model LogAuditoria {
+  id       String  @id @default(cuid())
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
+  usuarioId String?
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+
+  nivel     LogNivel     @default(INFO)
+  categoria LogCategoria
+  mensagem  String
+  detalhe   String? // JSON com contexto extra
+  ipAddress String?
+  userAgent String?
+
+  // Para o super-admin marcar como resolvido
+  resolvido   Boolean   @default(false)
+  resolvidoEm DateTime?
+  notaInterna String?
+
+  criadoEm DateTime @default(now())
+
+  @@index([tenantId, criadoEm])
+  @@index([nivel, criadoEm])
+  @@map("logs_auditoria")
+}

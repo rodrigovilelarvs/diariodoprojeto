@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/lembrete-rdo",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/contrato-vencendo",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/convite-pendente",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/resumo-diario",
+      "schedule": "0 23 * * *"
+    }
+  ]
+}
