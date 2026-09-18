@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { AdminProviders } from '@/components/Providers'
 import { AdminSidebar } from '@/components/superadmin/AdminSidebar'
 import { useTenants } from '@/hooks/useAdmin'
+import type { Tenant } from '@/lib/types'
 
 function UsoContent() {
   const router = useRouter()
@@ -15,9 +16,11 @@ function UsoContent() {
 
   const empresas = data?.tenants ?? []
 
-  const totalUsuarios = empresas.reduce((s: number, e: any) => s + (e._count?.usuarios ?? 0), 0)
-  const totalRdos     = empresas.reduce((s: number, e: any) => s + (e._count?.rdos ?? 0), 0)
-  const totalProjetos = empresas.reduce((s: number, e: any) => s + (e._count?.projetos ?? 0), 0)
+  const totalUsuarios = empresas.reduce((s: number, e: Tenant) => s + (e._count?.usuarios ?? 0), 0)
+  // Era e._count?.rdos (campo que não existe — sempre 0). O total de RDOs do
+  // mês vem em e.rdosMes, calculado à parte na rota (ver app/api/admin/tenants).
+  const totalRdos     = empresas.reduce((s: number, e: Tenant) => s + (e.rdosMes ?? 0), 0)
+  const totalProjetos = empresas.reduce((s: number, e: Tenant) => s + (e._count?.projetos ?? 0), 0)
 
   const PLANO_LIMITES: Record<string, { usuarios: number; rdos: number; projetos: number }> = {
     STARTER:    { usuarios:3,  rdos:30,  projetos:2  },
@@ -69,7 +72,7 @@ function UsoContent() {
         {/* Totais */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
           {[
-            { l:'Empresas ativas', v: empresas.filter((e:any)=>e.status==='ATIVO').length, cor:'#29B6D8' },
+            { l:'Empresas ativas', v: empresas.filter((e: Tenant) => e.status==='ATIVO').length, cor:'#29B6D8' },
             { l:'Usuários totais',  v: totalUsuarios, cor:'#E8EAF0' },
             { l:'Projetos totais',  v: totalProjetos, cor:'#E8EAF0' },
             { l:'RDOs totais',      v: totalRdos,     cor:'#4CAF7D' },
@@ -86,7 +89,7 @@ function UsoContent() {
           <div style={{ color:'#8B95A8', fontSize:12, padding:32, textAlign:'center' }}>Carregando...</div>
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
-            {empresas.map((e: any) => {
+            {empresas.map((e: Tenant) => {
               const limites = PLANO_LIMITES[e.plano] ?? PLANO_LIMITES.STARTER
               const usuarios  = e._count?.usuarios  ?? 0
               const projetos  = e._count?.projetos  ?? 0

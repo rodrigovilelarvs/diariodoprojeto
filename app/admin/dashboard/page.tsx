@@ -53,7 +53,7 @@ function DashboardContent() {
               <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.08)', borderRadius:12, overflow:'hidden' }}>
                 <div style={{ padding:'9px 14px', borderBottom:'.5px solid rgba(255,255,255,.07)', background:'#161B25', fontSize:12, fontWeight:500 }}>Receita por plano</div>
                 <div style={{ padding:'13px 14px' }}>
-                  {(data?.distribuicaoPlanos ?? []).map((d: any) => (
+                  {(data?.distribuicaoPlanos ?? []).map((d) => (
                     <div key={d.plano} style={{ marginBottom:10 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, marginBottom:4 }}>
                         <span style={{ color:'#8B95A8' }}>{d.plano}</span>
@@ -76,7 +76,7 @@ function DashboardContent() {
                 <div style={{ padding:'8px 0' }}>
                   {(data?.logsRecentes ?? []).length === 0 ? (
                     <div style={{ padding:'20px', textAlign:'center', color:'#4A5568', fontSize:11 }}>Nenhum alerta. Tudo em ordem!</div>
-                  ) : (data?.logsRecentes ?? []).slice(0,5).map((log: any) => (
+                  ) : (data?.logsRecentes ?? []).slice(0,5).map((log) => (
                     <div key={log.id} style={{ padding:'8px 14px', borderBottom:'.5px solid rgba(255,255,255,.05)', borderLeft:`3px solid ${log.nivel==='CRITICO'||log.nivel==='ERRO' ? '#E05C5C' : log.nivel==='AVISO' ? '#E6A817' : '#29B6D8'}` }}>
                       <div style={{ fontSize:11, color:'#E8EAF0', marginBottom:2 }}>{log.mensagem}</div>
                       <div style={{ fontSize:10, color:'#4A5568' }}>{log.tenant?.nome ?? 'Sistema'} · {new Date(log.criadoEm).toLocaleString('pt-BR')}</div>

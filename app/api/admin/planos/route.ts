@@ -7,32 +7,39 @@ import { LogCategoria, PlanoTipo } from '@/lib/prisma-enums'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-admin'
+import type { PlanoConfig } from '@/lib/types'
 // ── GET ──────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req)
   if ('error' in auth) return auth.error
 
-  const planos = await prisma.planoConfig.findMany({
+  // `prisma` não carrega os tipos gerados do Prisma Client neste projeto
+  // (ver lib/prisma.ts) — anota localmente com a forma real da tabela.
+  type DistribuicaoRow = { plano: PlanoTipo; _count: number }
+
+  const planos: PlanoConfig[] = await prisma.planoConfig.findMany({
     orderBy: { precoMensal: 'asc' },
   })
 
   // Conta empresas em cada plano
-  const distribuicao = await prisma.tenant.groupBy({
+  const distribuicao: DistribuicaoRow[] = await prisma.tenant.groupBy({
     by:     ['plano'],
     where:  { status: 'ATIVO' },
     _count: true,
   })
 
-  const mrr = (distribuicao as any[]).reduce((acc: any, d: any) => {
-    const plano = (planos as any[]).find((p: any) => p.tipo === d.plano)
-    return acc + Number(plano?.precoMensal ?? 0) * d._count
-  }, 0)
+  // Empresas e receita mensal recorrente por plano — a tela de planos usa
+  // isso pro card "Distribuição" (array, não um Record por tipo).
+  const distribuicaoPorPlano = distribuicao.map((d) => {
+    const plano = planos.find((p) => p.tipo === d.plano)
+    const receita = Number(plano?.precoMensal ?? 0) * d._count
+    return { plano: d.plano, empresas: d._count, receita }
+  })
+  const mrr = distribuicaoPorPlano.reduce((acc, d) => acc + d.receita, 0)
 
   return NextResponse.json({
     planos,
-    distribuicao: Object.fromEntries(
-      (distribuicao as any[]).map((d: any) => [d.plano, d._count]),
-    ),
+    distribuicao: distribuicaoPorPlano,
     mrr,
   })
 }

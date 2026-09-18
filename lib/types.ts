@@ -427,6 +427,27 @@ export interface RelatorioResponse {
   }
 }
 
+// ── Super-admin — Plano ──────────────────────────────────────
+export interface PlanoConfig {
+  id:                 string
+  tipo:               PlanoTipo
+  precoMensal:        number
+  limiteUsuarios:     number
+  limiteRdosMes:      number
+  limiteProjetos:     number
+  temRelatorios:      boolean
+  temExportPdf:       boolean
+  temApi:             boolean
+  temSuporteDedicado: boolean
+  descricao?:         string
+}
+
+export interface PlanosResponse {
+  planos:       PlanoConfig[]
+  distribuicao: Array<{ plano: PlanoTipo; empresas: number; receita: number }>
+  mrr:          number
+}
+
 // ── Super-admin — Tenant ─────────────────────────────────────
 export interface Tenant {
   id:             string

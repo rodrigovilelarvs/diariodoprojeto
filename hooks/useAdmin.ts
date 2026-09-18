@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type {
   DashboardAdminResponse, TenantsResponse,
-  Tenant, LogsResponse, LogEntry, PlanoTipo,
+  Tenant, LogsResponse, LogEntry, PlanoTipo, PlanosResponse,
 } from '@/lib/types'
 
 // ── Query keys ───────────────────────────────────────────────
@@ -239,11 +239,7 @@ export function useResolverLog() {
 export function usePlanos() {
   return useQuery({
     queryKey: AQK.planos,
-    queryFn:  () => api.get<{
-      planos:         unknown[]
-      distribuicao:   Record<string, number>
-      mrr:            number
-    }>('/api/admin/planos', true),
+    queryFn:  () => api.get<PlanosResponse>('/api/admin/planos', true),
     staleTime: 300_000, // 5 min — planos mudam raramente
   })
 }

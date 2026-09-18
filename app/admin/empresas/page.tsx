@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminProviders } from '@/components/Providers'
 import { useTenants, useCriarTenant, useAtivarTenant, useSuspenderTenant, useAtualizarTenant, useMudarPlano } from '@/hooks/useAdmin'
-import type { PlanoTipo } from '@/lib/types'
+import type { PlanoTipo, Tenant } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'
 
 const PLANO_COR: Record<string,string> = { STARTER:'#8B95A8', PRO:'#29B6D8', ENTERPRISE:'#F59E0B' }
@@ -27,7 +27,7 @@ function EmpresasContent() {
   const [ok,   setOk]     = useState('')
   const [mostrarSenhaNova, setMostrarSenhaNova] = useState(false)
 
-  const [editando, setEditando] = useState<any | null>(null)
+  const [editando, setEditando] = useState<Tenant | null>(null)
   const [editForm, setEditForm] = useState({ nome:'', cnpj:'', setor:'', cidade:'', uf:'', plano:'STARTER' as PlanoTipo, dataVencimentoPlano:'', admNome:'', admEmail:'', admTelefone:'', admSenha:'' })
   const [editErro, setEditErro] = useState('')
   const [mostrarSenhaEdit, setMostrarSenhaEdit] = useState(false)
@@ -58,7 +58,7 @@ function EmpresasContent() {
     } catch (err) { setErro(mensagemErro(err, 'Erro ao cadastrar.')) }
   }
 
-  function abrirEdicao(e: any) {
+  function abrirEdicao(e: Tenant) {
     setEditando(e)
     const responsavel = e.usuarios?.[0]
     setEditForm({
@@ -72,6 +72,7 @@ function EmpresasContent() {
 
   async function handleEditar(e: React.FormEvent) {
     e.preventDefault(); setEditErro('')
+    if (!editando) return
     if (!editForm.nome) { setEditErro('Preencha o nome da empresa.'); return }
     if (editForm.admSenha && editForm.admSenha.length < 8) { setEditErro('A nova senha deve ter pelo menos 8 caracteres.'); return }
     try {
@@ -179,7 +180,7 @@ function EmpresasContent() {
                   <div style={{ fontSize:13, color:'#8B95A8', marginBottom:4 }}>Nenhuma empresa cadastrada</div>
                   <div style={{ fontSize:11 }}>Clique em "+ Nova empresa" para começar</div>
                 </td></tr>
-              ) : empresas.map((e: any) => (
+              ) : empresas.map((e) => (
                 <tr key={e.id} style={{ borderBottom:'.5px solid rgba(255,255,255,.05)' }}>
                   <td style={{ padding:'9px 12px' }}>
                     <div style={{ fontSize:12, fontWeight:500, color:'#E8EAF0' }}>{e.nome}</div>

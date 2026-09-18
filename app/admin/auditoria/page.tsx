@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { AdminProviders } from '@/components/Providers'
 import { AdminSidebar } from '@/components/superadmin/AdminSidebar'
 import { useLogs } from '@/hooks/useAdmin'
+import type { LogEntry } from '@/lib/types'
 
 const NIVEL_COR: Record<string,string> = { INFO:'#29B6D8', AVISO:'#E6A817', ERRO:'#E05C5C', CRITICO:'#E05C5C' }
 const NIVEL_BG:  Record<string,string> = { INFO:'rgba(41,182,216,.1)', AVISO:'rgba(230,168,23,.1)', ERRO:'rgba(224,92,92,.1)', CRITICO:'rgba(224,92,92,.15)' }
@@ -23,7 +24,6 @@ function AuditoriaContent() {
   const { data, isLoading } = useLogs({ nivel: nivel || undefined, categoria: categoria || undefined, pagina, resolvido: soPend ? false : undefined })
   const logs  = data?.logs  ?? []
   const total = data?.total ?? 0
-  const stats = (data as any)?.contadores ?? {}
 
   return (
     <div style={{ display:'flex', height:'100vh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
@@ -38,9 +38,9 @@ function AuditoriaContent() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
           {[
             { l:'Total',    v: total,           cor:'#29B6D8' },
-            { l:'Avisos',   v: (data as any)?.contadores?.AVISO ?? 0,  cor:'#E6A817' },
-            { l:'Erros',    v: (data as any)?.contadores?.ERRO ?? 0,   cor:'#E05C5C' },
-            { l:'Críticos', v: (data as any)?.contadores?.CRITICO ?? 0, cor:'#E05C5C' },
+            { l:'Avisos',   v: data?.kpis?.porNivel?.AVISO ?? 0,   cor:'#E6A817' },
+            { l:'Erros',    v: data?.kpis?.porNivel?.ERRO ?? 0,    cor:'#E05C5C' },
+            { l:'Críticos', v: data?.kpis?.porNivel?.CRITICO ?? 0, cor:'#E05C5C' },
           ].map(k => (
             <div key={k.l} style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.08)', borderRadius:12, padding:'11px 13px' }}>
               <div style={{ fontSize:22, fontWeight:600, color:k.cor, marginBottom:3 }}>{k.v}</div>
@@ -90,7 +90,7 @@ function AuditoriaContent() {
                 <tr><td colSpan={6} style={{ padding:32, textAlign:'center', color:'#8B95A8' }}>Carregando...</td></tr>
               ) : logs.length === 0 ? (
                 <tr><td colSpan={6} style={{ padding:32, textAlign:'center', color:'#4A5568' }}>Nenhum log encontrado.</td></tr>
-              ) : logs.map((log: any) => (
+              ) : logs.map((log: LogEntry) => (
                 <tr key={log.id} style={{ borderBottom:'.5px solid rgba(255,255,255,.05)' }}>
                   <td style={{ padding:'8px 12px' }}>
                     <span style={{ fontSize:10, padding:'2px 7px', borderRadius:10, fontWeight:500, background: NIVEL_BG[log.nivel]||'transparent', color: NIVEL_COR[log.nivel]||'#E8EAF0', border:`.5px solid ${NIVEL_COR[log.nivel]||'#E8EAF0'}40` }}>

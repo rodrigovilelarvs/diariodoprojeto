@@ -5,25 +5,26 @@ import { AdminProviders } from '@/components/Providers'
 import { AdminSidebar } from '@/components/superadmin/AdminSidebar'
 import { usePlanos, useAtualizarPlano } from '@/hooks/useAdmin'
 import { toast } from 'sonner'
+import type { PlanoConfig, PlanoTipo } from '@/lib/types'
 
 function PlanosContent() {
   const router = useRouter()
   const { data, isLoading } = usePlanos()
   const atualizarPlano = useAtualizarPlano()
   const [editando, setEditando] = useState<string | null>(null)
-  const [form, setForm] = useState<Record<string, any>>({})
+  const [form, setForm] = useState<Record<string, string | number | boolean>>({})
 
   useEffect(() => {
     if (!localStorage.getItem('admin_session')) router.push('/admin/login')
   }, [router])
 
   const planos = data?.planos ?? []
-  const distribuicao = (data as any)?.distribuicao ?? []
+  const distribuicao = data?.distribuicao ?? []
 
   const PLANO_COR: Record<string, string> = { STARTER: '#8B95A8', PRO: '#29B6D8', ENTERPRISE: '#F59E0B' }
   const PLANO_EMOJI: Record<string, string> = { STARTER: '🌱', PRO: '🚀', ENTERPRISE: '🏆' }
 
-  function iniciarEdicao(plano: any) {
+  function iniciarEdicao(plano: PlanoConfig) {
     setEditando(plano.tipo)
     setForm({
       precoMensal:        plano.precoMensal,
@@ -38,9 +39,9 @@ function PlanosContent() {
     })
   }
 
-  async function salvar(tipo: string) {
+  async function salvar(tipo: PlanoTipo) {
     try {
-      await atualizarPlano.mutateAsync({ tipo: tipo as any, ...form })
+      await atualizarPlano.mutateAsync({ tipo, ...form } as Parameters<typeof atualizarPlano.mutateAsync>[0])
       toast.success(`Plano ${tipo} atualizado!`)
       setEditando(null)
     } catch { toast.error('Erro ao atualizar plano.') }
@@ -49,8 +50,8 @@ function PlanosContent() {
   const inp = (label: string, key: string, type = 'number') => (
     <div style={{ marginBottom:10 }}>
       <label style={{ fontSize:10, color:'#8B95A8', display:'block', marginBottom:3 }}>{label}</label>
-      <input type={type} value={form[key] ?? ''} onChange={e => setForm(f => ({ ...f, [key]: type==='number' ? Number(e.target.value) : e.target.value }))}
-        style={{ width:'100%', padding:'6px 9px', borderRadius:6, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+      <input type={type} value={(form[key] as string | number | undefined) ?? ''} onChange={e => setForm(f => ({ ...f, [key]: type==='number' ? Number(e.target.value) : e.target.value }))}
+        style={{ width:'100%', padding:'6px 9px', borderRadius:6, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
     </div>
   )
 
@@ -76,7 +77,7 @@ function PlanosContent() {
         {/* Distribuição */}
         {distribuicao.length > 0 && (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:9, marginBottom:16 }}>
-            {distribuicao.map((d: any) => (
+            {distribuicao.map((d) => (
               <div key={d.plano} style={{ background:'#1C2333', border:`.5px solid ${PLANO_COR[d.plano]}30`, borderRadius:12, padding:'11px 13px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
                   <span style={{ fontSize:11, color: PLANO_COR[d.plano], fontWeight:600 }}>{PLANO_EMOJI[d.plano]} {d.plano}</span>
@@ -96,7 +97,7 @@ function PlanosContent() {
           <div style={{ color:'#8B95A8', fontSize:12, padding:32, textAlign:'center' }}>Carregando...</div>
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
-            {planos.map((plano: any) => {
+            {planos.map((plano) => {
               const cor  = PLANO_COR[plano.tipo]
               const isEd = editando === plano.tipo
 
