@@ -56,6 +56,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL:      ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_APP_URL:           ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          RESEND_API_KEY:                ${{ secrets.RESEND_API_KEY }}
 
   # ── Testes de ponta a ponta (Playwright) ──────────────────
   # Roda contra um banco falso (FAKE_DB=1, ver lib/fake-db-test.ts) — não
