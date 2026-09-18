@@ -5,13 +5,19 @@
 // Visão inversa de /api/app/projetos/:id/acesso — aqui o ponto de partida é o
 // usuário, não o projeto (pra gerenciar tudo direto da tela de Usuários).
 
-import { LogCategoria, ProjetoAcessoNivel } from '@/lib/prisma-enums'
+import { LogCategoria, ProjetoAcessoNivel, ProjetoStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeGerenciarEquipe } from '@/lib/auth'
 
 type Params = { params: Promise<{ id: string }> }
+
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma dos `select` abaixo.
+type ProjetoResumo = { id: string; nome: string; cor: string; grupo: string | null; status: ProjetoStatus }
+type AcessoProjetoId = { projetoId: string }
+type AcessoComNivel = { projetoId: string; nivel: ProjetoAcessoNivel }
 
 export async function GET(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
@@ -29,7 +35,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 })
   }
 
-  const [projetos, todosAcessos, meusAcessos] = await Promise.all([
+  const [projetos, todosAcessos, meusAcessos]: [ProjetoResumo[], AcessoProjetoId[], AcessoComNivel[]] = await Promise.all([
     prisma.projeto.findMany({
       where:   { tenantId },
       select:  { id: true, nome: true, cor: true, grupo: true, status: true },
@@ -47,11 +53,11 @@ export async function GET(req: NextRequest, { params }: Params) {
     }),
   ])
 
-  const restritos = new Set(todosAcessos.map((a: any) => a.projetoId as string))
-  const mapaMeu   = new Map(meusAcessos.map((a: any) => [a.projetoId as string, a.nivel as string]))
+  const restritos = new Set(todosAcessos.map((a) => a.projetoId))
+  const mapaMeu   = new Map(meusAcessos.map((a) => [a.projetoId, a.nivel]))
 
   return NextResponse.json({
-    projetos: projetos.map((p: any) => ({
+    projetos: projetos.map((p) => ({
       ...p,
       restrito: restritos.has(p.id),
       nivel:    mapaMeu.get(p.id) ?? null,

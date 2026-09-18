@@ -213,7 +213,7 @@ export function FormularioRdo({ rdoId }: Props) {
         atividadeRegistros: [...f.atividadeRegistros, {
           atividadeId: atividade.id,
           pctAnterior: atividade.pctAcumulado, pctAtual: atividade.pctAcumulado, deltaHoje: 0,
-          atividade: atividade as any,
+          atividade,
         }],
       } : f)
     }
@@ -827,7 +827,7 @@ export function FormularioRdo({ rdoId }: Props) {
                         <i className="ti ti-history" style={{ fontSize:14, color: histOpen ? 'var(--ta)' : 'var(--tm)' }} />
                         <span className="ht-lbl">Histórico de avanço</span>
                         <div style={{ display:'flex', gap:3 }}>
-                          {(ativ?.registrosRdo ?? []).slice(0,5).map((h: any, i: number) => (
+                          {(ativ?.registrosRdo ?? []).slice(0,5).map((h, i: number) => (
                             <div key={i} className="hbw" style={{ width:34 }}>
                               <div className="hbf" style={{ width:`${h.pctAtual}%` }} />
                             </div>
@@ -838,7 +838,7 @@ export function FormularioRdo({ rdoId }: Props) {
                       </button>
                       <div className={`hp ${histOpen ? 'open' : ''}`}>
                         <div className="hh"><div>Data</div><div>Progresso</div><div style={{ textAlign:'right' }}>%</div><div style={{ textAlign:'right' }}>Δ dia</div></div>
-                        {(ativ?.registrosRdo ?? []).map((h: any) => (
+                        {(ativ?.registrosRdo ?? []).map((h) => (
                           <div key={h.rdo.numero} className="hr">
                             <div style={{ fontSize:11, color:'var(--ts)' }}>
                               {fmtData(h.rdo.data, {day:'2-digit',month:'2-digit'})}
@@ -1123,7 +1123,7 @@ export function FormularioRdo({ rdoId }: Props) {
             )}
           </div>
           <div className="sec-body">
-            {(rdo.comentarios ?? []).map((c: any) => (
+            {(rdo.comentarios ?? []).map((c) => (
               <div key={c.id} className="cmt-item">
                 <div className="av" style={{ width:28, height:28, fontSize:10, background:'var(--bga)', color:'var(--ta)' }}>
                   {c.autor.nome.split(' ').slice(0,2).map((n: string) => n[0]).join('')}

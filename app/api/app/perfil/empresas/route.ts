@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ erro: 'Usuário não encontrado.' }, { status: 404 })
   }
 
-  const contas = await prisma.usuario.findMany({
+  const contas: Array<{
+    tenantId: string; perfil: string; status: string
+    tenant: { id: string; nome: string; status: string }
+  }> = await prisma.usuario.findMany({
     where:  { email: eu.email },
     select: {
       tenantId: true, perfil: true, status: true,
@@ -31,7 +34,7 @@ export async function GET(req: NextRequest) {
   })
 
   const empresas = contas
-    .map((c: any) => ({
+    .map((c) => ({
       tenantId:     c.tenant.id,
       nome:         c.tenant.nome,
       tenantStatus: c.tenant.status,
@@ -39,7 +42,7 @@ export async function GET(req: NextRequest) {
       statusConta:  c.status,
       atual:        c.tenantId === tenantId,
     }))
-    .sort((a: any, b: any) => (a.atual === b.atual ? a.nome.localeCompare(b.nome) : a.atual ? -1 : 1))
+    .sort((a, b) => (a.atual === b.atual ? a.nome.localeCompare(b.nome) : a.atual ? -1 : 1))
 
   return NextResponse.json({ empresas })
 }

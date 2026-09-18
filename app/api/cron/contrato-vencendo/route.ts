@@ -12,6 +12,15 @@ import { filtrarEEnfileirar } from '@/lib/notificacoes'
 
 const DIAS_AVISO = 30
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma do `select` abaixo.
+type PessoaAviso = { id: string; nome: string; email: string }
+type ProjetoComContratoVencendo = {
+  id: string; nome: string; tenantId: string; dataFimContrato: Date | null
+  gestor: (PessoaAviso & { status: UsuarioStatus }) | null
+  tenant: { nome: string; usuarios: PessoaAviso[] }
+}
+
 // Aceita apenas o disparo do Vercel Cron (header Authorization com CRON_SECRET).
 // Sem CRON_SECRET configurado, só libera fora de produção (facilita testes locais).
 function autorizado(req: NextRequest): boolean {
@@ -37,7 +46,7 @@ export async function GET(req: NextRequest) {
   const alvoFim = new Date(alvo)
   alvoFim.setUTCDate(alvoFim.getUTCDate() + 1)
 
-  const projetos = await prisma.projeto.findMany({
+  const projetos: ProjetoComContratoVencendo[] = await prisma.projeto.findMany({
     where: {
       status: ProjetoStatus.ATIVO,
       // dataFimContrato é DateTime (não @db.Date) — compara por faixa do dia
@@ -92,7 +101,7 @@ export async function GET(req: NextRequest) {
       nivel:     LogNivel.AVISO,
       categoria: LogCategoria.EMPRESA,
       mensagem:  `Aviso de contrato vencendo em ${DIAS_AVISO} dias enviado — projeto "${projeto.nome}"`,
-      detalhe:   { projetoId: projeto.id, dataFimContrato: projeto.dataFimContrato!.toISOString().slice(0, 10), destinatarios: destinatarios.map((d: any) => d.email) },
+      detalhe:   { projetoId: projeto.id, dataFimContrato: projeto.dataFimContrato!.toISOString().slice(0, 10), destinatarios: destinatarios.map((d) => d.email) },
     })
 
     avisosEnviados++

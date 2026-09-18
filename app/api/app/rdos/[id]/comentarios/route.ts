@@ -11,6 +11,16 @@ import { numeroRdo } from '@/lib/format'
 
 type Params = { params: Promise<{ id: string }> }
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — corresponde ao `select` da busca do RDO logo abaixo.
+type Pessoa = { id: string; nome: string; email: string }
+type RdoParaComentario = {
+  id: string; numero: number; emissorId: string
+  projeto: { nome: string }
+  emissor: Pessoa
+  assinaturas: Array<{ usuario: Pessoa }>
+}
+
 export async function POST(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
@@ -19,7 +29,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { ipAddress, userAgent } = getRequestMeta(req)
   const rdoId = (await params).id
 
-  const rdo = await prisma.rdo.findFirst({
+  const rdo: RdoParaComentario | null = await prisma.rdo.findFirst({
     where:  { id: rdoId, projeto: { tenantId } },
     select: {
       id: true, numero: true, emissorId: true,
@@ -77,10 +87,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   // que pra quem recebe é o mesmo tipo de aviso ("tem algo novo no RDO").
   // Emissor comentou → avisa quem ainda precisa aprovar; qualquer outra
   // pessoa comentou → avisa o emissor. Nunca notifica o próprio autor.
-  const alvosBrutos = usuarioId === rdo.emissorId
-    ? rdo.assinaturas.map((a: any) => a.usuario)
+  const alvosBrutos: Pessoa[] = usuarioId === rdo.emissorId
+    ? rdo.assinaturas.map((a) => a.usuario)
     : [rdo.emissor]
-  const alvos = alvosBrutos.filter((u: any) => u.id !== usuarioId)
+  const alvos = alvosBrutos.filter((u) => u.id !== usuarioId)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const linkRdo = `${appUrl}/aprovacao/${rdoId}`
   const destinatarios = await filtrarEEnfileirar(alvos, 'emailRdoRejeitado', {
@@ -91,7 +101,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   })
   if (destinatarios.length > 0) {
     await enviarEmailSeguro(() => enviarComentarioRdo({
-      destinatarios: destinatarios.map((d: any) => ({ email: d.email, nome: d.nome })),
+      destinatarios: destinatarios.map((d) => ({ email: d.email, nome: d.nome })),
       autorNome: comentario.autor.nome,
       texto:     comentario.texto,
       rdo: {

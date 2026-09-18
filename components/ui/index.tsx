@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 
 // ── Badge ────────────────────────────────────────────────────
-type BadgeVariant = 'ok' | 'warn' | 'blue' | 'gray' | 'danger' | 'purple'
+export type BadgeVariant = 'ok' | 'warn' | 'blue' | 'gray' | 'danger' | 'purple'
 export function Badge({ variant = 'gray', children }: { variant?: BadgeVariant; children: React.ReactNode }) {
   return <span className={`badge b-${variant}`}>{children}</span>
 }

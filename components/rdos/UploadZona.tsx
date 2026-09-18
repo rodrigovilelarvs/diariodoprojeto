@@ -108,7 +108,7 @@ export function UploadZona({ rdoId, midiasIniciais, somenteLeitura }: Props) {
       }])
 
       try {
-        const midia: any = await uploadMidia.mutateAsync({
+        const midia = await uploadMidia.mutateAsync({
           rdoId,
           tenantId: session.tenantId,
           file,

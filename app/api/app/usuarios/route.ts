@@ -10,13 +10,34 @@ import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeGerenciarEquipe, hashSenha } from '@/lib/auth'
 import { addDays } from 'date-fns'
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotados aqui localmente com a forma dos `select` abaixo.
+type UsuarioListado = {
+  id: string; nome: string; email: string; funcao: string | null
+  perfil: UsuarioPerfil
+  permEmitirRdo: boolean; permAprovarRdo: boolean
+  permGerenciarProjetos: boolean; permGerenciarEquipe: boolean; permVerRelatorios: boolean
+  permGerenciarTarefas: boolean
+  status: UsuarioStatus
+  ultimoAcessoEm: Date | null; criadoEm: Date
+  _count: { projetoAcessos: number }
+}
+type ConviteListado = {
+  id: string; email: string; funcao: string | null
+  perfil: UsuarioPerfil
+  permEmitirRdo: boolean; permAprovarRdo: boolean
+  permGerenciarProjetos: boolean; permGerenciarEquipe: boolean; permVerRelatorios: boolean
+  permGerenciarTarefas: boolean
+  criadoEm: Date; expiradoEm: Date
+}
+
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
 
   const { tenantId } = auth.ctx
 
-  const [usuarios, convites] = await Promise.all([
+  const [usuarios, convites]: [UsuarioListado[], ConviteListado[]] = await Promise.all([
     prisma.usuario.findMany({
       where:   { tenantId },
       select: {
@@ -66,7 +87,7 @@ export async function GET(req: NextRequest) {
     usuarios,
     convites,
     uso: {
-      atual:  usuarios.filter((u: any) => u.status === 'ATIVO').length,
+      atual:  usuarios.filter((u) => u.status === UsuarioStatus.ATIVO).length,
       limite: tenant?.limiteUsuarios ?? 999,
     },
   })

@@ -15,6 +15,14 @@ import { filtrarEEnfileirar } from '@/lib/notificacoes'
 const DIAS_MINIMO_PENDENTE = 3 // só cobra depois de alguns dias — dá tempo da pessoa ver o e-mail
 const REPETIR_A_CADA_DIAS  = 3 // evita mandar o mesmo aviso todo dia enquanto ninguém age
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma do `select` abaixo.
+type PessoaAviso = { id: string; nome: string; email: string }
+type ConvitePendente = {
+  id: string; email: string; criadoEm: Date; tenantId: string
+  tenant: { nome: string; usuarios: PessoaAviso[] }
+}
+
 // Aceita apenas o disparo do Vercel Cron (header Authorization com CRON_SECRET).
 // Sem CRON_SECRET configurado, só libera fora de produção (facilita testes locais).
 function autorizado(req: NextRequest): boolean {
@@ -36,7 +44,7 @@ export async function GET(req: NextRequest) {
   const limiteIdade      = new Date(agora.getTime() - DIAS_MINIMO_PENDENTE * 24 * 60 * 60 * 1000)
   const limiteRepeticao  = new Date(agora.getTime() - REPETIR_A_CADA_DIAS * 24 * 60 * 60 * 1000)
 
-  const convites = await prisma.convite.findMany({
+  const convites: ConvitePendente[] = await prisma.convite.findMany({
     where: {
       aceitoEm:   null,
       expiradoEm: { gt: agora }, // convite expirado não adianta cobrar — só reenviando de novo
@@ -95,7 +103,7 @@ export async function GET(req: NextRequest) {
         nivel:     LogNivel.AVISO,
         categoria: LogCategoria.USUARIO,
         mensagem:  `Lembrete de convite(s) pendente(s) enviado (${grupo.convites.length})`,
-        detalhe:   { convites: grupo.convites.map(c => c.email), destinatarios: destinatarios.map((d: any) => d.email) },
+        detalhe:   { convites: grupo.convites.map(c => c.email), destinatarios: destinatarios.map((d) => d.email) },
       })
 
       avisosEnviados++

@@ -58,7 +58,9 @@ export async function GET(req: NextRequest) {
   })
 
   // Contadores por nível para os KPIs do painel
-  const contadores = await prisma.logAuditoria.groupBy({
+  // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+  // lib/prisma.ts) — anotado aqui localmente com a forma do `groupBy` acima.
+  const contadores: Array<{ nivel: LogNivel; _count: number }> = await prisma.logAuditoria.groupBy({
     by:    ['nivel'],
     where: { criadoEm: { gte: dataInicio } },
     _count: true,
@@ -81,7 +83,7 @@ export async function GET(req: NextRequest) {
       total,
       alertasNaoResolvidos,
       porNivel: Object.fromEntries(
-        contadores.map((c: any) => [c.nivel, c._count]),
+        contadores.map((c) => [c.nivel, c._count]),
       ),
     },
   })

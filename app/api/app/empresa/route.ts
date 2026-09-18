@@ -10,6 +10,15 @@ import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { LogCategoria, UsuarioPerfil } from '@/lib/prisma-enums'
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma usada abaixo.
+// `precoMensal` é `Decimal` (decimal.js) em runtime — só passa por `Number()`.
+type PlanoConfigRaw = {
+  precoMensal: unknown
+  temRelatorios: boolean; temExportPdf: boolean; temApi: boolean; temSuporteDedicado: boolean
+  descricao: string | null
+} | null
+
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
@@ -38,9 +47,9 @@ export async function GET(req: NextRequest) {
     prisma.usuario.count({ where: { tenantId, status: 'ATIVO' } }),
     prisma.rdo.count({ where: { projeto: { tenantId }, criadoEm: { gte: inicioMes } } }),
     prisma.projeto.count({ where: { tenantId } }),
-    prisma.planoConfig.findUnique({ where: { tenantId } }).then((cfg: any) =>
+    prisma.planoConfig.findUnique({ where: { tenantId } }).then((cfg: PlanoConfigRaw) =>
       cfg ?? prisma.planoConfig.findUnique({ where: { tipo: tenant.plano } }),
-    ),
+    ) as Promise<PlanoConfigRaw>,
   ])
 
   return NextResponse.json({

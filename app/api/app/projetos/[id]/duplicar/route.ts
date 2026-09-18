@@ -5,13 +5,31 @@
 // RDOs, ocorrências, comentários, mídias e assinaturas de RDO nunca são copiados —
 // são histórico operacional do projeto original, não fazem parte de um "molde".
 
-import { LogCategoria } from '@/lib/prisma-enums'
+import { LogCategoria, ProjetoAssinaturaModo } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeGerenciarProjetos } from '@/lib/auth'
 
 type Params = { params: Promise<{ id: string }> }
+
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma do `include` abaixo.
+type AtividadeParaCopiar = {
+  numero: string; nome: string; ordem: number
+  dataInicio: Date | null; dataFim: Date | null
+}
+type EtapaParaCopiar = { numero: string; nome: string; ordem: number; atividades: AtividadeParaCopiar[] }
+type ProjetoParaDuplicar = {
+  nome: string; descricao: string | null
+  pedidoCompraContrato: string | null; empresaContratada: string | null
+  grupo: string | null; fotoUrl: string | null; cor: string
+  dataInicioContrato: Date | null; dataFimContrato: Date | null
+  gestorId: string | null
+  assinaturaModo: ProjetoAssinaturaModo
+  assinante1Id: string | null; assinante2Id: string | null; assinante3Id: string | null
+  etapas: EtapaParaCopiar[]
+}
 
 export async function POST(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
@@ -25,7 +43,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Sem permissão para criar projetos.' }, { status: 403 })
   }
 
-  const original = await prisma.projeto.findFirst({
+  const original: ProjetoParaDuplicar | null = await prisma.projeto.findFirst({
     where: { id: projetoId, tenantId },
     include: { etapas: { include: { atividades: true }, orderBy: { ordem: 'asc' } } },
   })
@@ -72,12 +90,12 @@ export async function POST(req: NextRequest, { params }: Params) {
       assinante3Id:         original.assinante3Id,
       ...(body.comConteudo && {
         etapas: {
-          create: original.etapas.map((etapa: any) => ({
+          create: original.etapas.map((etapa) => ({
             numero: etapa.numero,
             nome:   etapa.nome,
             ordem:  etapa.ordem,
             atividades: {
-              create: etapa.atividades.map((a: any) => ({
+              create: etapa.atividades.map((a) => ({
                 numero:       a.numero,
                 nome:         a.nome,
                 ordem:        a.ordem,

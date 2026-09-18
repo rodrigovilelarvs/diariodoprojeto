@@ -781,7 +781,7 @@ export function useUploadMidia() {
       onProgress?.(80)
 
       // 2. Registra no banco via API
-      const res = await api.post('/api/app/midias', {
+      const res = await api.post<{ id: string }>('/api/app/midias', {
         rdoId,
         tipo,
         nomeArq:      file.name,

@@ -9,7 +9,7 @@ import {
 } from '@/hooks/useEmpresa'
 import { Topbar }  from '@/components/layout/Topbar'
 import { useAppAuth } from '@/contexts/AuthContext'
-import { KpiCard, Badge, Modal, Field, Input, Select, Skeleton, AutocompleteSearchInput } from '@/components/ui'
+import { KpiCard, Badge, Modal, Field, Input, Select, Skeleton, AutocompleteSearchInput, type BadgeVariant } from '@/components/ui'
 import { toast }   from 'sonner'
 import type { AtividadeStatus } from '@/lib/types'
 import { fmtData } from '@/lib/format'
@@ -26,7 +26,7 @@ const ST_L: Record<AtividadeStatus, string> = {
   CONCLUIDA:    'Concluída',
   EM_ATRASO:    'Em atraso',
 }
-const ST_V: Record<AtividadeStatus, string> = {
+const ST_V: Record<AtividadeStatus, BadgeVariant> = {
   NAO_INICIADA: 'gray',
   EM_ANDAMENTO: 'blue',
   CONCLUIDA:    'ok',
@@ -280,7 +280,7 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
                       {pctPlan}%
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <Badge variant={ST_V[efetivo] as any}>{ST_L[efetivo]}</Badge>
+                      <Badge variant={ST_V[efetivo]}>{ST_L[efetivo]}</Badge>
                     </div>
                     {podeGerenciar && (
                       <div className="proj-ac" style={{ justifyContent: 'flex-end' }}>

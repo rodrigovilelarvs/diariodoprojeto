@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeGerenciarTarefas } from '@/lib/auth'
-import { LogCategoria } from '@/lib/prisma-enums'
+import { LogCategoria, AtividadeStatus } from '@/lib/prisma-enums'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -44,6 +44,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (body.nome != null && !body.nome.trim()) {
     return NextResponse.json({ erro: 'Nome não pode ficar vazio.' }, { status: 400 })
   }
+  if (body.status != null && !Object.values(AtividadeStatus).includes(body.status as AtividadeStatus)) {
+    return NextResponse.json({ erro: 'Status inválido.' }, { status: 400 })
+  }
 
   const atualizada = await prisma.atividade.update({
     where: { id: atividadeId },
@@ -51,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(body.nome != null && { nome: body.nome }),
       ...(body.dataInicio != null && { dataInicio: new Date(body.dataInicio) }),
       ...(body.dataFim != null && { dataFim: new Date(body.dataFim) }),
-      ...(body.status != null && { status: body.status as any }),
+      ...(body.status != null && { status: body.status as AtividadeStatus }),
       ...(body.pctAcumulado != null && { pctAcumulado: Number(body.pctAcumulado) }),
     },
   })

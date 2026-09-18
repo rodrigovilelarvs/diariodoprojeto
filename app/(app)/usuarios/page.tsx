@@ -22,7 +22,7 @@ const NIVEL_L: Record<ProjetoAcessoNivel, string> = {
 const PERFIL_L: Record<string, string> = {
   ADMIN: 'Administrador', PERSONALIZADO: 'Personalizado',
 }
-const PERFIL_V: Record<string, string> = {
+const PERFIL_V: Record<string, 'blue' | 'gray'> = {
   ADMIN: 'blue', PERSONALIZADO: 'gray',
 }
 
@@ -48,7 +48,7 @@ const PERM_ITENS: Array<{ key: keyof PermissoesForm; label: string; desc: string
   { key: 'permGerenciarEquipe',   label: 'Gerenciar equipe',   desc: 'Convidar, remover e editar usuários' },
 ]
 
-function perfilDoUsuario(u: any): PermissoesForm {
+function perfilDoUsuario(u: Usuario): PermissoesForm {
   return {
     permEmitirRdo:         !!u.permEmitirRdo,
     permAprovarRdo:        !!u.permAprovarRdo,
@@ -472,9 +472,9 @@ export default function UsuariosPage() {
     }
   }
 
-  function tituloPermissoes(u: any): string | undefined {
+  function tituloPermissoes(u: Usuario): string | undefined {
     if (u.perfil !== 'PERSONALIZADO') return undefined
-    const ativas = PERM_ITENS.filter(i => u[i.key]).map(i => i.label)
+    const ativas = PERM_ITENS.filter(i => u[i.key as keyof Usuario]).map(i => i.label)
     return ativas.length ? ativas.join(', ') : 'Nenhuma permissão marcada'
   }
 
@@ -491,11 +491,11 @@ export default function UsuariosPage() {
       />
       <div className="content">
         <div className="ta-row">
-          {[
+          {([
             { id: 'usuarios', icon: 'ti-users',        label: 'Usuários' },
             { id: 'convites', icon: 'ti-mail-forward', label: 'Cadastro de usuário' },
-          ].map(t => (
-            <button key={t.id} className={`ta-tab ${aba === t.id ? 'on' : ''}`} onClick={() => setAba(t.id as any)}>
+          ] as const).map(t => (
+            <button key={t.id} className={`ta-tab ${aba === t.id ? 'on' : ''}`} onClick={() => setAba(t.id)}>
               <i className={`ti ${t.icon}`} /> {t.label}
               {t.id === 'convites' && convites.length > 0 && (
                 <span style={{ background: 'var(--fw)', color: 'var(--oa)', fontSize: 9, padding: '1px 5px', borderRadius: 10, fontWeight: 600 }}>
@@ -529,7 +529,7 @@ export default function UsuariosPage() {
                       </div>
                     </td>
                     <td title={tituloPermissoes(u)}>
-                      <Badge variant={PERFIL_V[u.perfil] as any}>{PERFIL_L[u.perfil] ?? u.perfil}</Badge>
+                      <Badge variant={PERFIL_V[u.perfil]}>{PERFIL_L[u.perfil] ?? u.perfil}</Badge>
                     </td>
                     <td style={{ textAlign: 'center', fontSize: 11, color: 'var(--ts)' }}>
                       {u.perfil === 'ADMIN' || u.permGerenciarProjetos ? (

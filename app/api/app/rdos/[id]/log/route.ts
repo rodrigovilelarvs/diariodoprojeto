@@ -31,7 +31,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   const marcador = `"rdoId":"${rdoId}"`
-  const logs = await prisma.logAuditoria.findMany({
+  const logs: Array<{ mensagem: string; criadoEm: Date; detalhe: string | null; usuario: { nome: string } | null }> = await prisma.logAuditoria.findMany({
     where: {
       tenantId,
       categoria: LogCategoria.RDO,
@@ -44,10 +44,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     orderBy: { criadoEm: 'desc' },
   })
 
-  const visualizacoes = logs.filter((l: any) => l.detalhe?.includes('"tipo":"visualizacao"'))
-  const edicoes       = logs.filter((l: any) => !l.detalhe?.includes('"tipo":"visualizacao"'))
+  const visualizacoes = logs.filter((l) => l.detalhe?.includes('"tipo":"visualizacao"'))
+  const edicoes       = logs.filter((l) => !l.detalhe?.includes('"tipo":"visualizacao"'))
 
-  const formatar = (l: any) => ({
+  const formatar = (l: (typeof logs)[number]) => ({
     mensagem: l.mensagem,
     criadoEm: l.criadoEm,
     usuario:  l.usuario?.nome ?? 'Sistema',

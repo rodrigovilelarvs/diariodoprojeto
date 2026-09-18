@@ -21,7 +21,11 @@ export interface JwtPayload {
 
 // ── Geração / verificação ───────────────────────────────────
 export function signToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload as object, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as any)
+  // `JWT_EXPIRES_IN` vem de env var (string livre, ex: "7d") — o tipo de
+  // `expiresIn` do jsonwebtoken exige um literal específico (`StringValue`
+  // de `ms`), então o cast é necessário só neste valor, não na chamada toda.
+  const options: jwt.SignOptions = { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] }
+  return jwt.sign(payload as object, JWT_SECRET, options)
 }
 
 export function verifyToken(token: string): JwtPayload {
@@ -221,15 +225,17 @@ export async function resolverAcessoProjeto(
 ): Promise<AcessoProjetoResultado> {
   if (podeGerenciarProjetos(ctx)) return null // gerencia todos os projetos — bypassa
 
-  const acessos = await prisma.projetoAcesso.findMany({
+  // `prisma` não carrega os tipos gerados do Prisma Client neste projeto —
+  // anotado aqui localmente com a forma do `select` acima.
+  const acessos: Array<{ usuarioId: string; nivel: ProjetoAcessoNivel }> = await prisma.projetoAcesso.findMany({
     where:  { projetoId },
     select: { usuarioId: true, nivel: true },
   })
 
   if (acessos.length === 0) return null // projeto sem restrição configurada
 
-  const meu = acessos.find((a: any) => a.usuarioId === ctx.usuarioId)
-  return meu ? (meu.nivel as ProjetoAcessoNivel) : 'SEM_ACESSO'
+  const meu = acessos.find((a) => a.usuarioId === ctx.usuarioId)
+  return meu ? meu.nivel : 'SEM_ACESSO'
 }
 
 export function podeVerProjeto(acesso: AcessoProjetoResultado): boolean {

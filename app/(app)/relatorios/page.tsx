@@ -263,7 +263,7 @@ export default function RelatoriosPage() {
             <option value="">Todos os projetos</option>
             {projetosFiltrados.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
           </select>
-          <select className="fsel" value={preset} onChange={e => setPreset(e.target.value as any)}>
+          <select className="fsel" value={preset} onChange={e => setPreset(e.target.value as '7' | '30' | '90' | 'custom')}>
             <option value="7">Últimos 7 dias</option>
             <option value="30">Últimos 30 dias</option>
             <option value="90">Último trimestre</option>

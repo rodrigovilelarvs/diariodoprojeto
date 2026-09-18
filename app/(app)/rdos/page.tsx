@@ -139,7 +139,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
                   </td>
                   <td style={{ fontSize: 11, color: 'var(--ts)' }}>{r.emissor.nome}</td>
                   <td><RdoStatusBadge status={r.status} assinaturas={r.assinaturas} /></td>
-                  <td><ClimaEmoji condicao={(r as any).climaManha} /></td>
+                  <td><ClimaEmoji condicao={r.climaManha} /></td>
                   <td>
                     <div className="proj-ac" style={{ justifyContent: 'flex-end' }}>
                       <button className="proj-ab" onClick={e => { e.stopPropagation(); router.push(`/rdos/${r.id}`) }} title="Abrir">
