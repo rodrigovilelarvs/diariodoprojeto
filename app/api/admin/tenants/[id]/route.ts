@@ -3,7 +3,7 @@
 // PATCH  /api/admin/tenants/:id  — editar dados / status / obs interna
 // DELETE /api/admin/tenants/:id  — excluir empresa (irreversível)
 
-import { LogCategoria, LogNivel, TenantStatus } from '@/lib/prisma-enums'
+import { LogCategoria, LogNivel, TenantStatus, UsuarioPerfil, UsuarioStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -126,7 +126,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     admNome, admEmail, admTelefone, admSenha,
     // Limites manuais (override do plano)
     limiteUsuarios, limiteRdosMes, limiteProjetos,
-  } = body as any
+  } = body
 
   if (admSenha && String(admSenha).length < 8) {
     return NextResponse.json({ erro: 'A senha do responsável deve ter pelo menos 8 caracteres.' }, { status: 400 })
@@ -170,7 +170,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   // sem depender do fluxo de convite/recuperação.
   if (admNome != null || admEmail != null || admTelefone != null || admSenha) {
     const adminUsuario = await prisma.usuario.findFirst({
-      where:   { tenantId: (await params).id, perfil: 'ADMIN' as any },
+      where:   { tenantId: (await params).id, perfil: UsuarioPerfil.ADMIN },
       orderBy: { criadoEm: 'asc' },
     })
     if (adminUsuario) {
@@ -181,7 +181,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           ...(admNome     != null && { nome:     String(admNome) }),
           ...(admEmail    != null && { email:    String(admEmail).toLowerCase().trim() }),
           ...(admTelefone != null && { telefone: String(admTelefone).trim() || null }),
-          ...(novaSenhaHash && { senha: novaSenhaHash, status: 'ATIVO' as any }),
+          ...(novaSenhaHash && { senha: novaSenhaHash, status: UsuarioStatus.ATIVO }),
         },
       })
     }
@@ -196,7 +196,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     // Envia e-mail de ativação
     if (ativando) {
       const admin = await prisma.usuario.findFirst({
-        where: { tenantId: (await params).id, perfil: 'ADMIN' as any },
+        where: { tenantId: (await params).id, perfil: UsuarioPerfil.ADMIN },
         select: { email: true, nome: true },
       })
       if (admin) {
@@ -212,7 +212,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     nivel    = LogNivel.AVISO
     if (suspendendo) {
       const admin = await prisma.usuario.findFirst({
-        where: { tenantId: (await params).id, perfil: 'ADMIN' as any },
+        where: { tenantId: (await params).id, perfil: UsuarioPerfil.ADMIN },
         select: { email: true, nome: true },
       })
       if (admin) {

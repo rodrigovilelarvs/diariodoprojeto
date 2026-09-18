@@ -250,9 +250,9 @@ function EmpresasContent() {
                 ].map(f => (
                   <div key={f.k} style={{ marginBottom:12 }}>
                     <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>{f.l}</label>
-                    <input type={f.t} placeholder={f.p} value={(form as any)[f.k]}
+                    <input type={f.t} placeholder={f.p} value={form[f.k as keyof typeof form] as string}
                       onChange={e => setForm(prev => ({ ...prev, [f.k]: e.target.value }))}
-                      style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                      style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                   </div>
                 ))}
 
@@ -261,7 +261,7 @@ function EmpresasContent() {
                   <div style={{ position:'relative' }}>
                     <input type={mostrarSenhaNova ? 'text' : 'password'} placeholder="Deixe em branco para enviar convite por e-mail"
                       value={form.senha} onChange={e => setForm(prev => ({ ...prev, senha: e.target.value }))}
-                      style={{ width:'100%', padding:'7px 38px 7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                      style={{ width:'100%', padding:'7px 38px 7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                     <button type="button" onClick={() => setMostrarSenhaNova(v => !v)}
                       aria-label={mostrarSenhaNova ? 'Ocultar senha' : 'Mostrar senha'}
                       style={{ position:'absolute', right:6, top:'50%', transform:'translateY(-50%)', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', fontSize:14, color:'#8B95A8', padding:0 }}>
@@ -294,7 +294,7 @@ function EmpresasContent() {
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>Próximo vencimento do plano (opcional)</label>
                   <input type="date" value={form.dataVencimentoPlano}
                     onChange={e => setForm(prev => ({ ...prev, dataVencimentoPlano: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any, colorScheme:'dark' }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box', colorScheme:'dark' }} />
                 </div>
 
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, padding:'8px 10px', background:'rgba(41,182,216,.07)', borderRadius:8, border:'.5px solid rgba(41,182,216,.2)' }}>
@@ -338,21 +338,21 @@ function EmpresasContent() {
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>Nome da empresa *</label>
                   <input type="text" value={editForm.nome}
                     onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                 </div>
 
                 <div style={{ marginBottom:14 }}>
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>CNPJ</label>
                   <input type="text" placeholder="00.000.000/0001-00" value={editForm.cnpj}
                     onChange={e => setEditForm(f => ({ ...f, cnpj: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                 </div>
 
                 <div style={{ marginBottom:12 }}>
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>Setor</label>
                   <input type="text" value={editForm.setor}
                     onChange={e => setEditForm(f => ({ ...f, setor: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                 </div>
 
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 80px', gap:8, marginBottom:14 }}>
@@ -360,13 +360,13 @@ function EmpresasContent() {
                     <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>Cidade</label>
                     <input type="text" value={editForm.cidade}
                       onChange={e => setEditForm(f => ({ ...f, cidade: e.target.value }))}
-                      style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                      style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                   </div>
                   <div>
                     <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>UF</label>
                     <input type="text" maxLength={2} value={editForm.uf}
                       onChange={e => setEditForm(f => ({ ...f, uf: e.target.value.toUpperCase() }))}
-                      style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                      style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                   </div>
                 </div>
 
@@ -383,21 +383,21 @@ function EmpresasContent() {
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>Nome do responsável</label>
                   <input type="text" placeholder="Nome completo" value={editForm.admNome}
                     onChange={e => setEditForm(f => ({ ...f, admNome: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                 </div>
 
                 <div style={{ marginBottom:12 }}>
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>E-mail do responsável</label>
                   <input type="email" placeholder="admin@empresa.com" value={editForm.admEmail}
                     onChange={e => setEditForm(f => ({ ...f, admEmail: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                 </div>
 
                 <div style={{ marginBottom:12 }}>
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>Telefone / WhatsApp</label>
                   <input type="text" placeholder="(11) 99999-9999" value={editForm.admTelefone}
                     onChange={e => setEditForm(f => ({ ...f, admTelefone: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                 </div>
 
                 <div style={{ marginBottom:14 }}>
@@ -405,7 +405,7 @@ function EmpresasContent() {
                   <div style={{ position:'relative' }}>
                     <input type={mostrarSenhaEdit ? 'text' : 'password'} placeholder="Deixe em branco para manter a senha atual"
                       value={editForm.admSenha} onChange={e => setEditForm(f => ({ ...f, admSenha: e.target.value }))}
-                      style={{ width:'100%', padding:'7px 38px 7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any }} />
+                      style={{ width:'100%', padding:'7px 38px 7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' }} />
                     <button type="button" onClick={() => setMostrarSenhaEdit(v => !v)}
                       aria-label={mostrarSenhaEdit ? 'Ocultar senha' : 'Mostrar senha'}
                       style={{ position:'absolute', right:6, top:'50%', transform:'translateY(-50%)', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', background:'transparent', border:'none', cursor:'pointer', fontSize:14, color:'#8B95A8', padding:0 }}>
@@ -436,7 +436,7 @@ function EmpresasContent() {
                   <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:4 }}>Próximo vencimento do plano</label>
                   <input type="date" value={editForm.dataVencimentoPlano}
                     onChange={e => setEditForm(f => ({ ...f, dataVencimentoPlano: e.target.value }))}
-                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box' as any, colorScheme:'dark' }} />
+                    style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box', colorScheme:'dark' }} />
                   <div style={{ fontSize:10, color:'#4A5568', marginTop:4 }}>Exibido para a empresa em "Dados da empresa". Deixe em branco para remover.</div>
                 </div>
 

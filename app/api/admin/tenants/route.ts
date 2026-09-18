@@ -9,6 +9,11 @@ import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-admin'
 import { hashSenha } from '@/lib/auth'
 import { addDays } from 'date-fns'
+import type { Tenant } from '@/lib/types'
+
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — rdosMes/alertas só existem depois do Promise.all abaixo.
+type TenantRow = Omit<Tenant, 'rdosMes' | 'alertas'>
 
 // ── GET — listar empresas ─────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -22,7 +27,7 @@ export async function GET(req: NextRequest) {
   const pagina  = Number(searchParams.get('pagina') ?? 1)
   const por     = Number(searchParams.get('por')    ?? 50)
 
-  const tenants = await prisma.tenant.findMany({
+  const tenants: TenantRow[] = await prisma.tenant.findMany({
     where: {
       ...(status ? { status }          : {}),
       ...(plano  ? { plano }           : {}),
@@ -59,8 +64,8 @@ export async function GET(req: NextRequest) {
   inicioMes.setDate(1)
   inicioMes.setHours(0, 0, 0, 0)
 
-  const tenantsComRdos = await Promise.all(
-    tenants.map(async (t: any) => {
+  const tenantsComRdos: Tenant[] = await Promise.all(
+    tenants.map(async (t) => {
       const rdosMes = await prisma.rdo.count({
         where: {
           projeto:  { tenantId: t.id },
@@ -89,15 +94,13 @@ export async function GET(req: NextRequest) {
   })
 
   // Resumo geral para o dashboard
+  const PRECO_PLANO: Record<PlanoTipo, number> = { STARTER: 0, PRO: 297, ENTERPRISE: 1485 }
   const resumo = {
     total,
-    ativos:     tenants.filter((t: any) => t.status === 'ATIVO').length,
-    aguardando: tenants.filter((t: any) => t.status === 'AGUARDANDO').length,
-    suspensos:  tenants.filter((t: any) => t.status === 'SUSPENSO').length,
-    mrr: (tenants as any[]).reduce((acc: any, t: any) => {
-      const preco = { STARTER: 0, PRO: 297, ENTERPRISE: 1485 }
-      return acc + ((preco as any)[t.plano] ?? 0)
-    }, 0),
+    ativos:     tenants.filter((t) => t.status === 'ATIVO').length,
+    aguardando: tenants.filter((t) => t.status === 'AGUARDANDO').length,
+    suspensos:  tenants.filter((t) => t.status === 'SUSPENSO').length,
+    mrr: tenants.reduce((acc, t) => acc + (PRECO_PLANO[t.plano] ?? 0), 0),
   }
 
   return NextResponse.json({ tenants: tenantsComRdos, total, pagina, por, resumo })
