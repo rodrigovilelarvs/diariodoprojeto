@@ -32,6 +32,13 @@ const mockPrisma = new Proxy({} as any, {
 const globalForPrisma = globalThis as unknown as { prisma: any }
 
 export const prisma = globalForPrisma.prisma ?? (() => {
+  // Banco falso pros testes de ponta a ponta (ver lib/fake-db-test.ts e
+  // playwright.config.ts) e pra depuração manual local. A Vercel nunca
+  // define FAKE_DB, então este branch nunca roda em produção.
+  if (process.env.FAKE_DB === '1') {
+    const { fakeDb } = require('./fake-db-test')
+    return fakeDb
+  }
   // Em produção com Prisma gerado, usar PrismaClient real
   try {
     const { PrismaClient } = require('@prisma/client')
