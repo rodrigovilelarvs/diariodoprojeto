@@ -47,7 +47,12 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  const projetos = await prisma.projeto.findMany({
+  type ProjetoComDestinatarios = {
+    id: string; nome: string; tenantId: string
+    tenant: { nome: string; usuarios: Array<{ id: string; nome: string; email: string }> }
+  }
+
+  const projetos: ProjetoComDestinatarios[] = await prisma.projeto.findMany({
     where: {
       status: ProjetoStatus.ATIVO,
       tenant: { status: TenantStatus.ATIVO },
@@ -104,7 +109,7 @@ export async function GET(req: NextRequest) {
       nivel:     LogNivel.AVISO,
       categoria: LogCategoria.RDO,
       mensagem:  `Lembrete de RDO não emitido (${dataVerificada.toISOString().slice(0, 10)}) enviado — projeto "${projeto.nome}"`,
-      detalhe:   { projetoId: projeto.id, dataVerificada: dataVerificada.toISOString().slice(0, 10), destinatarios: destinatarios.map((d: any) => d.email) },
+      detalhe:   { projetoId: projeto.id, dataVerificada: dataVerificada.toISOString().slice(0, 10), destinatarios: destinatarios.map((d) => d.email) },
     })
 
     lembretesEnviados++

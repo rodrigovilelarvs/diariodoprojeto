@@ -7,6 +7,28 @@ import { AtividadeStatus, LogCategoria, LogNivel, RdoStatus } from '@/lib/prisma
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeEmitirRdo, podeGerenciarProjetos, resolverAcessoProjeto, podeEditarProjetoConteudo } from '@/lib/auth'
+
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma do `include` usado
+// na busca do RDO anterior (pra cópia de atividades/mão de obra/equipamentos).
+type RdoAnterior = {
+  horaInicio: string | null; horaTermino: string | null
+  intervaloHoras: number | null; totalHoras: number | null
+  atividadeRegistros: Array<{
+    atividadeId: string | null; pctAtual: number; avulsa: boolean
+    avulsaEtapa: string | null; avulsaNome: string | null
+    atividade: { status: string } | null
+  }>
+  maoDeObra: Array<{
+    funcaoCadastroId: string | null; funcaoNome: string
+    quantidade: number; horaEntrada: string; horaSaida: string; totalHH: number
+  }>
+  equipamentos: Array<{
+    equipamentoCadastroId: string | null; equipamentoNome: string
+    quantidade: number; observacao: string | null
+  }>
+}
+
 // ── GET — lista RDOs ─────────────────────────────────────────
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
@@ -23,7 +45,7 @@ export async function GET(req: NextRequest) {
   const sortDir   = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc'
   const dataParam = searchParams.get('data') ?? undefined
 
-  const orderBy: any =
+  const orderBy: Record<string, unknown>[] =
     sortBy === 'projeto' ? [{ projeto: { nome: sortDir } }] :
     sortBy === 'gestor'  ? [{ emissor: { nome: sortDir } }] :
     sortBy === 'status'  ? [{ status: sortDir }, { data: 'desc' }] :
@@ -34,13 +56,13 @@ export async function GET(req: NextRequest) {
   // Projetos com acesso restrito que este usuário não integra ficam de fora
   let projetosExcluidos: string[] = []
   if (!podeGerenciarProjetos(auth.ctx)) {
-    const todosProjetos = await prisma.projeto.findMany({ where: { tenantId }, select: { id: true } })
-    const acessos = await prisma.projetoAcesso.findMany({
-      where:  { projetoId: { in: todosProjetos.map((p: any) => p.id) } },
+    const todosProjetos: Array<{ id: string }> = await prisma.projeto.findMany({ where: { tenantId }, select: { id: true } })
+    const acessos: Array<{ projetoId: string; usuarioId: string }> = await prisma.projetoAcesso.findMany({
+      where:  { projetoId: { in: todosProjetos.map((p) => p.id) } },
       select: { projetoId: true, usuarioId: true },
     })
-    const restritos: Set<string> = new Set(acessos.map((a: any) => a.projetoId as string))
-    const meus: Set<string> = new Set(acessos.filter((a: any) => a.usuarioId === usuarioId).map((a: any) => a.projetoId as string))
+    const restritos: Set<string> = new Set(acessos.map((a) => a.projetoId))
+    const meus: Set<string> = new Set(acessos.filter((a) => a.usuarioId === usuarioId).map((a) => a.projetoId))
     projetosExcluidos = Array.from(restritos).filter((id: string) => !meus.has(id))
   }
 
@@ -177,7 +199,7 @@ export async function POST(req: NextRequest) {
   const numero = (ultimo?.numero ?? 0) + 1
 
   // Busca RDO anterior para cópia
-  const rdoAnterior = copiarAnterior
+  const rdoAnterior: RdoAnterior | null = copiarAnterior
     ? await prisma.rdo.findFirst({
         where:   { projetoId, status: { in: ['APROVADO', 'PENDENTE_APROVACAO'] } },
         orderBy: { numero: 'desc' },
@@ -209,9 +231,13 @@ export async function POST(req: NextRequest) {
     })
 
     if (rdoAnterior) {
-      // Copia atividades EM ANDAMENTO (não copia concluídas)
+      // Copia atividades EM ANDAMENTO (não copia concluídas). Atividades
+      // avulsas não têm Atividade vinculada (atividade === null) — sem o
+      // "?." aqui, um RDO anterior com avulsa quebrava a cópia inteira com
+      // "Cannot read properties of null"; tratamos como "não concluída"
+      // (sempre copiada), já que avulsa não tem status de conclusão próprio.
       const atividadesParaCopiar = rdoAnterior.atividadeRegistros.filter(
-        (r: any) => r.atividade.status !== AtividadeStatus.CONCLUIDA,
+        (r) => r.atividade?.status !== AtividadeStatus.CONCLUIDA,
       )
 
       for (const reg of atividadesParaCopiar) {

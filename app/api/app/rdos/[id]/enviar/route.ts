@@ -11,6 +11,13 @@ import { filtrarEEnfileirar } from '@/lib/notificacoes'
 import { numeroRdo } from '@/lib/format'
 type Params = { params: Promise<{ id: string }> }
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — corresponde ao SELECT_APROVADOR mais abaixo.
+type Aprovador = {
+  id: string; nome: string; email: string; funcao: string | null; perfil: string
+  assinaturaDigital: { id: string; imagemUrl: string } | null
+}
+
 export async function POST(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
@@ -59,17 +66,17 @@ export async function POST(req: NextRequest, { params }: Params) {
     assinaturaDigital: { select: { id: true, imagemUrl: true } },
   } as const
 
-  let aprovadores: any[]
+  let aprovadores: Aprovador[]
 
   if (rdo.projeto.assinaturaModo === 'DEFINIDA') {
     // Assinantes pré-definidos pelo projeto (até 3, na ordem configurada)
     const ids = [rdo.projeto.assinante1Id, rdo.projeto.assinante2Id, rdo.projeto.assinante3Id]
       .filter((v): v is string => !!v)
-    const encontrados = ids.length > 0
+    const encontrados: Aprovador[] = ids.length > 0
       ? await prisma.usuario.findMany({ where: { id: { in: ids }, status: 'ATIVO' }, select: SELECT_APROVADOR })
       : []
     aprovadores = ids
-      .map(id => encontrados.find((a: any) => a.id === id))
+      .map(id => encontrados.find((a) => a.id === id))
       .filter((a): a is NonNullable<typeof a> => !!a)
   } else {
     // Modo aberto — administrador, ou quem tem permissão de aprovar RDO
@@ -123,7 +130,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   // E-mail só pra quem realmente precisa agir — quem já tinha assinatura
   // cadastrada e foi auto-assinado acima não tem nada pendente pra ver.
-  const pendentes = aprovadores.filter((a: any) => !a.assinaturaDigital)
+  const pendentes = aprovadores.filter((a) => !a.assinaturaDigital)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const linkAprovacao = `${appUrl}/aprovacao/${rdoId}`
   const destinatarios = await filtrarEEnfileirar(pendentes, 'emailRdoEnviado', {
@@ -133,14 +140,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     link:   linkAprovacao,
   })
   if (destinatarios.length > 0) {
-    const registros = rdo.atividadeRegistros ?? []
+    const registros: Array<{ pctAtual: number }> = rdo.atividadeRegistros ?? []
     const pctMedio  = registros.length
-      ? Math.round(registros.reduce((s: number, r: any) => s + r.pctAtual, 0) / registros.length)
+      ? Math.round(registros.reduce((s, r) => s + r.pctAtual, 0) / registros.length)
       : 0
-    const totalHH = (rdo.maoDeObra ?? []).reduce((s: number, m: any) => s + Number(m.totalHH), 0)
+    const maoDeObra: Array<{ totalHH: number }> = rdo.maoDeObra ?? []
+    const totalHH = maoDeObra.reduce((s, m) => s + Number(m.totalHH), 0)
 
     await enviarEmailSeguro(() => enviarRdoParaAprovacao({
-      aprovadores: destinatarios.map((a: any) => ({ email: a.email, nome: a.nome })),
+      aprovadores: destinatarios.map((a) => ({ email: a.email, nome: a.nome })),
       rdo: {
         numero:   rdo.numero,
         data:     rdo.data.toISOString(),
@@ -160,7 +168,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     mensagem:  `RDO #${rdo.numero} enviado para aprovação — projeto "${rdo.projeto.nome}"`,
     detalhe:   {
       rdoId:      rdoId,
-      aprovadores: aprovadores.map((a: any) => a.email),
+      aprovadores: aprovadores.map((a) => a.email),
     },
     ipAddress,
     userAgent,

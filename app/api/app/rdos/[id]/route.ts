@@ -183,12 +183,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(horaTermino    != null && { horaTermino:     String(horaTermino) }),
         ...(intervaloHoras != null && { intervaloHoras:  Number(intervaloHoras) }),
         ...(totalHoras     != null && { totalHoras:      Number(totalHoras) }),
-        ...(climaManha     != null && { climaManha:      climaManha as any }),
-        ...(climaTarde     != null && { climaTarde:      climaTarde as any }),
+        ...(climaManha     != null && { climaManha }),
+        ...(climaTarde     != null && { climaTarde }),
         // climaNoite é opcional e pode ser removido — usa !== undefined para permitir limpar com null
-        ...(climaNoite     !== undefined && { climaNoite: climaNoite as any }),
+        ...(climaNoite     !== undefined && { climaNoite }),
         ...(precipitacaoMm != null && { precipitacaoMm: Number(precipitacaoMm) }),
-        ...(climaImpacto   != null && { climaImpacto:   climaImpacto as any }),
+        ...(climaImpacto   != null && { climaImpacto }),
         ...(observacoes    != null && { observacoes:     String(observacoes) }),
       },
     })
@@ -283,7 +283,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             rdoId:            (await params).id,
             funcaoCadastroId: mo.funcaoCadastroId ?? undefined,
             funcaoNome:       mo.funcaoNome,
-            categoria:        (mo.categoria ?? 'DIRETA') as any,
+            categoria:        mo.categoria ?? 'DIRETA',
             quantidade:       mo.quantidade,
             horaEntrada:      mo.horaEntrada,
             horaSaida:        mo.horaSaida,
@@ -328,7 +328,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         await tx.ocorrencia.create({
           data: {
             rdoId:       (await params).id,
-            tipo:        oc.tipo        as any,
+            tipo:        oc.tipo,
             horaInicio:  oc.horaInicio  ?? undefined,
             horaTermino: oc.horaTermino ?? undefined,
             duracaoMin:  oc.duracaoMin  ?? undefined,
