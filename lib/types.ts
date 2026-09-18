@@ -243,6 +243,7 @@ export interface EapResponse {
 export interface MaoDeObraItem {
   id?:              string
   funcaoCadastroId?: string
+  funcaoCadastro?:  FuncaoCadastro | null
   funcaoNome:       string
   categoria:        MaoDeObraCategoria
   quantidade:       number
@@ -262,6 +263,7 @@ export type EquipamentoTipo = 'PROPRIO' | 'ALUGADO' | 'TERCEIRIZADO'
 export interface EquipamentoItem {
   id?:                    string
   equipamentoCadastroId?: string
+  equipamentoCadastro?:   EquipamentoCadastro | null
   equipamentoNome:        string
   quantidade:             number
   observacao?:            string

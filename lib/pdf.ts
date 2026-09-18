@@ -177,22 +177,22 @@ export async function gerarPdfRdo(
 
   // Dados pré-computados — não dependem do doc, calculados uma vez só
   const regs    = rdo.atividadeRegistros ?? []
-  const totalHH = (rdo.maoDeObra ?? []).reduce((s:number,m:any)=>s+Number(m.totalHH),0)
+  const totalHH = (rdo.maoDeObra ?? []).reduce((s:number,m)=>s+Number(m.totalHH),0)
   const prazo   = calcPrazo(rdo.projeto.dataInicioContrato, rdo.projeto.dataFimContrato, rdo.data)
   const midias    = rdo.midias ?? []
-  const fotos     = midias.filter((m:any) => m.tipo === 'FOTO')
-  const videos    = midias.filter((m:any) => m.tipo === 'VIDEO')
-  const arquivos  = midias.filter((m:any) => m.tipo === 'ARQUIVO')
+  const fotos     = midias.filter((m) => m.tipo === 'FOTO')
+  const videos    = midias.filter((m) => m.tipo === 'VIDEO')
+  const arquivos  = midias.filter((m) => m.tipo === 'ARQUIVO')
   const comentarios = rdo.comentarios ?? []
   const assinaturas = rdo.assinaturas ?? []
   const categoriasMO = ['INDIRETA','DIRETA','TERCEIRIZADO'] as const
   const subtotaisMO = categoriasMO
     .map(cat => {
-      const linhas = (rdo.maoDeObra ?? []).filter((m:any) => (m.categoria ?? 'DIRETA') === cat)
+      const linhas = (rdo.maoDeObra ?? []).filter((m) => (m.categoria ?? 'DIRETA') === cat)
       return {
         cat,
-        pessoas: linhas.reduce((s:number,m:any)=>s+Number(m.quantidade),0),
-        hh:      linhas.reduce((s:number,m:any)=>s+Number(m.totalHH),0),
+        pessoas: linhas.reduce((s:number,m)=>s+Number(m.quantidade),0),
+        hh:      linhas.reduce((s:number,m)=>s+Number(m.totalHH),0),
       }
     })
     .filter(s => s.pessoas > 0)
@@ -423,7 +423,7 @@ export async function gerarPdfRdo(
     if (regs.length === 0) {
       vazio('Nenhuma atividade registrada.')
     } else {
-      regs.forEach((r:any) => {
+      regs.forEach((r) => {
         const ativ  = r.atividade
         const etapaLabel = r.avulsa ? (r.avulsaEtapa ?? 'Avulsa') : (ativ?.etapa ? `${ativ.etapa.numero} · ${ativ.etapa.nome}` : '')
         const nome  = r.avulsa ? (r.avulsaNome ?? '') : (ativ ? `${ativ.numero} · ${ativ.nome}` : '—')
@@ -627,7 +627,7 @@ export async function gerarPdfRdo(
     if (totalOc === 0) {
       vazio('Nenhuma ocorrência registrada.')
     } else {
-      ;(rdo.ocorrencias ?? []).forEach((oc:any, i:number) => {
+      ;(rdo.ocorrencias ?? []).forEach((oc, i:number) => {
         novaPaginaSeNecessario(E(9))
         const dur = oc.horaInicio && oc.horaTermino ? calcOcDur(oc.horaInicio, oc.horaTermino) : null
 
@@ -683,9 +683,9 @@ export async function gerarPdfRdo(
           const aspectoCaixa = (thumbW-0.6) / (thumbH-0.6)
           const dataUris = medindo
             ? linha.map(() => null)
-            : await Promise.all(linha.map((m:any) => toCoverDataUri(m.url, aspectoCaixa)))
+            : await Promise.all(linha.map((m) => toCoverDataUri(m.url, aspectoCaixa)))
 
-          linha.forEach((m:any, j:number) => {
+          linha.forEach((m, j:number) => {
             const x = M + j*(thumbW+gap)
             // O fundo (COR.s2) por trás da imagem funciona como moldura — o
             // respiro entre ele e a imagem é o que aparece como "borda"; deixamos
@@ -735,7 +735,7 @@ export async function gerarPdfRdo(
     if (comentarios.length === 0) {
       vazio('Nenhum comentário registrado.')
     } else {
-      comentarios.forEach((c:any) => {
+      comentarios.forEach((c) => {
         doc.setFontSize(6.5 * escala)
         const linhasTxt = doc.splitTextToSize(c.texto ?? '', CW-5)
         const h = E(5.4) + linhasTxt.length*E(3.5)
@@ -790,13 +790,13 @@ export async function gerarPdfRdo(
       const aspectoSig = (sigW-6) / Math.max(areaH-5, 1)
       const sigDataUris = medindo
         ? assinaturas.slice(0,3).map(() => null)
-        : await Promise.all(assinaturas.slice(0,3).map((a:any) =>
+        : await Promise.all(assinaturas.slice(0,3).map((a) =>
             a.status==='ASSINADO' && a.assinaturaDigital?.imagemUrl
               ? toContainDataUri(a.assinaturaDigital.imagemUrl, aspectoSig)
               : Promise.resolve(null),
           ))
 
-      assinaturas.slice(0,3).forEach((a:any, i:number) => {
+      assinaturas.slice(0,3).forEach((a, i:number) => {
         const x = M + i*(sigW+3)
         const assinado = a.status==='ASSINADO'
 

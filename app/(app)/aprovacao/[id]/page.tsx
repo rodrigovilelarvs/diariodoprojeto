@@ -214,13 +214,13 @@ export default function AprovacaoPage() {
   const maoDeObra      = rdo.maoDeObra ?? []
   const equipamentos   = rdo.equipamentos ?? []
   const ocorrencias    = rdo.ocorrencias ?? []
-  const totalHH        = maoDeObra.reduce((s: number, m: any) => s + Number(m.totalHH), 0)
+  const totalHH        = maoDeObra.reduce((s: number, m) => s + Number(m.totalHH), 0)
   const hhPorCategoriaMO = CATEGORIAS.map(cat => ({
     categoria: cat,
-    totalHH:      maoDeObra.filter((m: any) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m: any) => s + Number(m.totalHH), 0),
-    totalPessoas: maoDeObra.filter((m: any) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m: any) => s + Number(m.quantidade), 0),
+    totalHH:      maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m) => s + Number(m.totalHH), 0),
+    totalPessoas: maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m) => s + Number(m.quantidade), 0),
   })).filter(c => c.totalPessoas > 0)
-  const totalEQ         = equipamentos.reduce((s: number, e: any) => s + Number(e.quantidade), 0)
+  const totalEQ         = equipamentos.reduce((s: number, e) => s + Number(e.quantidade), 0)
 
   return (
     <div className="main">
@@ -410,7 +410,7 @@ export default function AprovacaoPage() {
                   </div>
                 </div>
 
-                {registros.map((reg: any, ri: number) => {
+                {registros.map((reg, ri: number) => {
                   const ativ = reg.atividade
                   const pct  = reg.pctAtual
                   const cor  = pct >= 90 ? 'var(--fsu)' : pct >= 60 ? 'var(--fa)' : pct > 0 ? 'var(--fw)' : 'var(--tm)'
@@ -480,7 +480,7 @@ export default function AprovacaoPage() {
                 </div>
                 <div className="sec-body">
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
-                    {maoDeObra.map((mo: any, i: number) => (
+                    {maoDeObra.map((mo, i: number) => (
                       <div key={i} style={{ border:'.5px solid var(--b)', borderRadius:'var(--r)', padding:8, background:'var(--s1)' }}>
                         <div style={{ fontSize:12, fontWeight:500, marginBottom:6 }}>{mo.funcaoNome}</div>
                         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
@@ -518,7 +518,7 @@ export default function AprovacaoPage() {
                 </div>
                 <div className="sec-body">
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
-                    {equipamentos.map((eq: any, i: number) => (
+                    {equipamentos.map((eq, i: number) => (
                       <div key={i} style={{ border:'.5px solid var(--b)', borderRadius:'var(--r)', padding:8, background:'var(--s1)' }}>
                         <div style={{ fontSize:12, fontWeight:500, marginBottom:6 }}>{eq.equipamentoNome}</div>
                         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -547,7 +547,7 @@ export default function AprovacaoPage() {
                   </span>
                 </div>
                 <div className="sec-body">
-                  {ocorrencias.map((oc: any, i: number) => {
+                  {ocorrencias.map((oc, i: number) => {
                     const dur = oc.horaInicio && oc.horaTermino ? calcOcDur(oc.horaInicio, oc.horaTermino) : '—'
                     const durMin = oc.duracaoMin ?? 0
                     const durCor = durMin > 120 ? 'var(--td)' : durMin > 30 ? 'var(--tw)' : 'var(--ta)'
@@ -615,7 +615,7 @@ export default function AprovacaoPage() {
                     Nenhum comentário ainda.
                   </div>
                 ) : (
-                  (rdo.comentarios ?? []).map((c: any) => {
+                  (rdo.comentarios ?? []).map((c) => {
                     const estilo = COR_PERFIL[c.autor.perfil] ?? COR_PERFIL.PERSONALIZADO
                     const meu    = c.autor.id === session?.usuario.id
                     const podeEditar = meu || session?.usuario.perfil === 'ADMIN'
