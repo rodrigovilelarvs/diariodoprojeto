@@ -10,6 +10,7 @@ import { useRdo, useEnviarComentario, useEditarComentario, useExcluirComentario,
 import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar }       from '@/components/layout/Topbar'
 import { gerarPdfRdo }  from '@/lib/pdf'
+import { ApiError, mensagemErro } from '@/lib/api'
 import { RdoStatusBadge, Skeleton, Modal } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { UploadZona } from '@/components/rdos/UploadZona'
@@ -102,8 +103,8 @@ export default function AprovacaoPage() {
       await editarComentario.mutateAsync({ rdoId: id, comentarioId, texto })
       setEditandoId(null)
       toast.success('Comentário atualizado!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao editar comentário.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao editar comentário.'))
     }
   }
 
@@ -124,13 +125,13 @@ export default function AprovacaoPage() {
       } else {
         toast.success(`Assinatura registrada. Aguardando ${res.total - res.assinadas} aprovador(es).`)
       }
-    } catch (err: any) {
-      if (err?.codigo === 'SEM_ASSINATURA_CADASTRADA') {
+    } catch (err) {
+      if (err instanceof ApiError && err.codigo === 'SEM_ASSINATURA_CADASTRADA') {
         toast.error(err.message)
         router.push('/perfil')
         return
       }
-      toast.error(err?.message ?? 'Erro ao assinar RDO.')
+      toast.error(mensagemErro(err, 'Erro ao assinar RDO.'))
     }
   }
 
@@ -145,8 +146,8 @@ export default function AprovacaoPage() {
       await aprovarRdo.mutateAsync({ rdoId: id, aprovado: false, comentario: motivo })
       toast.warning('Revisão solicitada. Emissor notificado.')
       if (decisaoRef.current) decisaoRef.current.value = ''
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao solicitar revisão.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao solicitar revisão.'))
     }
   }
 
@@ -160,8 +161,8 @@ export default function AprovacaoPage() {
       await reabrirRdo.mutateAsync(id)
       toast.success('RDO reaberto para rascunho.')
       router.push(`/rdos/${id}`)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao reabrir RDO.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao reabrir RDO.'))
     }
   }
 
@@ -173,8 +174,8 @@ export default function AprovacaoPage() {
       await excluirRdo.mutateAsync(id)
       toast.success('RDO excluído.')
       router.push('/rdos')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao excluir RDO.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao excluir RDO.'))
     }
   }
 

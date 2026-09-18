@@ -22,6 +22,14 @@ export class LimitePlanoError extends ApiError {
   }
 }
 
+// Extrai uma mensagem de erro amigável de um `catch (err)` tipado como
+// `unknown` — substitui o padrão antigo `catch (err: any) { err?.message }`
+// (não seguro: qualquer coisa pode ser lançada, não só Error/ApiError).
+export function mensagemErro(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message
+  return fallback
+}
+
 // ── Recupera token do localStorage ─────────────────────────
 function getToken(admin = false): string | null {
   if (typeof window === 'undefined') return null

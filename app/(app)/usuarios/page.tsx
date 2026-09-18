@@ -13,6 +13,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Badge, Modal, Field, Input, Select, Btn, Skeleton } from '@/components/ui'
 import { toast } from 'sonner'
 import type { Usuario, UsuarioPerfil, ProjetoAcessoNivel } from '@/lib/types'
+import { mensagemErro } from '@/lib/api'
 
 const NIVEL_L: Record<ProjetoAcessoNivel, string> = {
   VISUALIZAR: 'Visualizar', EDITAR: 'Editar', GERENCIAMENTO: 'Gerenciamento total',
@@ -140,8 +141,8 @@ function ProjetosUsuarioModal({ usuario, onClose }: { usuario: Usuario; onClose:
       ))
       toast.success(idsSelecionados.length === 1 ? 'Acesso concedido!' : `Acesso concedido a ${idsSelecionados.length} projetos!`)
       setSelecionados({}); setNovoNivel('VISUALIZAR')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao conceder acesso.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao conceder acesso.'))
     } finally {
       setAplicando(false)
     }
@@ -151,8 +152,8 @@ function ProjetosUsuarioModal({ usuario, onClose }: { usuario: Usuario; onClose:
     try {
       await definir.mutateAsync({ usuarioId: usuario.id, projetoId, nivel })
       toast.success('Nível atualizado!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao atualizar nível.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao atualizar nível.'))
     }
   }
 
@@ -161,8 +162,8 @@ function ProjetosUsuarioModal({ usuario, onClose }: { usuario: Usuario; onClose:
     try {
       await remover.mutateAsync({ usuarioId: usuario.id, projetoId })
       toast.success('Acesso removido.')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao remover acesso.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao remover acesso.'))
     }
   }
 
@@ -298,16 +299,16 @@ function NotificacoesUsuarioModal({ usuario, onClose }: { usuario: Usuario; onCl
   async function toggle(campo: string, valorAtual: boolean) {
     try {
       await atualizar.mutateAsync({ [campo]: !valorAtual })
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao salvar preferência.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao salvar preferência.'))
     }
   }
 
   async function mudarModo(modo: 'IMEDIATO' | 'DIGEST_DIARIO') {
     try {
       await atualizar.mutateAsync({ modoNotificacao: modo })
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao salvar preferência.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao salvar preferência.'))
     }
   }
 
@@ -409,8 +410,8 @@ export default function UsuariosPage() {
         ? `"${convNome}" cadastrado! Já pode logar com a senha definida.`
         : `Convite enviado para ${convEmail}!`)
       limparFormConvite()
-    } catch (err: any) {
-      toast.error(err?.message ?? (convModo === 'cadastro' ? 'Erro ao cadastrar usuário.' : 'Erro ao enviar convite.'))
+    } catch (err) {
+      toast.error(mensagemErro(err, convModo === 'cadastro' ? 'Erro ao cadastrar usuário.' : 'Erro ao enviar convite.'))
     }
   }
 
@@ -435,8 +436,8 @@ export default function UsuariosPage() {
       })
       toast.success(`"${editNome}" atualizado!`)
       setModalEdit(null)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao atualizar usuário.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao atualizar usuário.'))
     }
   }
 
@@ -445,8 +446,8 @@ export default function UsuariosPage() {
     try {
       await convidar.mutateAsync({ email: c.email, perfil: c.perfil })
       toast.success(`Convite reenviado para ${c.email}!`)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao reenviar convite.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao reenviar convite.'))
     } finally {
       setReenviandoId(null)
     }
@@ -456,8 +457,8 @@ export default function UsuariosPage() {
     try {
       await cancelarConvite.mutateAsync(c.id)
       toast.success(`Convite para ${c.email} cancelado.`)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao cancelar convite.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao cancelar convite.'))
     }
   }
 
@@ -466,8 +467,8 @@ export default function UsuariosPage() {
     try {
       await atualizar.mutateAsync({ id: u.id, status: novoStatus })
       toast.success(novoStatus === 'ATIVO' ? `"${u.nome}" reativado!` : `"${u.nome}" desativado.`)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao alterar status.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao alterar status.'))
     }
   }
 

@@ -9,6 +9,7 @@ import { Topbar }    from '@/components/layout/Topbar'
 import { KpiCard, DualBar, Desvio, Badge, Skeleton, AutocompleteSearchInput, Modal, Field, Input, Textarea, Select, Btn } from '@/components/ui'
 import { toast }     from 'sonner'
 import type { Projeto } from '@/lib/types'
+import { mensagemErro } from '@/lib/api'
 
 const STATUS_L: Record<string, string> = { NAO_INICIADO: 'Não iniciado', ATIVO: 'Em andamento', PAUSADO: 'Paralisado', CONCLUIDO: 'Concluído', CANCELADO: 'Cancelado' }
 const STATUS_V: Record<string, 'ok' | 'warn' | 'gray' | 'danger' | 'blue'> = { NAO_INICIADO: 'gray', ATIVO: 'blue', PAUSADO: 'warn', CONCLUIDO: 'ok', CANCELADO: 'danger' }
@@ -133,8 +134,8 @@ export default function PainelPage() {
       setModalProjeto(false)
       setFormProjeto({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
       setFotoNovo({ file: null, preview: '' })
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao criar projeto.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao criar projeto.'))
     }
   }
 
@@ -180,8 +181,8 @@ export default function PainelPage() {
       })
       toast.success(`"${editForm.nome}" atualizado!`)
       setModalEdit(null)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao atualizar projeto.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao atualizar projeto.'))
     }
   }
 
@@ -190,8 +191,8 @@ export default function PainelPage() {
     try {
       await excluirProjeto.mutateAsync(p.id)
       toast.success(`Projeto "${p.nome}" excluído.`)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao excluir projeto.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao excluir projeto.'))
     }
   }
 
@@ -207,8 +208,8 @@ export default function PainelPage() {
       const copia = await duplicarProjeto.mutateAsync({ id: modalDuplicar.id, comConteudo })
       toast.success(`Projeto duplicado como "${copia.nome}"!`)
       setModalDuplicar(null)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao duplicar projeto.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao duplicar projeto.'))
     }
   }
 

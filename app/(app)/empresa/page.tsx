@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { Secao, Field, Input, Skeleton, Badge } from '@/components/ui'
 import { useEmpresaInfo, useAtualizarEmpresaInfo } from '@/hooks/useEmpresa'
+import { mensagemErro } from '@/lib/api'
 
 const PLANO_LABEL: Record<string, string> = { STARTER: 'Starter', PRO: 'Pro', ENTERPRISE: 'Enterprise' }
 const PLANO_COR:   Record<string, string> = { STARTER: '#8B95A8', PRO: '#29B6D8', ENTERPRISE: '#F59E0B' }
@@ -68,8 +69,8 @@ export default function EmpresaPage() {
     try {
       await atualizar.mutateAsync(form)
       toast.success('Dados da empresa atualizados!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao salvar dados da empresa.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao salvar dados da empresa.'))
     } finally {
       setSalvando(false)
     }

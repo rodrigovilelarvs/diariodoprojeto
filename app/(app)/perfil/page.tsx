@@ -9,6 +9,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Secao, Field, Input, Skeleton, Badge } from '@/components/ui'
 import { AssinaturaCanvas } from '@/components/perfil/AssinaturaCanvas'
 import { useAppAuth } from '@/contexts/AuthContext'
+import { mensagemErro } from '@/lib/api'
 import {
   useMeuPerfil, useAtualizarPerfil, useAlterarSenha, useEmpresasVinculadas,
 } from '@/hooks/useEmpresa'
@@ -65,8 +66,8 @@ export default function PerfilPage() {
       atualizarUsuarioSessao({ nome: atualizado.nome, avatarUrl: atualizado.avatarUrl })
       setFoto(f => ({ file: null, preview: atualizado.avatarUrl ?? f.preview }))
       toast.success('Dados atualizados!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao salvar dados.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao salvar dados.'))
     } finally {
       setSalvandoDados(false)
     }
@@ -86,8 +87,8 @@ export default function PerfilPage() {
       await alterarSenha.mutateAsync({ senhaAtual, novaSenha })
       toast.success('Senha alterada!')
       setSenhaAtual(''); setNovaSenha(''); setConfirmarSenha('')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao alterar senha.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao alterar senha.'))
     }
   }
 

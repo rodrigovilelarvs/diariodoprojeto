@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useRdo, useSalvarRdo, useEnviarRdo, useMinhaAssinatura, useEnviarComentario, useExcluirComentario, useEap, useFuncoes, useCriarFuncao, useEquipamentosCadastro, useCriarEquipamentoCadastro, useOcorrenciaTipos, useCriarOcorrenciaTipo, useExcluirRdo } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
-import { api, LimitePlanoError } from '@/lib/api'
+import { api, LimitePlanoError, mensagemErro } from '@/lib/api'
 import { gerarPdfRdo }   from '@/lib/pdf'
 import { numeroRdo, fmtData } from '@/lib/format'
 import type {
@@ -268,8 +268,8 @@ export function FormularioRdo({ rdoId }: Props) {
       await excluirRdo.mutateAsync(rdoId)
       toast.success('RDO excluído.')
       router.push('/rdos')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao excluir RDO.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao excluir RDO.'))
     }
   }
 

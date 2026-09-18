@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { useUploadMidia, useRemoverMidia, useAtualizarMidia } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
 import type { MidiaItem } from '@/lib/types'
+import { mensagemErro } from '@/lib/api'
 
 interface Props {
   rdoId:        string
@@ -123,11 +124,12 @@ export function UploadZona({ rdoId, midiasIniciais, somenteLeitura }: Props) {
           i.id === uid ? { ...i, id: midia.id, progresso: 100, salvo: true, midiaId: midia.id } : i,
         ))
         toast.success(`"${file.name}" enviado!`)
-      } catch (err: any) {
+      } catch (err) {
+        const msg = mensagemErro(err, 'Erro no upload.')
         setItems(prev => prev.map(i =>
-          i.id === uid ? { ...i, progresso: 0, erro: err.message ?? 'Erro no upload.' } : i,
+          i.id === uid ? { ...i, progresso: 0, erro: msg } : i,
         ))
-        toast.error(err.message ?? `Erro ao enviar "${file.name}".`)
+        toast.error(mensagemErro(err, `Erro ao enviar "${file.name}".`))
       }
     }
   }, [session, rdoId, uploadMidia])

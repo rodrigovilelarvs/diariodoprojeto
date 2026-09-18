@@ -12,6 +12,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Skeleton, Select, Btn } from '@/components/ui'
 import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import type { ProjetoAssinaturaModo } from '@/lib/types'
+import { mensagemErro } from '@/lib/api'
 
 export default function ProjetoAssinaturasPage() {
   const { id } = useParams<{ id: string }>()
@@ -48,8 +49,8 @@ export default function ProjetoAssinaturasPage() {
         assinante3Id: assinante3Id || null,
       })
       toast.success('Configuração de assinaturas salva!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao salvar.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao salvar.'))
     }
   }
 

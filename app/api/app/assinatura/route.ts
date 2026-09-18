@@ -7,6 +7,7 @@ import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
 import { uploadAssinatura } from '@/lib/storage'
 import { LogCategoria } from '@/lib/prisma-enums'
+import { mensagemErro } from '@/lib/api'
 
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
@@ -45,10 +46,10 @@ export async function POST(req: NextRequest) {
     ;({ url, hashSha256 } = await uploadAssinatura({
       tenantId, usuarioId, imagemBase64: body.imagemBase64,
     }))
-  } catch (err: any) {
+  } catch (err) {
     console.error('[ASSINATURA] Falha no upload:', err)
     return NextResponse.json(
-      { erro: err?.message ?? 'Falha ao enviar a assinatura para o armazenamento.' },
+      { erro: mensagemErro(err, 'Falha ao enviar a assinatura para o armazenamento.') },
       { status: 500 },
     )
   }

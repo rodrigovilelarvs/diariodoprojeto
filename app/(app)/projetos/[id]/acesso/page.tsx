@@ -12,6 +12,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { Skeleton, Select, Btn, Badge } from '@/components/ui'
 import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import type { ProjetoAcessoNivel } from '@/lib/types'
+import { mensagemErro } from '@/lib/api'
 
 const NIVEL_L: Record<ProjetoAcessoNivel, string> = {
   VISUALIZAR: 'Visualizar', EDITAR: 'Editar', GERENCIAMENTO: 'Gerenciamento total',
@@ -40,8 +41,8 @@ export default function ProjetoAcessoPage() {
       toast.success('Acesso definido!')
       setNovoUsuarioId('')
       setNovoNivel('VISUALIZAR')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao definir acesso.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao definir acesso.'))
     }
   }
 
@@ -49,8 +50,8 @@ export default function ProjetoAcessoPage() {
     try {
       await definirAcesso.mutateAsync({ projetoId: id, usuarioId, nivel })
       toast.success('Nível atualizado!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao atualizar nível.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao atualizar nível.'))
     }
   }
 
@@ -59,8 +60,8 @@ export default function ProjetoAcessoPage() {
     try {
       await removerAcesso.mutateAsync({ projetoId: id, usuarioId })
       toast.success('Acesso removido.')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao remover acesso.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao remover acesso.'))
     }
   }
 

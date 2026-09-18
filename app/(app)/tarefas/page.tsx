@@ -14,6 +14,7 @@ import { toast }   from 'sonner'
 import type { AtividadeStatus } from '@/lib/types'
 import { fmtData } from '@/lib/format'
 import { calcStatusEfetivo, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
+import { mensagemErro } from '@/lib/api'
 
 // Colunas da tabela de atividades — cabeçalho e linhas usam exatamente o mesmo
 // grid, pra ficarem alinhados de verdade (em vez de flex com minWidth aproximado).
@@ -132,7 +133,7 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
       await atualizarEtapa.mutateAsync({ id: etapaEditando.id, projetoId, nome: editEtNome, numero: editEtNum })
       toast.success('Etapa atualizada!')
       setEtapaEditando(null)
-    } catch (err: any) { toast.error(err?.message ?? 'Erro ao atualizar etapa.') }
+    } catch (err) { toast.error(mensagemErro(err, 'Erro ao atualizar etapa.')) }
   }
 
   function abrirEdicaoAtividade(a: {
@@ -158,7 +159,7 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
       })
       toast.success('Atividade atualizada!')
       setAtividadeEditando(null)
-    } catch (err: any) { toast.error(err?.message ?? 'Erro ao atualizar atividade.') }
+    } catch (err) { toast.error(mensagemErro(err, 'Erro ao atualizar atividade.')) }
   }
 
   async function excluirAtividade(a: { id: string; nome: string }) {
@@ -166,7 +167,7 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
     try {
       await removerAtividade.mutateAsync({ id: a.id, projetoId })
       toast.success('Atividade removida.')
-    } catch (err: any) { toast.error(err?.message ?? 'Erro ao remover atividade.') }
+    } catch (err) { toast.error(mensagemErro(err, 'Erro ao remover atividade.')) }
   }
 
   async function excluirEtapa(etapa: { id: string; nome: string }) {
@@ -174,7 +175,7 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
     try {
       await removerEtapa.mutateAsync({ id: etapa.id, projetoId })
       toast.success('Etapa removida.')
-    } catch (err: any) { toast.error(err?.message ?? 'Erro ao remover etapa.') }
+    } catch (err) { toast.error(mensagemErro(err, 'Erro ao remover etapa.')) }
   }
 
   const corpo = (

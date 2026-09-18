@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { AdminProviders } from '@/components/Providers'
 import { useTenants, useCriarTenant, useAtivarTenant, useSuspenderTenant, useAtualizarTenant, useMudarPlano } from '@/hooks/useAdmin'
 import type { PlanoTipo } from '@/lib/types'
+import { mensagemErro } from '@/lib/api'
 
 const PLANO_COR: Record<string,string> = { STARTER:'#8B95A8', PRO:'#29B6D8', ENTERPRISE:'#F59E0B' }
 const STATUS_COR: Record<string,string> = { ATIVO:'#4CAF7D', AGUARDANDO:'#E6A817', SUSPENSO:'#E05C5C' }
@@ -54,7 +55,7 @@ function EmpresasContent() {
       setModal(false)
       setForm({ nome:'', cnpj:'', setor:'Construção civil', cidade:'', uf:'SP', admNome:'', admEmail:'', admTelefone:'', senha:'', plano:'STARTER', obsInterna:'', dataVencimentoPlano:'', ativarImediatamente:false })
       refetch()
-    } catch (err: any) { setErro(err?.message ?? 'Erro ao cadastrar.') }
+    } catch (err) { setErro(mensagemErro(err, 'Erro ao cadastrar.')) }
   }
 
   function abrirEdicao(e: any) {
@@ -86,7 +87,7 @@ function EmpresasContent() {
       setOk(`"${editForm.nome}" atualizada com sucesso!${editForm.admSenha ? ' Senha do responsável redefinida.' : ''}`)
       setEditando(null)
       refetch()
-    } catch (err: any) { setEditErro(err?.message ?? 'Erro ao salvar.') }
+    } catch (err) { setEditErro(mensagemErro(err, 'Erro ao salvar.')) }
   }
 
   const empresas = data?.tenants ?? []

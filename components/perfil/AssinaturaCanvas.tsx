@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useMinhaAssinatura, useSalvarAssinatura } from '@/hooks/useEmpresa'
+import { mensagemErro } from '@/lib/api'
 
 export function AssinaturaCanvas() {
   const { data: minhaAssinaturaData, isLoading } = useMinhaAssinatura()
@@ -107,8 +108,8 @@ export function AssinaturaCanvas() {
       await salvarAssinatura.mutateAsync({ imagemBase64: img })
       setSigOpen(false)
       toast.success('Assinatura salva!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao salvar assinatura. Tente novamente.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao salvar assinatura. Tente novamente.'))
     }
   }
 

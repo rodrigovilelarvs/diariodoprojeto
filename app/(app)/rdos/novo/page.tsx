@@ -6,6 +6,7 @@ import { Topbar } from '@/components/layout/Topbar'
 import { RdoStatusBadge } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { toast } from 'sonner'
+import { mensagemErro } from '@/lib/api'
 
 export default function NovoRdoPage() {
   const router = useRouter()
@@ -31,8 +32,8 @@ export default function NovoRdoPage() {
       const rdo = await criarRdo.mutateAsync({ projetoId, data, copiarAnterior: copiar })
       toast.success(`RDO #${numeroRdo(rdo.numero)} criado!`)
       router.push(`/rdos/${rdo.id}`)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao criar RDO.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao criar RDO.'))
     }
   }
 

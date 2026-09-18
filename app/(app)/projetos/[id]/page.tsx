@@ -18,6 +18,7 @@ import { numeroRdo, fmtData } from '@/lib/format'
 import { toast } from 'sonner'
 import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import { baixarTodosRdosPdf, baixarMidiasProjeto } from '@/lib/download-projeto'
+import { mensagemErro } from '@/lib/api'
 
 const STATUS_L: Record<string, string> = { NAO_INICIADO: 'Não iniciado', ATIVO: 'Em andamento', PAUSADO: 'Paralisado', CONCLUIDO: 'Concluído', CANCELADO: 'Cancelado' }
 const STATUS_V: Record<string, 'ok' | 'warn' | 'gray' | 'danger' | 'blue'> = { NAO_INICIADO: 'gray', ATIVO: 'blue', PAUSADO: 'warn', CONCLUIDO: 'ok', CANCELADO: 'danger' }
@@ -128,8 +129,8 @@ export default function ProjetoResumoPage() {
       })
       toast.success('Projeto atualizado!')
       setModalEdit(false)
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao atualizar projeto.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao atualizar projeto.'))
     }
   }
 
@@ -139,8 +140,8 @@ export default function ProjetoResumoPage() {
     try {
       await baixarTodosRdosPdf(id, data.projeto.nome, session?.tenantNome, (feito, total) => setBaixandoRdos({ feito, total }))
       toast.success('RDOs baixados em .zip!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao gerar os PDFs dos RDOs.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao gerar os PDFs dos RDOs.'))
     } finally {
       setBaixandoRdos(null)
     }
@@ -156,8 +157,8 @@ export default function ProjetoResumoPage() {
         (feito, total) => setBaixandoMidias({ feito, total }),
       )
       toast.success('Fotos, vídeos e arquivos baixados em .zip!')
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Erro ao baixar as mídias.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao baixar as mídias.'))
     } finally {
       setBaixandoMidias(null)
     }
