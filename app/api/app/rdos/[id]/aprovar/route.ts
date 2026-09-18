@@ -70,9 +70,8 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   // Verifica se este usuário é um aprovador registrado no RDO
-  const minhaAssinatura = (rdo.assinaturas as any[]).find(
-    (a: any) => a.usuario.id === usuarioId,
-  )
+  const assinaturasRdo: Array<{ id: string; status: string; usuario: { id: string } }> = rdo.assinaturas
+  const minhaAssinatura = assinaturasRdo.find((a) => a.usuario.id === usuarioId)
 
   if (!minhaAssinatura) {
     return NextResponse.json(
@@ -228,13 +227,13 @@ export async function POST(req: NextRequest, { params }: Params) {
     })
 
     // Verifica se todos os aprovadores já assinaram
-    const assinaturasAtual = await tx.assinatura.findMany({
+    const assinaturasAtual: Array<{ status: string }> = await tx.assinatura.findMany({
       where:  { rdoId },
       select: { status: true },
     })
     totalAssin = assinaturasAtual.length
-    assinadas  = (assinaturasAtual as any[]).filter(
-      (a: any) => a.status === AssinaturaStatus.ASSINADO,
+    assinadas  = assinaturasAtual.filter(
+      (a) => a.status === AssinaturaStatus.ASSINADO,
     ).length
     todosAssinaram = totalAssin > 0 && assinadas === totalAssin
 

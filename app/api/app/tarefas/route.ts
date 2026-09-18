@@ -10,6 +10,18 @@ import { requireAuth, podeGerenciarTarefas } from '@/lib/auth'
 import { calcPctPlanejado, calcProgressoPonderado, calcStatusEfetivo } from '@/lib/rdo-display'
 import type { AtividadeStatus } from '@/lib/types'
 
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — anotado aqui localmente com a forma exata do `include`.
+type AtividadeRow = {
+  id: string; numero: string; nome: string; status: string
+  pctAcumulado: number; dataInicio: Date | null; dataFim: Date | null; ordem: number
+  registrosRdo: Array<{
+    pctAnterior: number; pctAtual: number; deltaHoje: number; criadoEm: Date
+    rdo: { numero: number; data: Date }
+  }>
+}
+type EtapaRow = { id: string; numero: string; nome: string; ordem: number; atividades: AtividadeRow[] }
+
 // ── GET — EAP completa ───────────────────────────────────────
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
@@ -37,7 +49,7 @@ export async function GET(req: NextRequest) {
     )
   }
 
-  const etapas = await prisma.etapa.findMany({
+  const etapas: EtapaRow[] = await prisma.etapa.findMany({
     where:   { projetoId },
     orderBy: { ordem: 'asc' },
     include: {
@@ -58,16 +70,16 @@ export async function GET(req: NextRequest) {
   })
 
   // KPIs calculados — status efetivo considera prazo, não só o que foi lançado
-  const todasAtividades = etapas.flatMap((e: any) => e.atividades)
-  const efetivos: AtividadeStatus[] = todasAtividades.map((a: any) => calcStatusEfetivo(a))
+  const todasAtividades = etapas.flatMap((e) => e.atividades)
+  const efetivos: AtividadeStatus[] = todasAtividades.map((a) => calcStatusEfetivo(a))
   const kpis = {
     total:    todasAtividades.length,
     nao:      efetivos.filter((s: AtividadeStatus) => s === 'NAO_INICIADA').length,
     andamento: efetivos.filter((s: AtividadeStatus) => s === 'EM_ANDAMENTO').length,
     concluida: efetivos.filter((s: AtividadeStatus) => s === 'CONCLUIDA').length,
     atraso:   efetivos.filter((s: AtividadeStatus) => s === 'EM_ATRASO').length,
-    pctMedio: calcProgressoPonderado(todasAtividades as any[]),
-    pctPlanejado: calcPctPlanejado(todasAtividades as any[]),
+    pctMedio: calcProgressoPonderado(todasAtividades),
+    pctPlanejado: calcPctPlanejado(todasAtividades),
   }
 
   return NextResponse.json({ etapas, kpis })
@@ -175,7 +187,7 @@ export async function POST(req: NextRequest) {
         etapaId:     body.etapaId,
         numero,
         nome:        body.nome,
-        status:      (body.status as any) ?? 'NAO_INICIADA',
+        status:      body.status ?? 'NAO_INICIADA',
         pctAcumulado: body.pctAcumulado ?? 0,
         dataInicio:  body.dataInicio ? new Date(body.dataInicio) : undefined,
         dataFim:     body.dataFim    ? new Date(body.dataFim)    : undefined,

@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   })
   if (!rdo) return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
 
-  const midia = await (prisma as any).midia.create({
+  const midia = await prisma.midia.create({
     data: {
       rdoId: body.rdoId, tipo: body.tipo, nomeArq: body.nomeArq,
       url: body.url, tamanhoBytes: body.tamanhoBytes,
@@ -54,12 +54,12 @@ export async function PATCH(req: NextRequest) {
   try { body = await req.json() }
   catch { return NextResponse.json({ erro: 'JSON inválido.' }, { status: 400 }) }
 
-  const midia = await (prisma as any).midia.findFirst({
+  const midia = await prisma.midia.findFirst({
     where: { id: midiaId, rdo: { projeto: { tenantId } } },
   })
   if (!midia) return NextResponse.json({ erro: 'Mídia não encontrada.' }, { status: 404 })
 
-  const atualizada = await (prisma as any).midia.update({
+  const atualizada = await prisma.midia.update({
     where: { id: midiaId },
     data:  { descricao: body.descricao ?? '' },
   })
@@ -74,7 +74,7 @@ export async function DELETE(req: NextRequest) {
   const midiaId = new URL(req.url).searchParams.get('id')
   if (!midiaId) return NextResponse.json({ erro: 'id obrigatório.' }, { status: 400 })
 
-  const midia = await (prisma as any).midia.findFirst({
+  const midia = await prisma.midia.findFirst({
     where: { id: midiaId, rdo: { projeto: { tenantId } } },
   })
   if (!midia) return NextResponse.json({ erro: 'Mídia não encontrada.' }, { status: 404 })
@@ -84,7 +84,7 @@ export async function DELETE(req: NextRequest) {
     if (path) await supabaseAdmin().storage.from('rdos-midias').remove([path])
   } catch { /* ignora erro storage */ }
 
-  await (prisma as any).midia.delete({ where: { id: midiaId } })
+  await prisma.midia.delete({ where: { id: midiaId } })
   await registrarLog({
     tenantId, usuarioId, categoria: LogCategoria.RDO,
     mensagem: `Mídia "${midia.nomeArq}" removida`,

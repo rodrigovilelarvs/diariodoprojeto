@@ -6,6 +6,16 @@ import { LogNivel } from '@/lib/prisma-enums'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-admin'
+
+// `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
+// lib/prisma.ts) — criadoEm ainda é Date aqui (LogEntry, em lib/types.ts, já
+// é a forma pós-serialização JSON, com criadoEm como string).
+type LogRow = {
+  id: string; nivel: string; categoria: string; mensagem: string; criadoEm: Date; resolvido: boolean
+  tenant: { nome: string } | null
+  usuario: { nome: string; email: string } | null
+}
+
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req)
   if ('error' in auth) return auth.error
@@ -45,6 +55,15 @@ export async function GET(req: NextRequest) {
 
     // Uso por tenant (para gráfico)
     rdosPorTenant,
+  ]: [
+    number, number, number, number, number,
+    number, number, number,
+    number, number,
+    Array<{ plano: string; _count: number }>,
+    Array<{ tipo: string; precoMensal: number }>,
+    number, number,
+    LogRow[],
+    Array<{ projetoId: string; _count: number }>,
   ] = await Promise.all([
 
     prisma.tenant.count(),
@@ -101,10 +120,10 @@ export async function GET(req: NextRequest) {
   ])
 
   // Calcula MRR
-  const precoPorPlano = Object.fromEntries(
-    (planosConfig as any[]).map((p: any) => [p.tipo, Number(p.precoMensal)]),
+  const precoPorPlano: Record<string, number> = Object.fromEntries(
+    planosConfig.map((p) => [p.tipo, Number(p.precoMensal)]),
   )
-  const mrr = (distribuicaoPlanos as any[]).reduce((acc: number, d: any) => {
+  const mrr = distribuicaoPlanos.reduce((acc: number, d) => {
     return acc + (precoPorPlano[d.plano] ?? 0) * d._count
   }, 0)
 
@@ -140,7 +159,7 @@ export async function GET(req: NextRequest) {
         mrr,
         tendencia: tendencias.mrr,
         porPlano:  Object.fromEntries(
-          distribuicaoPlanos.map((d: any) => [
+          distribuicaoPlanos.map((d) => [
             d.plano,
             {
               empresas: d._count,
@@ -155,7 +174,7 @@ export async function GET(req: NextRequest) {
       },
     },
     logsRecentes,
-    distribuicaoPlanos: distribuicaoPlanos.map((d: any) => ({
+    distribuicaoPlanos: distribuicaoPlanos.map((d) => ({
       plano:    d.plano,
       empresas: d._count,
       receita:  (precoPorPlano[d.plano] ?? 0) * d._count,
