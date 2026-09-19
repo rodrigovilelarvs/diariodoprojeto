@@ -46,3 +46,6 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# Configuração local do Claude Code (contém tokens de teste nas permissões)
+.claude/
