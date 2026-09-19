@@ -32,6 +32,11 @@ type ConviteListado = {
 }
 
 export async function GET(req: NextRequest) {
+  // Decisão de produto: a lista de equipe (nomes, e-mails, permissões, convites
+  // pendentes) é visível a qualquer usuário logado da empresa — quem gerencia
+  // projetos precisa dela pra escolher assinantes/acessos sem ter permissão de
+  // equipe. Só as ações de escrita (POST aqui, convites, edição) exigem
+  // podeGerenciarEquipe. Não é lacuna esquecida: não restringir sem combinar.
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
 
