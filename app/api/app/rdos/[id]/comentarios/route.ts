@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, resolverAcessoProjeto, podeVerProjeto } from '@/lib/auth'
 import { LogCategoria } from '@/lib/prisma-enums'
 import { enviarEmailSeguro, enviarComentarioRdo } from '@/lib/email'
 import { filtrarEEnfileirar } from '@/lib/notificacoes'
@@ -15,7 +15,7 @@ type Params = { params: Promise<{ id: string }> }
 // lib/prisma.ts) — corresponde ao `select` da busca do RDO logo abaixo.
 type Pessoa = { id: string; nome: string; email: string }
 type RdoParaComentario = {
-  id: string; numero: number; emissorId: string
+  id: string; numero: number; emissorId: string; projetoId: string
   projeto: { nome: string }
   emissor: Pessoa
   assinaturas: Array<{ usuario: Pessoa }>
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const rdo: RdoParaComentario | null = await prisma.rdo.findFirst({
     where:  { id: rdoId, projeto: { tenantId } },
     select: {
-      id: true, numero: true, emissorId: true,
+      id: true, numero: true, emissorId: true, projetoId: true,
       projeto: { select: { nome: true } },
       emissor: { select: { id: true, nome: true, email: true } },
       assinaturas: {
@@ -42,6 +42,12 @@ export async function POST(req: NextRequest, { params }: Params) {
     },
   })
   if (!rdo) {
+    return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
+  }
+
+  // Projeto com acesso restrito: quem não foi liberado não vê nem comenta
+  const acessoProjeto = await resolverAcessoProjeto(rdo.projetoId, auth.ctx)
+  if (!podeVerProjeto(acessoProjeto)) {
     return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
   }
 

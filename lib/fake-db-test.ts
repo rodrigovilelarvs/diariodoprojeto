@@ -13,6 +13,9 @@ const AGORA = new Date()
 export const TENANT_ID = 't1'
 export const ADMIN_EMAIL = 'admin@teste.com'
 export const ADMIN_SENHA = 'teste123'
+// Usuários PERSONALIZADOS pra testar autorização (todos com a mesma senha)
+export const LEITOR_EMAIL = 'leitor@teste.com'   // nenhuma permissão marcada
+export const EMISSOR_EMAIL = 'emissor@teste.com' // só "emitir RDO"
 export const PROJETO_ID = 'p1'
 export const PROJETO_NOME = 'Obra Teste E2E'
 // Projeto CONCLUÍDO com histórico de RDOs — usado pelo teste de download em massa
@@ -26,14 +29,28 @@ export const STORAGE_FAKE = 'https://storage-fake.teste/rdos'
 
 const TENANT = { id: TENANT_ID, nome: 'Empresa Teste', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0 }
 
-const ADMIN = {
-  id: 'admin1', tenantId: TENANT_ID, nome: 'Rodrigo Vilela Santos', email: ADMIN_EMAIL,
-  senha: '$2a$10$/A37tU4hhXLUW8oVrW5Wu./Povna1X4mapHVqf4H/SFsMfAtl3/9e', // bcrypt de "teste123"
-  telefone: null, funcao: 'Administrador', perfil: 'ADMIN', status: 'ATIVO', avatarUrl: null,
+const SEM_PERMISSOES = {
+  permEmitirRdo: false, permAprovarRdo: false, permGerenciarProjetos: false,
+  permGerenciarEquipe: false, permVerRelatorios: false, permGerenciarTarefas: false,
+}
+
+function usuarioFake(id: string, nome: string, email: string, perfil: string, perms: Partial<typeof SEM_PERMISSOES>) {
+  return {
+    id, tenantId: TENANT_ID, nome, email,
+    senha: '$2a$10$/A37tU4hhXLUW8oVrW5Wu./Povna1X4mapHVqf4H/SFsMfAtl3/9e', // bcrypt de "teste123"
+    telefone: null, funcao: perfil === 'ADMIN' ? 'Administrador' : 'Colaborador', perfil, status: 'ATIVO', avatarUrl: null,
+    ...SEM_PERMISSOES, ...perms,
+    ultimoAcessoEm: null, criadoEm: AGORA, atualizadoEm: AGORA, tenant: TENANT,
+  }
+}
+
+const ADMIN = usuarioFake('admin1', 'Rodrigo Vilela Santos', ADMIN_EMAIL, 'ADMIN', {
   permEmitirRdo: true, permAprovarRdo: true, permGerenciarProjetos: true,
   permGerenciarEquipe: true, permVerRelatorios: true, permGerenciarTarefas: true,
-  ultimoAcessoEm: null, criadoEm: AGORA, atualizadoEm: AGORA, tenant: TENANT,
-}
+})
+const LEITOR  = usuarioFake('leitor1', 'Leitor Sem Permissoes', LEITOR_EMAIL, 'PERSONALIZADO', {})
+const EMISSOR = usuarioFake('emissor1', 'Emissor De RDO', EMISSOR_EMAIL, 'PERSONALIZADO', { permEmitirRdo: true })
+const USUARIOS = [ADMIN, LEITOR, EMISSOR]
 
 const PROJETO = {
   id: PROJETO_ID, tenantId: TENANT_ID, nome: PROJETO_NOME, descricao: 'Projeto fixo do banco falso de testes.',
@@ -97,10 +114,13 @@ const fakeDbBase = {
   }),
 
   usuario: modelo({
-    findFirst: async ({ where }: any) => (where.email === ADMIN_EMAIL ? ADMIN : null),
-    findUnique: async ({ where, select }: any) => (where.id === ADMIN.id ? pick(ADMIN, select) : null),
-    findMany: async () => [ADMIN],
-    count: async () => 1,
+    findFirst: async ({ where }: any) => USUARIOS.find(u => u.email === where.email) ?? null,
+    findUnique: async ({ where, select }: any) => {
+      const u = USUARIOS.find(u => u.id === where.id)
+      return u ? pick(u, select) : null
+    },
+    findMany: async () => USUARIOS,
+    count: async () => USUARIOS.length,
     update: async ({ data }: any) => ({ ...ADMIN, ...data }),
   }),
 
@@ -115,6 +135,25 @@ const fakeDbBase = {
       where?.id === PROJETO_ID ? PROJETO : PROJETOS_CONCLUIDOS[where?.id] ?? null,
     findMany: async () => [PROJETO],
     count: async () => 1,
+  }),
+
+  // Projeto grande (p3) tem acesso RESTRITO: só o admin está liberado — os
+  // demais usuários do tenant não enxergam nem editam nada dele.
+  projetoAcesso: modelo({
+    findMany: async ({ where }: any) =>
+      where?.projetoId === PROJETO_GRANDE_ID ? [{ projetoId: PROJETO_GRANDE_ID, usuarioId: ADMIN.id, nivel: 'GERENCIAMENTO' }] : [],
+  }),
+
+  // Mídia dos RDOs do histórico (busca por id, já com o RDO dono — status/projeto)
+  midia: modelo({
+    findFirst: async ({ where }: any) => {
+      for (const rdo of rdosConcluido.values()) {
+        const m = rdo.midias.find((x: any) => x.id === where?.id)
+        if (m) return { ...m, rdo: { projetoId: rdo.projetoId, status: rdo.status } }
+      }
+      return null
+    },
+    create: async ({ data }: any) => ({ id: 'midia-nova', ...data }),
   }),
 
   rdo: modelo({
