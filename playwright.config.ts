@@ -27,6 +27,8 @@ export default defineConfig({
     url: 'http://localhost:3100',
     reuseExistingServer: false,
     timeout: 120_000,
-    env: { FAKE_DB: '1' },
+    // Limite de ~20 bytes por parte de ZIP de mídias: força a divisão em partes
+    // com poucos arquivos (ver lib/download-projeto.ts).
+    env: { FAKE_DB: '1', NEXT_PUBLIC_DOWNLOAD_PARTE_MB: '0.00002' },
   },
 })

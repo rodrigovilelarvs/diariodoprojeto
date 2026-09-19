@@ -138,8 +138,12 @@ export default function ProjetoResumoPage() {
     if (!data) return
     setBaixandoRdos({ feito: 0, total: 0 })
     try {
-      await baixarTodosRdosPdf(id, data.projeto.nome, session?.tenantNome, (feito, total) => setBaixandoRdos({ feito, total }))
-      toast.success('RDOs baixados em .zip!')
+      const r = await baixarTodosRdosPdf(id, data.projeto.nome, session?.tenantNome, (feito, total) => setBaixandoRdos({ feito, total }))
+      if (r.falhas.length > 0) {
+        toast.warning(`${r.baixados} RDO(s) baixados, mas ${r.falhas.length} não puderam ser gerados — veja RDOS_NAO_GERADOS.txt dentro do .zip.`, { duration: 10000 })
+      } else {
+        toast.success(`${r.baixados} RDO(s) baixados em .zip!`)
+      }
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao gerar os PDFs dos RDOs.'))
     } finally {
@@ -151,12 +155,17 @@ export default function ProjetoResumoPage() {
     if (!data) return
     setBaixandoMidias({ feito: 0, total: 0 })
     try {
-      await baixarMidiasProjeto(
+      const r = await baixarMidiasProjeto(
         { fotos: data.fotos, videos: data.videos, anexos: data.anexos },
         data.projeto.nome,
         (feito, total) => setBaixandoMidias({ feito, total }),
       )
-      toast.success('Fotos, vídeos e arquivos baixados em .zip!')
+      const partesTxt = r.partes > 1 ? ` Divididos em ${r.partes} arquivos .zip (o navegador pode pedir permissão para baixar vários arquivos).` : ''
+      if (r.falhas.length > 0) {
+        toast.warning(`${r.baixados} arquivo(s) baixados, mas ${r.falhas.length} não puderam ser baixados — veja ARQUIVOS_NAO_BAIXADOS.txt dentro do .zip.${partesTxt}`, { duration: 10000 })
+      } else {
+        toast.success(`${r.baixados} arquivo(s) baixados.${partesTxt}`, { duration: r.partes > 1 ? 10000 : 4000 })
+      }
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao baixar as mídias.'))
     } finally {
