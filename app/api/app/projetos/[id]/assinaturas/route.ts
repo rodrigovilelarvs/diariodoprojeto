@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   const acesso = await resolverAcessoProjeto(projetoId, auth.ctx)
-  if (!podeGerenciarProjeto(acesso)) {
+  if (!podeGerenciarProjeto(auth.ctx, acesso)) {
     return NextResponse.json({ erro: 'Sem permissão para gerenciar as assinaturas deste projeto.' }, { status: 403 })
   }
 
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const acesso = await resolverAcessoProjeto(projetoId, auth.ctx)
-  if (!podeGerenciarProjeto(acesso)) {
+  if (!podeGerenciarProjeto(auth.ctx, acesso)) {
     return NextResponse.json({ erro: 'Sem permissão para gerenciar as assinaturas deste projeto.' }, { status: 403 })
   }
 

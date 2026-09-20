@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, podeEmitirRdo } from '@/lib/auth'
 
 // Tipos padrão de ocorrência — semeados automaticamente no primeiro acesso do tenant
 const TIPOS_PADRAO = [
@@ -43,6 +43,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
+
+  // Catálogo é preenchido por quem monta o RDO; perfil sem permissão é só leitura
+  if (!podeEmitirRdo(auth.ctx)) {
+    return NextResponse.json({ erro: 'Sem permissão.' }, { status: 403 })
+  }
 
   const { tenantId } = auth.ctx
 

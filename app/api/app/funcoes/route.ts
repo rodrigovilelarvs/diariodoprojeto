@@ -6,7 +6,7 @@ import { MaoDeObraCategoria } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, podeEmitirRdo } from '@/lib/auth'
 
 // Funções rotineiras de execução de obra — semeadas automaticamente no primeiro acesso do tenant
 const FUNCOES_PADRAO: Array<{ nome: string; categoria: MaoDeObraCategoria }> = [
@@ -54,6 +54,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
+
+  // Catálogo é preenchido por quem monta o RDO; perfil sem permissão é só leitura
+  if (!podeEmitirRdo(auth.ctx)) {
+    return NextResponse.json({ erro: 'Sem permissão.' }, { status: 403 })
+  }
 
   const { tenantId } = auth.ctx
 

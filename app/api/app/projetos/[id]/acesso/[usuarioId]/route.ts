@@ -23,7 +23,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const acesso = await resolverAcessoProjeto(projetoId, auth.ctx)
-  if (!podeGerenciarProjeto(acesso)) {
+  if (!podeGerenciarProjeto(auth.ctx, acesso)) {
     return NextResponse.json({ erro: 'Sem permissão para gerenciar o acesso deste projeto.' }, { status: 403 })
   }
 

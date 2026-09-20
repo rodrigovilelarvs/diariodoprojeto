@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   if (!podeVerProjeto(acessoProjeto)) {
     return NextResponse.json({ erro: 'Projeto não encontrado.' }, { status: 404 })
   }
-  const podeGerenciar = podeGerenciarProjeto(acessoProjeto)
+  const podeGerenciar = podeGerenciarProjeto(auth.ctx, acessoProjeto)
 
   const atividades: Array<{ pctAcumulado: number; dataInicio: Date | null; dataFim: Date | null }> = await prisma.atividade.findMany({
     where:  { etapa: { projetoId } },

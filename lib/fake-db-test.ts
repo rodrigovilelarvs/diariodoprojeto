@@ -16,6 +16,7 @@ export const ADMIN_SENHA = 'teste123'
 // Usuários PERSONALIZADOS pra testar autorização (todos com a mesma senha)
 export const LEITOR_EMAIL = 'leitor@teste.com'   // nenhuma permissão marcada
 export const EMISSOR_EMAIL = 'emissor@teste.com' // só "emitir RDO"
+export const GERENTE_EMAIL = 'gerente@teste.com' // só "gerenciar equipe" (não é ADMIN)
 export const PROJETO_ID = 'p1'
 export const PROJETO_NOME = 'Obra Teste E2E'
 // Projeto CONCLUÍDO com histórico de RDOs — usado pelo teste de download em massa
@@ -50,7 +51,8 @@ const ADMIN = usuarioFake('admin1', 'Rodrigo Vilela Santos', ADMIN_EMAIL, 'ADMIN
 })
 const LEITOR  = usuarioFake('leitor1', 'Leitor Sem Permissoes', LEITOR_EMAIL, 'PERSONALIZADO', {})
 const EMISSOR = usuarioFake('emissor1', 'Emissor De RDO', EMISSOR_EMAIL, 'PERSONALIZADO', { permEmitirRdo: true })
-const USUARIOS = [ADMIN, LEITOR, EMISSOR]
+const GERENTE = usuarioFake('gerente1', 'Gerente De Equipe', GERENTE_EMAIL, 'PERSONALIZADO', { permGerenciarEquipe: true })
+const USUARIOS = [ADMIN, LEITOR, EMISSOR, GERENTE]
 
 const PROJETO = {
   id: PROJETO_ID, tenantId: TENANT_ID, nome: PROJETO_NOME, descricao: 'Projeto fixo do banco falso de testes.',
@@ -114,7 +116,8 @@ const fakeDbBase = {
   }),
 
   usuario: modelo({
-    findFirst: async ({ where }: any) => USUARIOS.find(u => u.email === where.email) ?? null,
+    findFirst: async ({ where }: any) =>
+      USUARIOS.find(u => (where.email != null && u.email === where.email) || (where.id != null && u.id === where.id)) ?? null,
     findUnique: async ({ where, select }: any) => {
       const u = USUARIOS.find(u => u.id === where.id)
       return u ? pick(u, select) : null
@@ -138,10 +141,16 @@ const fakeDbBase = {
   }),
 
   // Projeto grande (p3) tem acesso RESTRITO: só o admin está liberado — os
-  // demais usuários do tenant não enxergam nem editam nada dele.
+  // demais usuários do tenant não enxergam nem editam nada dele. Exceção: o LEITOR
+  // (sem nenhuma permissão global) recebe GERENCIAMENTO explícito só nesse projeto.
   projetoAcesso: modelo({
     findMany: async ({ where }: any) =>
-      where?.projetoId === PROJETO_GRANDE_ID ? [{ projetoId: PROJETO_GRANDE_ID, usuarioId: ADMIN.id, nivel: 'GERENCIAMENTO' }] : [],
+      where?.projetoId === PROJETO_GRANDE_ID
+        ? [
+            { projetoId: PROJETO_GRANDE_ID, usuarioId: ADMIN.id, nivel: 'GERENCIAMENTO' },
+            { projetoId: PROJETO_GRANDE_ID, usuarioId: LEITOR.id, nivel: 'GERENCIAMENTO' },
+          ]
+        : [],
   }),
 
   // Mídia dos RDOs do histórico (busca por id, já com o RDO dono — status/projeto)

@@ -5,7 +5,7 @@ import { LogCategoria, UsuarioPerfil, UsuarioStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeGerenciarEquipe } from '@/lib/auth'
+import { requireAuth, podeGerenciarEquipe, violacaoDeDelegacao } from '@/lib/auth'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -57,6 +57,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const { permEmitirRdo, permAprovarRdo, permGerenciarProjetos, permGerenciarEquipe, permVerRelatorios, permGerenciarTarefas } = body
+
+  const violacao = violacaoDeDelegacao(auth.ctx, {
+    perfilAtualDoAlvo: usuario.perfil,
+    flagsAtuais: usuario,
+    novoPerfil,
+    flags: { permEmitirRdo, permAprovarRdo, permGerenciarProjetos, permGerenciarEquipe, permVerRelatorios, permGerenciarTarefas },
+  })
+  if (violacao) {
+    return NextResponse.json({ erro: violacao }, { status: 403 })
+  }
 
   const atualizado = await prisma.usuario.update({
     where: { id: alvoId },

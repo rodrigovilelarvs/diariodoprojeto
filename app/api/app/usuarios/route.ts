@@ -7,7 +7,7 @@ import { enviarEmailSeguro, enviarConviteUsuario } from '@/lib/email'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeGerenciarEquipe, hashSenha } from '@/lib/auth'
+import { requireAuth, podeGerenciarEquipe, hashSenha, violacaoDeDelegacao } from '@/lib/auth'
 import { addDays } from 'date-fns'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
@@ -154,6 +154,11 @@ export async function POST(req: NextRequest) {
     permVerRelatorios:     !!body.permVerRelatorios,
     permGerenciarTarefas:  !!body.permGerenciarTarefas,
   }
+  const violacao = violacaoDeDelegacao(auth.ctx, { novoPerfil: body.perfil, flags })
+  if (violacao) {
+    return NextResponse.json({ erro: violacao }, { status: 403 })
+  }
+
   const dadosPerfil = {
     perfil: body.perfil as UsuarioPerfil,
     ...(body.perfil === UsuarioPerfil.PERSONALIZADO ? flags : {

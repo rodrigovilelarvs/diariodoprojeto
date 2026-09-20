@@ -5,7 +5,7 @@ import { LogCategoria, ProjetoStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeGerenciarProjetos, resolverAcessoProjeto, podeGerenciarProjeto } from '@/lib/auth'
+import { requireAuth, resolverAcessoProjeto, podeGerenciarProjeto } from '@/lib/auth'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const acessoProjeto = await resolverAcessoProjeto(projetoId, auth.ctx)
-  if (!podeGerenciarProjetos(auth.ctx) && !podeGerenciarProjeto(acessoProjeto)) {
+  if (!podeGerenciarProjeto(auth.ctx, acessoProjeto)) {
     return NextResponse.json({ erro: 'Sem permissão para editar projetos.' }, { status: 403 })
   }
 
@@ -98,7 +98,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
   }
 
   const acessoProjeto = await resolverAcessoProjeto(projetoId, auth.ctx)
-  if (!podeGerenciarProjetos(auth.ctx) && !podeGerenciarProjeto(acessoProjeto)) {
+  if (!podeGerenciarProjeto(auth.ctx, acessoProjeto)) {
     return NextResponse.json({ erro: 'Sem permissão para excluir projetos.' }, { status: 403 })
   }
 

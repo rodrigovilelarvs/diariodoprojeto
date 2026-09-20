@@ -213,6 +213,46 @@ export function podeGerenciarTarefas(ctx: CtxPerm): boolean {
   return ctx.perfil === UsuarioPerfil.ADMIN || ctx.permissoes.gerenciarTarefas
 }
 
+// ── Delegação de permissões ───────────────────────────────────
+// Quem gerencia a equipe mas NÃO é ADMIN só delega o que ele mesmo tem: não
+// concede o perfil de administrador, não altera um administrador e não liga
+// uma permissão que não possui. Sem isso, "gerenciar equipe" viraria um atalho
+// pra virar ADMIN (bastava editar o próprio usuário). Devolve a mensagem de
+// erro, ou null se a operação é permitida.
+const FLAG_PARA_PERMISSAO = {
+  permEmitirRdo: 'emitirRdo', permAprovarRdo: 'aprovarRdo',
+  permGerenciarProjetos: 'gerenciarProjetos', permGerenciarEquipe: 'gerenciarEquipe',
+  permVerRelatorios: 'verRelatorios', permGerenciarTarefas: 'gerenciarTarefas',
+} as const
+export type FlagPermissao = keyof typeof FLAG_PARA_PERMISSAO
+
+export function violacaoDeDelegacao(
+  ctx: CtxPerm,
+  opts: {
+    perfilAtualDoAlvo?: UsuarioPerfil | null // perfil do usuário sendo editado (não se aplica a convite)
+    novoPerfil?: string | null
+    flags: Partial<Record<FlagPermissao, boolean | undefined>>
+    // Como as flags estão hoje no alvo: reenviar `true` pra uma permissão que ele
+    // já tem não é conceder nada (a tela de edição manda todas as flags sempre).
+    flagsAtuais?: Partial<Record<FlagPermissao, boolean>>
+  },
+): string | null {
+  if (ctx.perfil === UsuarioPerfil.ADMIN) return null
+
+  if (opts.perfilAtualDoAlvo === UsuarioPerfil.ADMIN) {
+    return 'Somente um administrador pode alterar outro administrador.'
+  }
+  if (opts.novoPerfil === UsuarioPerfil.ADMIN) {
+    return 'Somente um administrador pode conceder o perfil de administrador.'
+  }
+  for (const [flag, valor] of Object.entries(opts.flags) as [FlagPermissao, boolean | undefined][]) {
+    if (valor === true && opts.flagsAtuais?.[flag] !== true && !ctx.permissoes[FLAG_PARA_PERMISSAO[flag]]) {
+      return 'Você só pode conceder permissões que você mesmo possui.'
+    }
+  }
+  return null
+}
+
 // ── Acesso por projeto (pasta do projeto) ────────────────────
 // null = sem restrição configurada para o projeto (comportamento padrão,
 // visível/editável por todo o tenant) ou usuário que já gerencia todos os
@@ -246,6 +286,12 @@ export function podeEditarProjetoConteudo(acesso: AcessoProjetoResultado): boole
   return acesso === null || acesso === ProjetoAcessoNivel.EDITAR || acesso === ProjetoAcessoNivel.GERENCIAMENTO
 }
 
-export function podeGerenciarProjeto(acesso: AcessoProjetoResultado): boolean {
-  return acesso === null || acesso === ProjetoAcessoNivel.GERENCIAMENTO
+// Administrar o projeto (editar/excluir, assinaturas, quem tem acesso) exige a
+// permissão global de gerenciar projetos OU o nível GERENCIAMENTO liberado
+// nesse projeto. `acesso === null` NÃO basta: significa "sem restrição
+// configurada" (todos da empresa veem o projeto e emitem RDOs nele), não
+// "todos administram". Antes desta checagem, qualquer usuário — mesmo sem
+// nenhuma permissão — editava/excluía projetos sem restrição.
+export function podeGerenciarProjeto(ctx: CtxPerm, acesso: AcessoProjetoResultado): boolean {
+  return podeGerenciarProjetos(ctx) || acesso === ProjetoAcessoNivel.GERENCIAMENTO
 }
