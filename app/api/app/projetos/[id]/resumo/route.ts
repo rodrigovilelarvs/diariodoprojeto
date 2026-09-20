@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, resolverAcessoProjeto, podeVerProjeto, podeGerenciarProjeto } from '@/lib/auth'
-import { calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
+import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -152,7 +152,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     },
     kpis: {
       totalRdos: rdos.length,
-      pctReal, pctPlanejado, desvio: pctReal - pctPlanejado,
+      pctReal, pctPlanejado, desvio: calcDesvio(pctReal, pctPlanejado, atividades),
       ocorrenciasAbertas, totalHH: Math.round(totalHH * 100) / 100,
     },
     rdosRecentes,

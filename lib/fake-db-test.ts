@@ -63,8 +63,14 @@ const PROJETO = {
   assinaturaModo: 'ABERTA', assinante1Id: null, assinante2Id: null, assinante3Id: null,
   assinante1: null, assinante2: null, assinante3: null,
   criadoEm: AGORA, atualizadoEm: AGORA,
-  etapas: [],
-  _count: { rdos: 0, etapas: 0 },
+  etapas: [{
+    id: 'e1', numero: '1.0', nome: 'Etapa sem datas', ordem: 0,
+    atividades: [
+      { id: 'a1', nome: 'Atividade A', pctAcumulado: 50, dataInicio: null, dataFim: null, status: 'EM_ANDAMENTO', ordem: 0 },
+      { id: 'a2', nome: 'Atividade B', pctAcumulado: 30, dataInicio: null, dataFim: null, status: 'EM_ANDAMENTO', ordem: 1 },
+    ],
+  }],
+  _count: { rdos: 0, etapas: 1 },
 }
 
 const PROJETO_CONCLUIDO = { ...PROJETO, id: PROJETO_CONCLUIDO_ID, nome: PROJETO_CONCLUIDO_NOME, status: 'CONCLUIDO' }
@@ -138,6 +144,25 @@ const fakeDbBase = {
       where?.id === PROJETO_ID ? PROJETO : PROJETOS_CONCLUIDOS[where?.id] ?? null,
     findMany: async () => [PROJETO],
     count: async () => 1,
+  }),
+
+  // Atividades (EAP) por projeto — usadas pra testar o cálculo de desvio:
+  //   p1: duas atividades SEM datas (lista só de atividades) → sem cronograma
+  //   p2: uma atividade COM datas já vencidas, 40% feita → atrasada
+  atividade: modelo({
+    findMany: async ({ where }: any) => {
+      const projetoId = where?.etapa?.projetoId
+      if (projetoId === PROJETO_ID) {
+        return [
+          { pctAcumulado: 50, dataInicio: null, dataFim: null },
+          { pctAcumulado: 30, dataInicio: null, dataFim: null },
+        ]
+      }
+      if (projetoId === PROJETO_CONCLUIDO_ID) {
+        return [{ pctAcumulado: 40, dataInicio: new Date('2026-01-01'), dataFim: new Date('2026-02-01') }]
+      }
+      return []
+    },
   }),
 
   // Projeto grande (p3) tem acesso RESTRITO: só o admin está liberado — os

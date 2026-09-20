@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, podeVerRelatorios } from '@/lib/auth'
-import { calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
+import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
 // lib/prisma.ts) — anotados aqui localmente com a forma real de cada query.
@@ -211,7 +211,7 @@ export async function GET(req: NextRequest) {
       cor:         proj.cor,
       pctReal,
       pctPlanejado,
-      desvio:      pctReal - pctPlanejado,
+      desvio:      calcDesvio(pctReal, pctPlanejado, atividades),
       totalRdos:   proj._count.rdos,
     }
   })

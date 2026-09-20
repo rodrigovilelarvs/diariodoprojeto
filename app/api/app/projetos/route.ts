@@ -7,7 +7,7 @@ import { LogCategoria } from '@/lib/prisma-enums'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeGerenciarProjetos } from '@/lib/auth'
-import { calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
+import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 import type { Projeto } from '@/lib/types'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
         ...p,
         pctReal,
         pctPlanejado,
-        desvio: pctReal - pctPlanejado,
+        desvio: calcDesvio(pctReal, pctPlanejado, atividades),
         ocorrenciasAbertas,
         totalAtividades: atividades.length,
         totalOcorrencias,

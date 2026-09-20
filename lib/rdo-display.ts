@@ -80,6 +80,25 @@ export function calcProgressoPonderado(
   return peso > 0 ? Math.round(soma / peso) : 0
 }
 
+// Só existe "prazo planejado" quando pelo menos uma atividade tem início E
+// término. Datas são opcionais ao criar a lista de tarefas.
+export function temCronograma(
+  atividades: { dataInicio?: string | Date | null; dataFim?: string | Date | null }[],
+): boolean {
+  return atividades.some((a) => !!a.dataInicio && !!a.dataFim)
+}
+
+// Desvio = % real − % planejado. Sem cronograma não há planejado pra comparar:
+// o planejado sai 0% e o desvio viraria o próprio progresso (um projeto 40%
+// concluído apareceria como "+40% adiantado" sem prazo nenhum). Nesse caso é 0.
+export function calcDesvio(
+  pctReal: number,
+  pctPlanejado: number,
+  atividades: { dataInicio?: string | Date | null; dataFim?: string | Date | null }[],
+): number {
+  return temCronograma(atividades) ? pctReal - pctPlanejado : 0
+}
+
 export function calcPctPlanejado(
   atividades: { dataInicio?: string | Date | null; dataFim?: string | Date | null }[],
   hoje?: Date,

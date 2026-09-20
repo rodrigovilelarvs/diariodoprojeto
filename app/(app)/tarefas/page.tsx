@@ -374,8 +374,8 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
           <Input value={avNome} onChange={e => setAvNome(e.target.value)} placeholder="Descreva a atividade" />
         </Field>
         <div className="g2">
-          <Field label="Início"><Input type="date" value={avIni} onChange={e => setAvIni(e.target.value)} /></Field>
-          <Field label="Término"><Input type="date" value={avFim} onChange={e => setAvFim(e.target.value)} /></Field>
+          <Field label="Início (opcional)"><Input type="date" value={avIni} onChange={e => setAvIni(e.target.value)} /></Field>
+          <Field label="Término (opcional)"><Input type="date" value={avFim} onChange={e => setAvFim(e.target.value)} /></Field>
         </div>
         <div className="g2">
           <Field label="Status">
@@ -425,8 +425,8 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
           <Input value={editAvNome} onChange={e => setEditAvNome(e.target.value)} placeholder="Descreva a atividade" />
         </Field>
         <div className="g2">
-          <Field label="Início"><Input type="date" value={editAvIni} onChange={e => setEditAvIni(e.target.value)} /></Field>
-          <Field label="Término"><Input type="date" value={editAvFim} onChange={e => setEditAvFim(e.target.value)} /></Field>
+          <Field label="Início (opcional)"><Input type="date" value={editAvIni} onChange={e => setEditAvIni(e.target.value)} /></Field>
+          <Field label="Término (opcional)"><Input type="date" value={editAvFim} onChange={e => setEditAvFim(e.target.value)} /></Field>
         </div>
         <div className="g2">
           <Field label="Status">
