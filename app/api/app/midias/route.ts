@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog } from '@/lib/prisma'
 import { requireAuth, podeEmitirRdo, resolverAcessoProjeto, podeEditarProjetoConteudo, type AuthContext } from '@/lib/auth'
-import { LogCategoria, RdoStatus } from '@/lib/prisma-enums'
+import { LogCategoria, MidiaTipo, RdoStatus } from '@/lib/prisma-enums'
 import { supabaseAdmin } from '@/lib/storage'
 
 // Mídia é conteúdo do RDO: adicionar, legendar e remover seguem exatamente a
@@ -25,6 +25,24 @@ async function bloquearEdicaoDeMidia(
     return NextResponse.json({ erro: 'RDO aprovado não pode ser editado.' }, { status: 400 })
   }
   return null
+}
+
+// O upload vai direto do navegador pro Storage (lib/storage.ts) no caminho
+// `<tenantId>/<rdoId>/<arquivo>` e depois registra a URL aqui. O servidor não
+// pode confiar nessa URL: na exclusão ela vira um caminho apagado com a chave
+// de serviço, então uma URL apontando pra pasta de OUTRA empresa faria o
+// servidor destruir arquivo alheio. Por isso só aceita https e a pasta do
+// próprio tenant/RDO, e a exclusão só toca em arquivo dentro da pasta do tenant.
+function caminhoNoBucket(url: unknown): string | null {
+  if (typeof url !== 'string') return null
+  try {
+    const u = new URL(url)
+    if (u.protocol !== 'https:') return null
+    const [, depois] = u.pathname.split('/rdos-midias/')
+    return depois ? decodeURIComponent(depois) : null
+  } catch {
+    return null
+  }
 }
 
 const SEM_PERMISSAO = () => NextResponse.json({ erro: 'Sem permissão.' }, { status: 403 })
@@ -48,6 +66,14 @@ export async function POST(req: NextRequest) {
   if (!rdo) return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
   const bloqueio = await bloquearEdicaoDeMidia(auth.ctx, rdo)
   if (bloqueio) return bloqueio
+
+  if (!Object.values(MidiaTipo).includes(body.tipo as MidiaTipo) || typeof body.nomeArq !== 'string' || !body.nomeArq.trim()) {
+    return NextResponse.json({ erro: 'Tipo ou nome do arquivo inválido.' }, { status: 400 })
+  }
+  const caminho = caminhoNoBucket(body.url)
+  if (!caminho || !caminho.startsWith(`${tenantId}/${body.rdoId}/`)) {
+    return NextResponse.json({ erro: 'URL da mídia inválida.' }, { status: 400 })
+  }
 
   const midia = await prisma.midia.create({
     data: {
@@ -111,8 +137,10 @@ export async function DELETE(req: NextRequest) {
   if (bloqueio) return bloqueio
 
   try {
-    const path = new URL(midia.url).pathname.split('/rdos-midias/')[1]
-    if (path) await supabaseAdmin().storage.from('rdos-midias').remove([path])
+    const path = caminhoNoBucket(midia.url)
+    if (path && path.startsWith(`${tenantId}/`)) {
+      await supabaseAdmin().storage.from('rdos-midias').remove([path])
+    }
   } catch { /* ignora erro storage */ }
 
   await prisma.midia.delete({ where: { id: midiaId } })

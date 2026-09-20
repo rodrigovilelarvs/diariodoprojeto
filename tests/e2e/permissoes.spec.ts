@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext, type PlaywrightWorkerArgs } from '@playwright/test'
 import {
   ADMIN_EMAIL, ADMIN_SENHA, LEITOR_EMAIL, EMISSOR_EMAIL, GERENTE_EMAIL,
-  PROJETO_CONCLUIDO_ID, PROJETO_GRANDE_ID,
+  PROJETO_CONCLUIDO_ID, PROJETO_GRANDE_ID, TENANT_ID,
 } from '../../lib/fake-db-test'
 
 // Autorização no servidor: perfil PERSONALIZADO só pode o que o administrador
@@ -31,7 +31,9 @@ async function logarComo(playwright: Playwright, baseURL: string, email: string)
 }
 
 const baseURL = 'http://localhost:3100'
-const midiaNova = (rdoId: string) => ({ rdoId, tipo: 'FOTO', nomeArq: 'x.png', url: 'https://storage-fake.teste/rdos/x.png' })
+// Mesmo formato que o upload real gera: <tenantId>/<rdoId>/<arquivo> no bucket rdos-midias
+const urlStorage = (pasta: string) => `https://mock.supabase.co/storage/v1/object/public/rdos-midias/${pasta}/1-x.png`
+const midiaNova = (rdoId: string) => ({ rdoId, tipo: 'FOTO', nomeArq: 'x.png', url: urlStorage(`${TENANT_ID}/${rdoId}`) })
 
 test.describe('usuário Personalizado sem nenhuma permissão', () => {
   let api: APIRequestContext
@@ -155,6 +157,30 @@ test.describe('usuário que só gerencia a equipe (não é administrador)', () =
     expect((await api.patch('/api/app/usuarios/leitor1', { data: { permGerenciarEquipe: true } })).status()).toBe(200)
     // o emissor já tem "emitir RDO" (que o gerente não tem): a tela reenvia tudo, e isso não é conceder nada
     expect((await api.patch('/api/app/usuarios/emissor1', { data: { nome: 'Emissor', permEmitirRdo: true, permAprovarRdo: false } })).status()).toBe(200)
+  })
+})
+
+// A URL da mídia vira, na exclusão, um caminho apagado com a chave de serviço do
+// Storage: se o servidor aceitasse uma URL da pasta de outra empresa, dava pra
+// mandar apagar arquivo alheio.
+test.describe('mídia: só aceita arquivo da própria pasta (tenant/RDO)', () => {
+  let api: APIRequestContext
+  test.beforeAll(async ({ playwright }) => { api = await logarComo(playwright, baseURL, EMISSOR_EMAIL) })
+  test.afterAll(async () => { await api.dispose() })
+
+  test('rejeita URL da pasta de outra empresa, de outro RDO, http e lixo', async () => {
+    const com = (url: unknown) => api.post('/api/app/midias', { data: { ...midiaNova('rc3'), url } })
+    expect((await com(urlStorage('outra-empresa/rc3'))).status()).toBe(400)          // outro tenant
+    expect((await com(urlStorage(`${TENANT_ID}/rdo-de-outro`))).status()).toBe(400) // outro RDO
+    expect((await com(urlStorage(`${TENANT_ID}/rc3`).replace('https', 'http'))).status()).toBe(400)
+    expect((await com('https://evil.example/qualquer.png')).status()).toBe(400)      // fora do bucket
+    expect((await com(undefined)).status()).toBe(400)
+    expect((await com(`https://mock.supabase.co/storage/v1/object/public/rdos-midias/${TENANT_ID}/rc3/../../outra/x.png`)).status()).toBe(400)
+  })
+
+  test('rejeita tipo inválido e aceita a URL correta', async () => {
+    expect((await api.post('/api/app/midias', { data: { ...midiaNova('rc3'), tipo: 'EXECUTAVEL' } })).status()).toBe(400)
+    expect((await api.post('/api/app/midias', { data: midiaNova('rc3') })).status()).toBe(201)
   })
 })
 
