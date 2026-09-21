@@ -29,6 +29,8 @@ export default defineConfig({
     timeout: 120_000,
     // Limite de ~20 bytes por parte de ZIP de mídias: força a divisão em partes
     // com poucos arquivos (ver lib/download-projeto.ts).
-    env: { FAKE_DB: '1', NEXT_PUBLIC_DOWNLOAD_PARTE_MB: '0.00002' },
+    // Os e-mails do servidor de teste vão para um receptor local (porta 3199, ver
+    // tests/e2e/email-conta-criada.spec.ts) em vez de tentar sair pelo Resend.
+    env: { FAKE_DB: '1', NEXT_PUBLIC_DOWNLOAD_PARTE_MB: '0.00002', RESEND_BASE_URL: 'http://127.0.0.1:3199' },
   },
 })

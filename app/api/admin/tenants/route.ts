@@ -110,7 +110,7 @@ export async function GET(req: NextRequest) {
 }
 
 // ── POST — criar empresa ──────────────────────────────────────
-import { enviarEmailSeguro, enviarBoasVindasEmpresa } from '@/lib/email'
+import { enviarEmailSeguro, enviarBoasVindasEmpresa, enviarContaCriada } from '@/lib/email'
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req)
   if ('error' in auth) return auth.error
@@ -257,6 +257,16 @@ export async function POST(req: NextRequest) {
       plano,
       precoMensal: Number(planoConfig?.precoMensal ?? 0),
       token:       convite.token,
+    }))
+  } else {
+    // Já veio com senha: não há convite, então avisa que o acesso foi criado
+    // (sem a senha — a equipe a repassa por outro meio)
+    await enviarEmailSeguro(() => enviarContaCriada({
+      email:       admEmail.toLowerCase(),
+      nome:        admNome,
+      nomeEmpresa: nome,
+      perfil:      UsuarioPerfil.ADMIN,
+      origem:      'plataforma',
     }))
   }
 

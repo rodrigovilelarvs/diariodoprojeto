@@ -407,7 +407,7 @@ export default function UsuariosPage() {
         ...(convPerfil === 'PERSONALIZADO' ? convPerms : {}),
       })
       toast.success(convModo === 'cadastro'
-        ? `"${convNome}" cadastrado! Já pode logar com a senha definida.`
+        ? `"${convNome}" cadastrado! Já pode logar com a senha definida — enviamos um e-mail de aviso (sem a senha), então passe a senha a ele por outro meio.`
         : `Convite enviado para ${convEmail}!`)
       limparFormConvite()
     } catch (err) {

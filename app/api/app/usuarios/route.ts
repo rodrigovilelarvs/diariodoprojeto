@@ -3,7 +3,7 @@
 // POST /api/app/usuarios  — convidar por e-mail OU cadastrar direto com senha inicial
 
 import { LogCategoria, UsuarioPerfil, UsuarioStatus } from '@/lib/prisma-enums'
-import { enviarEmailSeguro, enviarConviteUsuario } from '@/lib/email'
+import { enviarEmailSeguro, enviarConviteUsuario, enviarContaCriada } from '@/lib/email'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -226,6 +226,16 @@ export async function POST(req: NextRequest) {
       ipAddress,
       userAgent,
     })
+
+    // Avisa a pessoa de que o acesso existe (sem a senha — quem cadastrou a repassa)
+    const empresa = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { nome: true } })
+    await enviarEmailSeguro(() => enviarContaCriada({
+      email:       body.email!.toLowerCase(),
+      nome:        body.nome!.trim(),
+      nomeEmpresa: empresa?.nome ?? 'sua empresa',
+      perfil:      body.perfil!,
+      origem:      'empresa',
+    }))
 
     return NextResponse.json(
       {

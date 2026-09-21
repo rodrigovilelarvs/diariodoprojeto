@@ -151,6 +151,59 @@ export async function enviarConviteUsuario({
   })
 }
 
+// ── 1b. Aviso de conta criada com senha inicial ──────────
+// Quando o acesso é cadastrado direto com senha (sem convite), a pessoa não
+// recebia nada. Este e-mail avisa que a conta existe, em qual empresa e como
+// entrar. A SENHA NUNCA VAI NO E-MAIL (não é um canal seguro): quem cadastrou a
+// repassa por outro meio — por isso a função nem recebe a senha como parâmetro.
+function escaparHtml(texto: string): string {
+  return texto
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
+export async function enviarContaCriada({
+  email, nome, nomeEmpresa, perfil, origem,
+}: {
+  email:       string
+  nome:        string
+  nomeEmpresa: string
+  perfil:      string
+  // quem criou o acesso: o administrador da própria empresa ou a equipe da plataforma
+  origem:      'empresa' | 'plataforma'
+}) {
+  // nome e empresa são digitados por terceiros: escapa antes de entrar no HTML
+  const nomeSeguro    = escaparHtml(nome)
+  const empresaSegura = escaparHtml(nomeEmpresa)
+  const emailSeguro   = escaparHtml(email)
+
+  const perfilL: Record<string,string> = {
+    ADMIN: 'Administrador', PERSONALIZADO: 'Personalizado',
+  }
+  const quem = origem === 'plataforma' ? 'A equipe do Diário do Projeto' : 'O administrador da sua empresa'
+  const link = `${APP_URL}/login`
+
+  const html = layout(`
+    ${paragrafo(`Olá, <strong style="color:${C.tp}">${nomeSeguro}</strong>! ${quem} criou o seu acesso à plataforma <strong style="color:${C.ta}">Diário do Projeto</strong> como membro de <strong style="color:${C.tp}">${empresaSegura}</strong>.`)}
+    ${tabela(
+      infoRow('Empresa', empresaSegura) +
+      infoRow('E-mail de acesso', emailSeguro) +
+      infoRow('Perfil de acesso', perfilL[perfil] ?? escaparHtml(perfil))
+    )}
+    ${alerta('A senha inicial foi definida por quem criou o seu acesso. Por segurança, <strong>ela não é enviada por e-mail</strong> — peça-a diretamente a essa pessoa.', C.tw)}
+    ${btn('Acessar o Diário do Projeto', link, C.ta)}
+    ${divisor()}
+    ${paragrafo('Recomendamos <strong>trocar a senha no primeiro acesso</strong>: em <strong>Meu perfil → Segurança</strong>. Se preferir, use <strong>"Esqueci minha senha"</strong> na tela de login para criar uma nova senha por e-mail.')}
+    ${paragrafo('Não esperava este cadastro? Ignore este e-mail ou avise o administrador da empresa.')}
+  `, `Seu acesso a ${empresaSegura}`)
+
+  return resend.emails.send({
+    from: FROM, to: email,
+    subject: `Seu acesso ao Diário do Projeto — ${nomeEmpresa}`,
+    html,
+  })
+}
+
 // ── 2. Boas-vindas nova empresa (admin) ──────────────────
 export async function enviarBoasVindasEmpresa({
   email, nomeAdmin, nomeEmpresa, plano, precoMensal, token,
