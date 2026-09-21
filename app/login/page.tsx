@@ -4,6 +4,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { salvarSessaoApp } from '@/lib/sessao'
+import type { EscolherEmpresaResponse } from '@/lib/types'
 
 export default function LoginPage() {
   const router  = useRouter()
@@ -12,30 +14,34 @@ export default function LoginPage() {
   const [erro, setErro]     = useState('')
   const [loading, setLoading] = useState(false)
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  // E-mail com conta em mais de uma empresa: depois de conferir a senha, a
+  // tela pede em qual delas entrar
+  const [escolha, setEscolha] = useState<EscolherEmpresaResponse['empresas'] | null>(null)
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
+  async function entrar(tenantId?: string) {
     setErro(''); setLoading(true)
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, senha }),
+        body: JSON.stringify({ email, senha, ...(tenantId ? { tenantId } : {}) }),
       })
       const data = await res.json()
       if (!res.ok) { setErro(data.erro ?? 'Erro ao entrar.'); return }
-      document.cookie = `app_token=${data.token}; path=/; max-age=${7*24*60*60}; SameSite=Lax`
-      localStorage.setItem('app_token', data.token)
-      localStorage.setItem('app_session', JSON.stringify({
-        usuario: data.usuario, tenantId: data.tenant.id,
-        tenantNome: data.tenant.nome, perfil: data.usuario.perfil,
-      }))
+      if (data.escolherEmpresa) { setEscolha(data.empresas); return }
+      salvarSessaoApp(data)
       router.push('/painel')
     } catch {
       setErro('Erro de conexão. Tente novamente.')
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setEscolha(null)
+    void entrar()
   }
 
   return (
@@ -70,6 +76,30 @@ export default function LoginPage() {
         <div className="login-right" style={{ flex:1, background:'#1C2333', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'28px 30px' }}>
           <div style={{ width:'100%', maxWidth:290 }}>
             <div style={{ fontSize:14, fontWeight:600, color:'#29B6D8', letterSpacing:'.5px', textAlign:'center', marginBottom:20 }}>DIÁRIO DO PROJETO</div>
+            {escolha ? (
+              <div>
+                <div style={{ fontSize:12, color:'#E8EAF0', fontWeight:600, marginBottom:4 }}>Escolha a empresa</div>
+                <div style={{ fontSize:11, color:'#8B95A8', marginBottom:12, lineHeight:1.5 }}>
+                  O e-mail {email} tem acesso a mais de uma empresa. Você pode trocar depois em Meu perfil.
+                </div>
+                {escolha.map(emp => (
+                  <button
+                    key={emp.tenantId} type="button" disabled={loading}
+                    onClick={() => entrar(emp.tenantId)}
+                    style={{ width:'100%', textAlign:'left', padding:'9px 11px', marginBottom:8, borderRadius:8, border:'.5px solid rgba(255,255,255,.14)', background:'#161B25', color:'#E8EAF0', fontSize:12, cursor: loading ? 'not-allowed' : 'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:8 }}
+                  >
+                    <i className="ti ti-building-skyscraper" style={{ color:'#29B6D8', fontSize:15 }} />
+                    <span style={{ flex:1 }}>{emp.nome}</span>
+                    <span style={{ fontSize:10, color:'#8B95A8' }}>{emp.perfil === 'ADMIN' ? 'Administrador' : 'Personalizado'}</span>
+                  </button>
+                ))}
+                {erro && <div style={{ background:'rgba(224,92,92,.1)', border:'.5px solid rgba(224,92,92,.3)', borderRadius:8, padding:'7px 10px', fontSize:11, color:'#E05C5C', marginBottom:10 }}>{erro}</div>}
+                <button type="button" onClick={() => { setEscolha(null); setSenha('') }}
+                  style={{ display:'block', width:'100%', textAlign:'center', fontSize:11, color:'#8B95A8', background:'transparent', border:'none', cursor:'pointer', fontFamily:'inherit', marginTop:4 }}>
+                  ← Voltar
+                </button>
+              </div>
+            ) : (
             <form onSubmit={handleLogin}>
               {[{t:'email',p:'seu@email.com',v:email,s:setEmail,i:'ti-mail'},{t:'password',p:'••••••••',v:senha,s:setSenha,i:'ti-lock'}].map(f=>(
                 <div key={f.t} style={{ position:'relative', marginBottom:10 }}>
@@ -96,6 +126,7 @@ export default function LoginPage() {
                 Esqueci minha senha
               </Link>
             </form>
+            )}
             <div style={{ fontSize:10, color:'#546070', textAlign:'center', marginTop:10 }}>© 2026 RVS Gestão de Projetos</div>
           </div>
         </div>

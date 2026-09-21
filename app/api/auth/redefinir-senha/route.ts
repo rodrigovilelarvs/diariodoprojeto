@@ -39,8 +39,11 @@ export async function POST(req: NextRequest) {
   }
 
   const senhaHash = await hashSenha(novaSenha)
-  await prisma.usuario.update({
-    where: { id: usuario.id },
+  // O link foi enviado ao e-mail, então quem o usa é o dono dele: a senha nova
+  // vale pra TODAS as contas desse e-mail (uma por empresa), inclusive as que
+  // tinham outra senha. Contas ainda sem senha (convite pendente) ficam de fora.
+  await prisma.usuario.updateMany({
+    where: { email: usuario.email, senha: { not: null } },
     data:  { senha: senhaHash },
   })
 

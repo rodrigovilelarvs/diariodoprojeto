@@ -5,9 +5,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { salvarSessaoApp } from '@/lib/sessao'
 
 interface ConviteInfo {
   email:       string
+  // O e-mail já tem senha (a senha é uma só por e-mail): só confirma a atual
+  contaExistente?: boolean
   nomeEmpresa: string
   perfilLabel: string
 }
@@ -43,8 +46,10 @@ export default function ConvitePage() {
     setErro('')
 
     if (!nome.trim()) { setErro('Informe seu nome completo.'); return }
-    if (senha.length < 8) { setErro('A senha deve ter no mínimo 8 caracteres.'); return }
-    if (senha !== confirmar) { setErro('As senhas não coincidem.'); return }
+    if (!info?.contaExistente) {
+      if (senha.length < 8) { setErro('A senha deve ter no mínimo 8 caracteres.'); return }
+      if (senha !== confirmar) { setErro('As senhas não coincidem.'); return }
+    }
 
     setLoading(true)
     try {
@@ -56,12 +61,7 @@ export default function ConvitePage() {
       const data = await res.json()
       if (!res.ok) { setErro(data.erro ?? 'Erro ao aceitar convite.'); return }
 
-      document.cookie = `app_token=${data.token}; path=/; max-age=${7*24*60*60}; SameSite=Lax`
-      localStorage.setItem('app_token', data.token)
-      localStorage.setItem('app_session', JSON.stringify({
-        usuario: data.usuario, tenantId: data.tenant.id,
-        tenantNome: data.tenant.nome, perfil: data.usuario.perfil,
-      }))
+      salvarSessaoApp(data)
       router.push('/painel')
     } catch {
       setErro('Erro de conexão. Tente novamente.')
@@ -113,15 +113,21 @@ export default function ConvitePage() {
               </div>
 
               <div style={{ marginBottom:14 }}>
-                <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:5 }}>Criar senha</label>
+                <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:5 }}>{info?.contaExistente ? 'Sua senha atual' : 'Criar senha'}</label>
                 <input
                   type="password" required value={senha}
                   onChange={e => setSenha(e.target.value)}
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder={info?.contaExistente ? 'A senha que você já usa no Diário do Projeto' : 'Mínimo 8 caracteres'}
                   style={{ width:'100%', padding:'9px 12px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#151D2B', color:'#E8EAF0', fontSize:13, fontFamily:'inherit', boxSizing:'border-box' }}
                 />
               </div>
 
+              {info?.contaExistente && (
+                <div style={{ fontSize:11, color:'#8B95A8', marginBottom:14, lineHeight:1.5 }}>
+                  Este e-mail já tem acesso ao Diário do Projeto. A senha é a mesma em todas as suas empresas — digite a atual (se esqueceu, use "Esqueci minha senha" na tela de login).
+                </div>
+              )}
+              {!info?.contaExistente && (
               <div style={{ marginBottom:20 }}>
                 <label style={{ fontSize:11, color:'#8B95A8', display:'block', marginBottom:5 }}>Confirmar senha</label>
                 <input
@@ -131,6 +137,7 @@ export default function ConvitePage() {
                   style={{ width:'100%', padding:'9px 12px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#151D2B', color:'#E8EAF0', fontSize:13, fontFamily:'inherit', boxSizing:'border-box' }}
                 />
               </div>
+              )}
 
               {erro && (
                 <div style={{ background:'rgba(224,92,92,.1)', border:'.5px solid rgba(224,92,92,.3)', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#E05C5C', marginBottom:14 }}>

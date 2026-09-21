@@ -17,6 +17,12 @@ export const ADMIN_SENHA = 'teste123'
 export const LEITOR_EMAIL = 'leitor@teste.com'   // nenhuma permissão marcada
 export const EMISSOR_EMAIL = 'emissor@teste.com' // só "emitir RDO"
 export const GERENTE_EMAIL = 'gerente@teste.com' // só "gerenciar equipe" (não é ADMIN)
+// Mesmo e-mail em mais de uma empresa (testes de "uma senha por e-mail")
+export const TENANT2_ID = 't2'
+export const MULTI_EMAIL = 'multi@teste.com'       // contas em t1 e t2, MESMA credencial (teste123)
+export const DONO_EMAIL = 'dono@teste.com'         // t1: teste123 · t2: outra senha (atacante123)
+export const VIAJANTE_EMAIL = 'viajante@teste.com' // conta só em t1; convidado pra t2
+export const NOVATO_EMAIL = 'novato@teste.com'     // e-mail novo, convidado pra t2
 // Super-admin (painel /admin) e empresas do painel — usados pelo teste de planos
 export const SUPERADMIN_EMAIL = 'super@teste.com'
 export const PROJETO_ID = 'p1'
@@ -30,6 +36,7 @@ export const PROJETO_GRANDE_NOME = 'Obra Grande E2E'
 // Host fictício das mídias — o teste intercepta as requisições a ele (page.route)
 export const STORAGE_FAKE = 'https://storage-fake.teste/rdos'
 
+const TENANT2 = { id: 't2', nome: 'Empresa Dois', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0 }
 const TENANT = { id: TENANT_ID, nome: 'Empresa Teste', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0 }
 
 const SEM_PERMISSOES = {
@@ -37,13 +44,20 @@ const SEM_PERMISSOES = {
   permGerenciarEquipe: false, permVerRelatorios: false, permGerenciarTarefas: false,
 }
 
-function usuarioFake(id: string, nome: string, email: string, perfil: string, perms: Partial<typeof SEM_PERMISSOES>) {
+const HASH_TESTE123 = '$2a$10$/A37tU4hhXLUW8oVrW5Wu./Povna1X4mapHVqf4H/SFsMfAtl3/9e' // bcrypt de "teste123"
+const HASH_ATACANTE = '$2a$10$JYe9lDfKsQ79nb84iFtS7OtCAkVnZuvbmknB6Qk2H6I8z2fawjw2O' // bcrypt de "atacante123"
+
+function usuarioFake(
+  id: string, nome: string, email: string, perfil: string, perms: Partial<typeof SEM_PERMISSOES>,
+  extra: { tenant?: typeof TENANT; senha?: string } = {},
+) {
+  const tenant = extra.tenant ?? TENANT
   return {
-    id, tenantId: TENANT_ID, nome, email,
-    senha: '$2a$10$/A37tU4hhXLUW8oVrW5Wu./Povna1X4mapHVqf4H/SFsMfAtl3/9e', // bcrypt de "teste123"
+    id, tenantId: tenant.id, nome, email,
+    senha: extra.senha ?? HASH_TESTE123,
     telefone: null, funcao: perfil === 'ADMIN' ? 'Administrador' : 'Colaborador', perfil, status: 'ATIVO', avatarUrl: null,
     ...SEM_PERMISSOES, ...perms,
-    ultimoAcessoEm: null, criadoEm: AGORA, atualizadoEm: AGORA, tenant: TENANT,
+    ultimoAcessoEm: null, criadoEm: AGORA, atualizadoEm: AGORA, tenant,
   }
 }
 
@@ -54,7 +68,31 @@ const ADMIN = usuarioFake('admin1', 'Rodrigo Vilela Santos', ADMIN_EMAIL, 'ADMIN
 const LEITOR  = usuarioFake('leitor1', 'Leitor Sem Permissoes', LEITOR_EMAIL, 'PERSONALIZADO', {})
 const EMISSOR = usuarioFake('emissor1', 'Emissor De RDO', EMISSOR_EMAIL, 'PERSONALIZADO', { permEmitirRdo: true })
 const GERENTE = usuarioFake('gerente1', 'Gerente De Equipe', GERENTE_EMAIL, 'PERSONALIZADO', { permGerenciarEquipe: true })
-const USUARIOS = [ADMIN, LEITOR, EMISSOR, GERENTE]
+// Mesmo e-mail em duas empresas, com a MESMA credencial (a senha é uma só por e-mail)
+const MULTI_A = usuarioFake('multi-a', 'Multi Empresa', MULTI_EMAIL, 'ADMIN', {})
+const MULTI_B = usuarioFake('multi-b', 'Multi Empresa', MULTI_EMAIL, 'PERSONALIZADO', { permEmitirRdo: true }, { tenant: TENANT2 })
+// Mesmo e-mail em duas empresas com credenciais DIFERENTES: a conta de t2 foi
+// cadastrada à parte, com uma senha que outra pessoa escolheu
+const DONO_A = usuarioFake('dono-a', 'Dono Da Conta', DONO_EMAIL, 'ADMIN', {})
+const DONO_B = usuarioFake('dono-b', 'Dono Da Conta', DONO_EMAIL, 'PERSONALIZADO', {}, { tenant: TENANT2, senha: HASH_ATACANTE })
+const VIAJANTE = usuarioFake('viajante-a', 'Viajante', VIAJANTE_EMAIL, 'PERSONALIZADO', {})
+const USUARIOS = [ADMIN, LEITOR, EMISSOR, GERENTE, MULTI_A, MULTI_B, DONO_A, DONO_B, VIAJANTE]
+
+// Convites pendentes pra empresa t2
+const conviteFake = (token: string, email: string) => ({
+  id: `conv-${token}`, token, email, tenantId: TENANT2_ID, tenant: TENANT2, funcao: null,
+  perfil: 'PERSONALIZADO', permEmitirRdo: false, permAprovarRdo: false, permGerenciarProjetos: false,
+  permGerenciarEquipe: false, permVerRelatorios: false, permGerenciarTarefas: false,
+  aceitoEm: null as Date | null, expiradoEm: new Date(Date.now() + 7 * 86_400_000),
+})
+const CONVITES = [conviteFake('conv-viajante', VIAJANTE_EMAIL), conviteFake('conv-novato', NOVATO_EMAIL)]
+
+// where de usuário usado pelas rotas de login/convite/perfil: e-mail, id, empresa e senha (preenchida ou não)
+const casaUsuario = (u: any, where: any = {}) =>
+  (where.email == null || u.email === where.email) &&
+  (where.id == null || u.id === where.id) &&
+  (where.tenantId == null || u.tenantId === where.tenantId) &&
+  (where.senha === undefined ? true : where.senha?.not === null ? u.senha != null : u.senha === where.senha)
 
 const SUPERADMIN = {
   id: 'sa1', nome: 'Super Admin Teste', email: SUPERADMIN_EMAIL,
@@ -157,7 +195,7 @@ const fakeDbBase = {
   $disconnect: async () => {},
 
   tenant: modelo({
-    findUnique: async ({ where }: any) => (where.id === TENANT_ID ? TENANT : null),
+    findUnique: async ({ where }: any) => [TENANT, TENANT2].find(t => t.id === where.id) ?? null,
     findMany: async ({ where, include }: any) =>
       TENANTS_ADMIN
         .filter(t => (!where?.plano || t.plano === where.plano) && (!where?.status || t.status === where.status))
@@ -192,15 +230,42 @@ const fakeDbBase = {
   }),
 
   usuario: modelo({
+    // exige e-mail ou id (senão devolve nada, como antes); os demais campos do where restringem
     findFirst: async ({ where }: any) =>
-      USUARIOS.find(u => (where.email != null && u.email === where.email) || (where.id != null && u.id === where.id)) ?? null,
+      where && (where.email != null || where.id != null) ? USUARIOS.find(u => casaUsuario(u, where)) ?? null : null,
     findUnique: async ({ where, select }: any) => {
       const u = USUARIOS.find(u => u.id === where.id)
       return u ? pick(u, select) : null
     },
-    findMany: async () => USUARIOS,
-    count: async () => USUARIOS.length,
-    update: async ({ data }: any) => ({ ...ADMIN, ...data }),
+    findMany: async ({ where }: any = {}) => USUARIOS.filter(u => casaUsuario(u, where)),
+    count: async ({ where }: any = {}) => USUARIOS.filter(u => casaUsuario(u, where)).length,
+    update: async ({ where, data }: any) => {
+      const u = USUARIOS.find(x => x.id === where?.id)
+      return u ? Object.assign(u, data) : { ...ADMIN, ...data }
+    },
+    // atualização em massa (troca/redefinição de senha nas contas do e-mail)
+    updateMany: async ({ where, data }: any) => {
+      const alvo = USUARIOS.filter(u => casaUsuario(u, where))
+      for (const u of alvo) Object.assign(u, data)
+      return { count: alvo.length }
+    },
+    upsert: async ({ where, update, create }: any) => {
+      const chave = where?.tenantId_email
+      const existente = USUARIOS.find(u => u.tenantId === chave?.tenantId && u.email === chave?.email)
+      if (existente) return Object.assign(existente, update)
+      const tenant = [TENANT, TENANT2].find(t => t.id === create.tenantId) ?? TENANT
+      const novo = { ...usuarioFake(`novo-${USUARIOS.length}`, create.nome, create.email, create.perfil, {}, { tenant, senha: create.senha }), ...create }
+      USUARIOS.push(novo)
+      return novo
+    },
+  }),
+
+  convite: modelo({
+    findUnique: async ({ where }: any) => CONVITES.find(c => c.token === where?.token) ?? null,
+    update: async ({ where, data }: any) => {
+      const c = CONVITES.find(x => x.id === where?.id)
+      return c ? Object.assign(c, data) : data
+    },
   }),
 
   logAuditoria: modelo({

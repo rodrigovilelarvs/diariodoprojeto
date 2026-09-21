@@ -2,11 +2,12 @@
 // GET  /api/auth/convite?token=...  — consultar dados do convite (para exibir antes de aceitar)
 // POST /api/auth/convite  — aceitar convite e definir senha
 
-import { LogCategoria, UsuarioStatus } from '@/lib/prisma-enums'
+import { LogCategoria, LogNivel, UsuarioStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { hashSenha, signToken } from '@/lib/auth'
+import { hashSenha, verificarSenha } from '@/lib/auth'
+import { MAX_TENTATIVAS, falhasRecentesDoIp, respostaDeSessao } from '@/lib/contas'
 
 const PERFIL_L: Record<string, string> = {
   ADMIN: 'Administrador', PERSONALIZADO: 'Personalizado',
@@ -33,8 +34,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ erro: 'Convite expirado. Solicite um novo convite ao administrador.' }, { status: 400 })
   }
 
+  // A senha é uma só por e-mail: se ele já tem senha (em outra empresa), a tela
+  // pede a senha atual em vez de criar uma nova
+  const contaExistente = (await prisma.usuario.count({ where: { email: convite.email, senha: { not: null } } })) > 0
+
   return NextResponse.json({
     email:       convite.email,
+    contaExistente,
     nomeEmpresa: convite.tenant.nome,
     perfil:      convite.perfil,
     perfilLabel: PERFIL_L[convite.perfil] ?? convite.perfil,
@@ -57,13 +63,6 @@ export async function POST(req: NextRequest) {
   if (!token || !nome || !senha) {
     return NextResponse.json(
       { erro: 'Token, nome e senha são obrigatórios.' },
-      { status: 400 },
-    )
-  }
-
-  if (senha.length < 8) {
-    return NextResponse.json(
-      { erro: 'Senha deve ter no mínimo 8 caracteres.' },
       { status: 400 },
     )
   }
@@ -95,8 +94,45 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Cria ou ativa o usuário
-  const senhaHash = await hashSenha(senha)
+  // Senha: uma só por e-mail. Se o e-mail já tem senha em outra empresa, quem
+  // aceita precisa DIGITAR essa senha (prova que é a mesma pessoa, já que o
+  // link do convite sozinho não pode trocar a senha de uma conta que já
+  // existe) e a nova conta reaproveita a mesma credencial. Só e-mail novo cria senha.
+  const existentes: Array<{ senha: string | null }> = await prisma.usuario.findMany({
+    where:  { email: convite.email, senha: { not: null } },
+    select: { senha: true },
+  })
+
+  let senhaHash: string
+  if (existentes.length > 0) {
+    if ((await falhasRecentesDoIp(ipAddress)) >= MAX_TENTATIVAS) {
+      return NextResponse.json({ erro: 'Muitas tentativas. Tente novamente em alguns minutos.' }, { status: 429 })
+    }
+    let confirmada: string | null = null
+    for (const hash of new Set(existentes.map((e) => e.senha!))) {
+      if (await verificarSenha(senha, hash)) { confirmada = hash; break }
+    }
+    if (!confirmada) {
+      await registrarLog({
+        tenantId:  convite.tenantId,
+        nivel:     LogNivel.AVISO,
+        categoria: LogCategoria.LOGIN,
+        mensagem:  `Senha incorreta ao aceitar convite (${convite.email})`,
+        ipAddress,
+        userAgent,
+      })
+      return NextResponse.json(
+        { erro: 'Senha incorreta. Use a senha que você já usa no Diário do Projeto (ou recupere-a em "Esqueci minha senha").' },
+        { status: 401 },
+      )
+    }
+    senhaHash = confirmada
+  } else {
+    if (senha.length < 8) {
+      return NextResponse.json({ erro: 'Senha deve ter no mínimo 8 caracteres.' }, { status: 400 })
+    }
+    senhaHash = await hashSenha(senha)
+  }
 
   const flagsConvite = {
     perfil:                convite.perfil,
@@ -137,28 +173,5 @@ export async function POST(req: NextRequest) {
     userAgent,
   })
 
-  const jwtToken = signToken({
-    usuarioId: usuario.id,
-    tenantId:  convite.tenantId,
-    perfil:    usuario.perfil,
-  })
-
-  return NextResponse.json({
-    token: jwtToken,
-    usuario: {
-      id:     usuario.id,
-      nome:   usuario.nome,
-      email:  usuario.email,
-      funcao: usuario.funcao,
-      perfil: usuario.perfil,
-      permEmitirRdo: usuario.permEmitirRdo, permAprovarRdo: usuario.permAprovarRdo,
-      permGerenciarProjetos: usuario.permGerenciarProjetos,
-      permGerenciarEquipe: usuario.permGerenciarEquipe, permVerRelatorios: usuario.permVerRelatorios,
-      permGerenciarTarefas: usuario.permGerenciarTarefas,
-    },
-    tenant: {
-      id:   convite.tenant.id,
-      nome: convite.tenant.nome,
-    },
-  })
+  return NextResponse.json(respostaDeSessao(usuario, convite.tenant))
 }

@@ -43,16 +43,25 @@ export async function POST(req: NextRequest) {
       mensagem:  'Tentativa de troca de senha com senha atual incorreta',
       ipAddress, userAgent,
     })
-    return NextResponse.json({ erro: 'Senha atual incorreta.' }, { status: 401 })
+    // 403, não 401: o cliente trata 401 como "sessão expirada" e deslogava o
+    // usuário por errar a senha atual
+    return NextResponse.json({ erro: 'Senha atual incorreta.', codigo: 'SENHA_ATUAL_INCORRETA' }, { status: 403 })
   }
 
   const novaHash = await hashSenha(novaSenha)
-  await prisma.usuario.update({ where: { id: usuarioId }, data: { senha: novaHash } })
+  // A senha é uma só por e-mail: troca também nas contas dele em outras empresas
+  // que guardam a MESMA credencial. Contas com outra credencial (ex.: cadastradas
+  // à parte por um administrador) não são tocadas.
+  const atualizadas: { count: number } = await prisma.usuario.updateMany({
+    where: { email: usuario.email, senha: usuario.senha },
+    data:  { senha: novaHash },
+  })
 
   await registrarLog({
     tenantId, usuarioId,
     categoria: LogCategoria.USUARIO,
     mensagem:  'Senha alterada pelo próprio usuário',
+    detalhe:   { contasAtualizadas: atualizadas.count },
     ipAddress, userAgent,
   })
 

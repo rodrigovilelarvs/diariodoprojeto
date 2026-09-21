@@ -25,6 +25,13 @@ export interface LoginResponse {
   tenant:  { id: string; nome: string }
 }
 
+// Login de um e-mail com conta em mais de uma empresa: ainda não há sessão,
+// a tela pede a escolha e repete o login com o tenantId escolhido
+export interface EscolherEmpresaResponse {
+  escolherEmpresa: true
+  empresas: { tenantId: string; nome: string; perfil: UsuarioPerfil }[]
+}
+
 export interface AdminLoginResponse {
   token:    string
   admin:    { id: string; nome: string; email: string }

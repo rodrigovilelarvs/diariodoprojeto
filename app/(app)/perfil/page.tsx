@@ -3,13 +3,15 @@
 // "Meu perfil" — dados da conta, empresas vinculadas ao e-mail, troca de
 // senha e cadastro da assinatura digital pessoal.
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { Secao, Field, Input, Skeleton, Badge } from '@/components/ui'
 import { AssinaturaCanvas } from '@/components/perfil/AssinaturaCanvas'
 import { useAppAuth } from '@/contexts/AuthContext'
-import { mensagemErro } from '@/lib/api'
+import { api, ApiError, mensagemErro } from '@/lib/api'
+import { salvarSessaoApp } from '@/lib/sessao'
+import type { LoginResponse } from '@/lib/types'
 import {
   useMeuPerfil, useAtualizarPerfil, useAlterarSenha, useEmpresasVinculadas,
 } from '@/hooks/useEmpresa'
@@ -94,6 +96,31 @@ export default function PerfilPage() {
 
   const empresas = empresasData?.empresas ?? []
 
+  // ── Trocar de empresa (mesmo e-mail) ────────────────────────
+  // A senha é uma só por e-mail, então normalmente a troca é direta. Se a conta
+  // da outra empresa tiver uma senha diferente (cadastrada à parte), o servidor
+  // pede a senha dela.
+  const [trocandoId, setTrocandoId]     = useState<string | null>(null)
+  const [pedirSenhaId, setPedirSenhaId] = useState<string | null>(null)
+  const [senhaTroca, setSenhaTroca]     = useState('')
+
+  async function trocarEmpresa(tenantId: string, senha?: string) {
+    setTrocandoId(tenantId)
+    try {
+      const data = await api.post<LoginResponse>('/api/auth/trocar-empresa', { tenantId, ...(senha ? { senha } : {}) })
+      salvarSessaoApp(data)
+      // Recarrega tudo: o cache e a sessão da empresa anterior não podem vazar pra nova
+      window.location.assign('/painel')
+    } catch (err) {
+      if (err instanceof ApiError && err.codigo === 'PEDIR_SENHA') {
+        setPedirSenhaId(tenantId); setSenhaTroca('')
+      } else {
+        toast.error(mensagemErro(err, 'Não foi possível trocar de empresa.'))
+      }
+      setTrocandoId(null)
+    }
+  }
+
   return (
     <div className="main">
       <Topbar titulo="Meu perfil" subtitulo="Seus dados, empresas vinculadas, senha e assinatura digital" />
@@ -164,7 +191,8 @@ export default function PerfilPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {empresas.map(emp => (
-                  <div key={emp.tenantId} style={{
+                  <Fragment key={emp.tenantId}>
+                  <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                     padding: '9px 12px', borderRadius: 'var(--r)', background: 'var(--s1)',
                     border: emp.atual ? '.5px solid var(--ba)' : '.5px solid var(--b)',
@@ -191,8 +219,24 @@ export default function PerfilPage() {
                         <Badge variant="warn">{STATUS_TENANT_LABEL[emp.tenantStatus] ?? emp.tenantStatus}</Badge>
                       )}
                       {emp.atual && <Badge variant="blue">Empresa atual</Badge>}
+                      {!emp.atual && emp.tenantStatus === 'ATIVO' && emp.statusConta === 'ATIVO' && (
+                        <button className="btn btn-sm" type="button" disabled={trocandoId === emp.tenantId} onClick={() => trocarEmpresa(emp.tenantId)}>
+                          <i className="ti ti-switch-horizontal" /> {trocandoId === emp.tenantId ? 'Entrando...' : 'Entrar'}
+                        </button>
+                      )}
                     </div>
                   </div>
+                  {pedirSenhaId === emp.tenantId && (
+                    <form
+                      onSubmit={e => { e.preventDefault(); trocarEmpresa(emp.tenantId, senhaTroca) }}
+                      style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '0 12px 6px' }}
+                    >
+                      <span style={{ fontSize: 11, color: 'var(--ts)', flexShrink: 0 }}>A senha desta empresa é diferente. Digite-a:</span>
+                      <Input type="password" value={senhaTroca} onChange={e => setSenhaTroca(e.target.value)} autoComplete="current-password" />
+                      <button className="btn btn-p btn-sm" type="submit" disabled={!senhaTroca || trocandoId === emp.tenantId}>Confirmar</button>
+                    </form>
+                  )}
+                  </Fragment>
                 ))}
               </div>
             </>
