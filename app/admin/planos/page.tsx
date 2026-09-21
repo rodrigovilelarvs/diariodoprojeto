@@ -40,9 +40,20 @@ function PlanosContent() {
   }
 
   async function salvar(tipo: PlanoTipo) {
+    // Limite alterado vale pra TODAS as empresas do plano (inclusive as que
+    // tiverem um limite ajustado à mão) — confirma antes de aplicar
+    const atual = planos.find(p => p.tipo === tipo)
+    const mudouLimite = !!atual && (['limiteUsuarios', 'limiteRdosMes', 'limiteProjetos'] as const)
+      .some(k => form[k] != null && Number(form[k]) !== atual[k])
+    if (mudouLimite && !window.confirm(
+      `Os novos limites do plano ${tipo} passam a valer para TODAS as empresas que estão nesse plano, inclusive as que tenham um limite ajustado individualmente. Continuar?`,
+    )) return
     try {
-      await atualizarPlano.mutateAsync({ tipo, ...form } as Parameters<typeof atualizarPlano.mutateAsync>[0])
-      toast.success(`Plano ${tipo} atualizado!`)
+      const r = await atualizarPlano.mutateAsync({ tipo, ...form } as Parameters<typeof atualizarPlano.mutateAsync>[0])
+      const n = r.empresasAtualizadas
+      toast.success(n > 0
+        ? `Plano ${tipo} atualizado! Limites aplicados a ${n} ${n === 1 ? 'empresa' : 'empresas'}.`
+        : `Plano ${tipo} atualizado!`)
       setEditando(null)
     } catch { toast.error('Erro ao atualizar plano.') }
   }

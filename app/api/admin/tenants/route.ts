@@ -7,6 +7,7 @@ import { LogCategoria, PlanoTipo, TenantStatus, UsuarioPerfil, UsuarioStatus } f
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-admin'
+import { precosDosPlanos } from '@/lib/planos'
 import { hashSenha } from '@/lib/auth'
 import { addDays } from 'date-fns'
 import type { Tenant } from '@/lib/types'
@@ -94,7 +95,7 @@ export async function GET(req: NextRequest) {
   })
 
   // Resumo geral para o dashboard
-  const PRECO_PLANO: Record<PlanoTipo, number> = { STARTER: 0, PRO: 297, ENTERPRISE: 1485 }
+  const PRECO_PLANO = await precosDosPlanos()
   const resumo = {
     total,
     ativos:     tenants.filter((t) => t.status === 'ATIVO').length,
@@ -252,6 +253,7 @@ export async function POST(req: NextRequest) {
       nomeAdmin:   admNome,
       nomeEmpresa: nome,
       plano,
+      precoMensal: Number(planoConfig?.precoMensal ?? 0),
       token:       convite.token,
     }))
   }

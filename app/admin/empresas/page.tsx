@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminProviders } from '@/components/Providers'
-import { useTenants, useCriarTenant, useAtivarTenant, useSuspenderTenant, useAtualizarTenant, useMudarPlano } from '@/hooks/useAdmin'
+import { useTenants, useCriarTenant, useAtivarTenant, useSuspenderTenant, useAtualizarTenant, useMudarPlano, usePlanos } from '@/hooks/useAdmin'
 import type { PlanoTipo, Tenant } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'
 
@@ -20,6 +20,10 @@ function EmpresasContent() {
   const suspenderTenant = useSuspenderTenant()
   const atualizarTenant = useAtualizarTenant()
   const mudarPlano      = useMudarPlano()
+  // Preço mostrado na escolha do plano vem da configuração (Planos), não fixo
+  const { data: planosData } = usePlanos()
+  const precoPro = planosData?.planos.find(p => p.tipo === 'PRO')?.precoMensal
+  const rotuloPro = precoPro != null ? `R$ ${Number(precoPro).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}/mês` : 'Pro'
   const [modal, setModal] = useState(false)
   const [nome, setNome]   = useState('')
   const [form, setForm]   = useState({ nome:'', cnpj:'', setor:'Construção civil', cidade:'', uf:'SP', admNome:'', admEmail:'', admTelefone:'', senha:'', plano:'STARTER' as PlanoTipo, obsInterna:'', dataVencimentoPlano:'', ativarImediatamente:false })
@@ -278,7 +282,7 @@ function EmpresasContent() {
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
                     {[
                       { tipo:'STARTER' as PlanoTipo,   label:'Starter',    preco:'Grátis',     cor:'#8B95A8' },
-                      { tipo:'PRO' as PlanoTipo,        label:'Pro',        preco:'R$ 297/mês', cor:'#29B6D8' },
+                      { tipo:'PRO' as PlanoTipo,        label:'Pro',        preco:rotuloPro, cor:'#29B6D8' },
                       { tipo:'ENTERPRISE' as PlanoTipo, label:'Enterprise', preco:'Sob consulta',cor:'#F59E0B' },
                     ].map(p => (
                       <div key={p.tipo} onClick={() => setForm(f=>({...f,plano:p.tipo}))}
@@ -420,7 +424,7 @@ function EmpresasContent() {
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
                     {[
                       { tipo:'STARTER' as PlanoTipo,   label:'Starter',    preco:'Grátis',     cor:'#8B95A8' },
-                      { tipo:'PRO' as PlanoTipo,        label:'Pro',        preco:'R$ 297/mês', cor:'#29B6D8' },
+                      { tipo:'PRO' as PlanoTipo,        label:'Pro',        preco:rotuloPro, cor:'#29B6D8' },
                       { tipo:'ENTERPRISE' as PlanoTipo, label:'Enterprise', preco:'Sob consulta',cor:'#F59E0B' },
                     ].map(p => (
                       <div key={p.tipo} onClick={() => setEditForm(f=>({...f,plano:p.tipo}))}

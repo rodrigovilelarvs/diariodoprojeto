@@ -1,12 +1,14 @@
 // src/api/admin/planos/route.ts
 // GET   /api/admin/planos          — listar configurações dos planos
-// PATCH /api/admin/planos/:tipo    — atualizar limites e preço de um plano
+// PATCH /api/admin/planos          — atualizar preço, limites e funcionalidades de um
+//                                     plano (limites alterados valem pras empresas dele)
 
 import { LogCategoria, PlanoTipo } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-admin'
+import { CAMPOS_LIMITE, limitesAlterados, type LimitesPlano } from '@/lib/planos'
 import type { PlanoConfig } from '@/lib/types'
 // ── GET ──────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
@@ -77,7 +79,29 @@ export async function PATCH(req: NextRequest) {
 
   const { tipo, ...dados } = body
 
-  const atualizado = await prisma.planoConfig.upsert({
+  // Os números do plano valem pra todas as empresas dele: valida antes de gravar
+  for (const campo of CAMPOS_LIMITE) {
+    const v = dados[campo]
+    if (v != null && (!Number.isInteger(v) || v < 0)) {
+      return NextResponse.json(
+        { erro: `Limite inválido (${campo}): use um número inteiro, 0 ou maior (0 = ilimitado).` },
+        { status: 400 },
+      )
+    }
+  }
+  if (dados.precoMensal != null && (!Number.isFinite(dados.precoMensal) || dados.precoMensal < 0)) {
+    return NextResponse.json({ erro: 'Preço inválido.' }, { status: 400 })
+  }
+
+  // Limites que de fato mudam nesta edição → aplicados às empresas do plano.
+  // Preço e funcionalidades não precisam de cópia: a tela da empresa, o MRR e
+  // os avisos leem direto do plano.
+  const existente: (LimitesPlano & { tenantId: string | null }) | null = await prisma.planoConfig.findUnique({ where: { tipo } })
+  const mudancasLimite = limitesAlterados(existente, dados)
+  // Configuração própria de uma empresa específica (tenantId) não é a do plano
+  const propagar = Object.keys(mudancasLimite).length > 0 && !existente?.tenantId
+
+  const salvarPlano = prisma.planoConfig.upsert({
     where:  { tipo },
     update: {
       ...(dados.precoMensal        != null && { precoMensal:        dados.precoMensal }),
@@ -102,17 +126,22 @@ export async function PATCH(req: NextRequest) {
     },
   })
 
+  // Plano e empresas mudam juntos (tudo ou nada): nunca fica um plano novo com
+  // empresas presas no limite antigo.
+  const [atualizado, empresas] = propagar
+    ? await prisma.$transaction([salvarPlano, prisma.tenant.updateMany({ where: { plano: tipo }, data: mudancasLimite })])
+    : [await salvarPlano, { count: 0 }]
+  const empresasAtualizadas: number = empresas.count
+
   await registrarLog({
     categoria: LogCategoria.PLANO,
-    mensagem:  `Configuração do plano ${tipo} atualizada`,
-    detalhe:   { tipo, alteracoes: dados, adminId },
+    mensagem:  empresasAtualizadas > 0
+      ? `Configuração do plano ${tipo} atualizada — limites aplicados a ${empresasAtualizadas} empresa(s)`
+      : `Configuração do plano ${tipo} atualizada`,
+    detalhe:   { tipo, alteracoes: dados, limitesAplicados: mudancasLimite, empresasAtualizadas, adminId },
     ipAddress,
     userAgent,
   })
 
-  // NOTA: a mudança de PlanoConfig NÃO afeta automaticamente tenants existentes.
-  // Ela só vale para novas contratações. Para ajustar tenants existentes, use
-  // PATCH /api/admin/tenants/:id/plano individualmente.
-
-  return NextResponse.json(atualizado)
+  return NextResponse.json({ ...atualizado, empresasAtualizadas })
 }

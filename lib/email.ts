@@ -153,17 +153,21 @@ export async function enviarConviteUsuario({
 
 // ── 2. Boas-vindas nova empresa (admin) ──────────────────
 export async function enviarBoasVindasEmpresa({
-  email, nomeAdmin, nomeEmpresa, plano, token,
+  email, nomeAdmin, nomeEmpresa, plano, precoMensal, token,
 }: {
   email:       string
   nomeAdmin:   string
   nomeEmpresa: string
   plano:       string
+  precoMensal?: number // preço atual do plano escolhido (vem do PlanoConfig)
   token:       string
 }) {
   const link = `${APP_URL}/convite/${token}`
+  const precoPro = precoMensal != null && precoMensal > 0
+    ? `R$ ${precoMensal.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}/mês`
+    : null
   const planoL: Record<string,string> = {
-    STARTER:'Starter (Grátis)', PRO:'Pro (R$ 297/mês)', ENTERPRISE:'Enterprise',
+    STARTER:'Starter (Grátis)', PRO: precoPro ? `Pro (${precoPro})` : 'Pro', ENTERPRISE:'Enterprise',
   }
 
   const html = layout(`

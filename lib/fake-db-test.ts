@@ -17,6 +17,8 @@ export const ADMIN_SENHA = 'teste123'
 export const LEITOR_EMAIL = 'leitor@teste.com'   // nenhuma permissão marcada
 export const EMISSOR_EMAIL = 'emissor@teste.com' // só "emitir RDO"
 export const GERENTE_EMAIL = 'gerente@teste.com' // só "gerenciar equipe" (não é ADMIN)
+// Super-admin (painel /admin) e empresas do painel — usados pelo teste de planos
+export const SUPERADMIN_EMAIL = 'super@teste.com'
 export const PROJETO_ID = 'p1'
 export const PROJETO_NOME = 'Obra Teste E2E'
 // Projeto CONCLUÍDO com histórico de RDOs — usado pelo teste de download em massa
@@ -53,6 +55,33 @@ const LEITOR  = usuarioFake('leitor1', 'Leitor Sem Permissoes', LEITOR_EMAIL, 'P
 const EMISSOR = usuarioFake('emissor1', 'Emissor De RDO', EMISSOR_EMAIL, 'PERSONALIZADO', { permEmitirRdo: true })
 const GERENTE = usuarioFake('gerente1', 'Gerente De Equipe', GERENTE_EMAIL, 'PERSONALIZADO', { permGerenciarEquipe: true })
 const USUARIOS = [ADMIN, LEITOR, EMISSOR, GERENTE]
+
+const SUPERADMIN = {
+  id: 'sa1', nome: 'Super Admin Teste', email: SUPERADMIN_EMAIL,
+  senha: '$2a$10$/A37tU4hhXLUW8oVrW5Wu./Povna1X4mapHVqf4H/SFsMfAtl3/9e', // bcrypt de "teste123"
+}
+
+// Empresas que aparecem no painel do super-admin. Ficam separadas do tenant t1
+// (o das telas do app), então mexer nos limites delas não afeta os outros testes.
+const empresaAdmin = (id: string, nome: string, plano: string, lim: [number, number, number]) => ({
+  id, nome, plano, status: 'ATIVO', cnpj: null, criadoEm: AGORA, atualizadoEm: AGORA, dataVencimentoPlano: null,
+  limiteUsuarios: lim[0], limiteRdosMes: lim[1], limiteProjetos: lim[2],
+  _count: { usuarios: 1, projetos: 0, logs: 0 }, usuarios: [],
+})
+const TENANTS_ADMIN = [
+  empresaAdmin('ta', 'Empresa A (Starter)', 'STARTER', [3, 30, 2]),
+  empresaAdmin('tb', 'Empresa B (Starter)', 'STARTER', [3, 30, 2]),
+  empresaAdmin('tc', 'Empresa C (Pro)', 'PRO', [10, 100, 10]),
+]
+const planoBase = (tipo: string, preco: number, lim: [number, number, number]) => ({
+  id: `plano-${tipo}`, tipo, precoMensal: preco, limiteUsuarios: lim[0], limiteRdosMes: lim[1], limiteProjetos: lim[2],
+  temRelatorios: false, temExportPdf: true, temApi: false, temSuporteDedicado: false, descricao: null, tenantId: null,
+})
+const PLANOS: Record<string, any> = {
+  STARTER: planoBase('STARTER', 0, [3, 30, 2]),
+  PRO: planoBase('PRO', 297, [10, 100, 10]),
+  ENTERPRISE: planoBase('ENTERPRISE', 1485, [0, 0, 0]),
+}
 
 const PROJETO = {
   id: PROJETO_ID, tenantId: TENANT_ID, nome: PROJETO_NOME, descricao: 'Projeto fixo do banco falso de testes.',
@@ -113,12 +142,41 @@ function modelo(overrides: Record<string, (...a: any[]) => any>) {
 }
 
 const fakeDbBase = {
-  $transaction: async (fn: any) => fn(fakeDb),
+  $transaction: async (arg: any) => (Array.isArray(arg) ? Promise.all(arg) : arg(fakeDb)),
   $queryRaw: async () => [],
   $disconnect: async () => {},
 
   tenant: modelo({
     findUnique: async ({ where }: any) => (where.id === TENANT_ID ? TENANT : null),
+    findMany: async ({ where }: any) =>
+      TENANTS_ADMIN.filter(t => (!where?.plano || t.plano === where.plano) && (!where?.status || t.status === where.status)),
+    count: async ({ where }: any = {}) =>
+      TENANTS_ADMIN.filter(t => (!where?.plano || t.plano === where.plano) && (!where?.status || t.status === where.status)).length,
+    // atualização em massa: aplica `data` nas empresas do plano e devolve quantas mudaram
+    updateMany: async ({ where, data }: any) => {
+      const alvo = TENANTS_ADMIN.filter(t => !where?.plano || t.plano === where.plano)
+      for (const t of alvo) Object.assign(t, data)
+      return { count: alvo.length }
+    },
+    groupBy: async ({ where }: any) => {
+      const por: Record<string, number> = {}
+      for (const t of TENANTS_ADMIN) if (!where?.status || t.status === where.status) por[t.plano] = (por[t.plano] ?? 0) + 1
+      return Object.entries(por).map(([plano, _count]) => ({ plano, _count }))
+    },
+  }),
+
+  planoConfig: modelo({
+    findUnique: async ({ where }: any) => (where?.tipo ? PLANOS[where.tipo] ?? null : null),
+    findMany: async () => Object.values(PLANOS),
+    upsert: async ({ where, update, create }: any) => {
+      PLANOS[where.tipo] = PLANOS[where.tipo] ? Object.assign(PLANOS[where.tipo], update) : { ...planoBase(where.tipo, 0, [3, 30, 2]), ...create }
+      return PLANOS[where.tipo]
+    },
+  }),
+
+  superAdmin: modelo({
+    findUnique: async ({ where }: any) =>
+      [SUPERADMIN].find(a => (where.email != null && a.email === where.email) || (where.id != null && a.id === where.id)) ?? null,
   }),
 
   usuario: modelo({

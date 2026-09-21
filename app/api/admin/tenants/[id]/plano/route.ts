@@ -58,16 +58,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     },
   })
 
-  const precos: Record<PlanoTipo, number> = {
-    STARTER:    0,
-    PRO:        297,
-    ENTERPRISE: 1485,
-  }
+  // Preço atual do plano escolhido (vem da configuração, não é número fixo)
+  const preco = Number(planoConfig?.precoMensal ?? 0)
 
   await registrarLog({
     tenantId:  (await params).id,
     categoria: LogCategoria.PLANO,
-    mensagem:  `Plano alterado: ${planoAntigo} → ${body.plano} (R$ ${precos[body.plano]}/mês)`,
+    mensagem:  `Plano alterado: ${planoAntigo} → ${body.plano} (R$ ${preco}/mês)`,
     detalhe:   {
       planoAntigo,
       planoNovo:  body.plano,
@@ -92,7 +89,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     transicao: {
       de:    planoAntigo,
       para:  body.plano,
-      valor: precos[body.plano],
+      valor: preco,
     },
   })
 }

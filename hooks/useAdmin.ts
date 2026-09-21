@@ -257,7 +257,7 @@ export function useAtualizarPlano() {
       temExportPdf?:      boolean
       temApi?:            boolean
       temSuporteDedicado?: boolean
-    }) => api.patch('/api/admin/planos', body, true),
+    }) => api.patch<{ empresasAtualizadas: number }>('/api/admin/planos', body, true),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: AQK.planos })
       qc.invalidateQueries({ queryKey: AQK.dashboard })
