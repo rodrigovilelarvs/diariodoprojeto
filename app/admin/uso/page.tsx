@@ -22,12 +22,6 @@ function UsoContent() {
   const totalRdos     = empresas.reduce((s: number, e: Tenant) => s + (e.rdosMes ?? 0), 0)
   const totalProjetos = empresas.reduce((s: number, e: Tenant) => s + (e._count?.projetos ?? 0), 0)
 
-  const PLANO_LIMITES: Record<string, { usuarios: number; rdos: number; projetos: number }> = {
-    STARTER:    { usuarios:3,  rdos:30,  projetos:2  },
-    PRO:        { usuarios:10, rdos:0,   projetos:10 },
-    ENTERPRISE: { usuarios:0,  rdos:0,   projetos:0  },
-  }
-
   function barCor(pct: number) {
     if (pct >= 90) return '#E05C5C'
     if (pct >= 70) return '#E6A817'
@@ -90,7 +84,9 @@ function UsoContent() {
         ) : (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
             {empresas.map((e: Tenant) => {
-              const limites = PLANO_LIMITES[e.plano] ?? PLANO_LIMITES.STARTER
+              // Limite que vale de verdade pra esta empresa (o mesmo que o sistema aplica ao
+              // barrar novos usuários/projetos/RDOs) — não um número fixo por plano.
+              const limites = { usuarios: e.limiteUsuarios, rdos: e.limiteRdosMes, projetos: e.limiteProjetos }
               const usuarios  = e._count?.usuarios  ?? 0
               const projetos  = e._count?.projetos  ?? 0
               const rdosMes   = e.rdosMes ?? 0

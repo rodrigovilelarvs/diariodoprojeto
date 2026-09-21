@@ -1,5 +1,5 @@
-import { test, expect, type APIRequestContext, type PlaywrightWorkerArgs } from '@playwright/test'
-import { SUPERADMIN_EMAIL, ADMIN_SENHA } from '../../lib/fake-db-test'
+import { test, expect, type APIRequestContext } from '@playwright/test'
+import { apiAdmin } from './helpers'
 
 // Quando o super-admin altera um limite de um plano, as empresas que estão
 // nesse plano passam a ter o novo limite (antes, cada empresa guardava uma
@@ -13,16 +13,6 @@ import { SUPERADMIN_EMAIL, ADMIN_SENHA } from '../../lib/fake-db-test'
 
 const baseURL = 'http://localhost:3100'
 
-async function adminApi(playwright: PlaywrightWorkerArgs['playwright']): Promise<APIRequestContext> {
-  const login = await playwright.request.newContext({ baseURL })
-  const res = await login.post('/api/admin/auth/login', { data: { email: SUPERADMIN_EMAIL, senha: ADMIN_SENHA } })
-  expect(res.ok(), 'login do super-admin').toBeTruthy()
-  const { token } = await res.json()
-  await login.dispose()
-  // /api/admin exige o cookie admin_token (middleware) e o header Bearer (requireAdmin)
-  return playwright.request.newContext({ baseURL, extraHTTPHeaders: { Authorization: `Bearer ${token}`, Cookie: `admin_token=${token}` } })
-}
-
 type Empresa = { id: string; limiteUsuarios: number; limiteRdosMes: number; limiteProjetos: number }
 async function empresas(api: APIRequestContext) {
   const r = await (await api.get('/api/admin/tenants')).json()
@@ -34,7 +24,7 @@ test.describe.configure({ mode: 'serial' })
 
 test.describe('alterar um plano no super-admin', () => {
   let api: APIRequestContext
-  test.beforeAll(async ({ playwright }) => { api = await adminApi(playwright) })
+  test.beforeAll(async ({ playwright }) => { api = await apiAdmin(playwright) })
   test.afterAll(async () => { await api.dispose() })
 
   test('ponto de partida: limites das empresas iguais aos do plano; MRR = preço do plano Pro', async () => {
