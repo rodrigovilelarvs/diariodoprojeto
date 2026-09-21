@@ -1,5 +1,7 @@
 import http from 'node:http'
 import { test, expect } from '@playwright/test'
+import './email-env' // antes de lib/email: define o ambiente do Resend
+import * as email from '../../lib/email'
 
 // Todo texto que vem de fora (nome de pessoa, empresa, projeto, comentário,
 // motivo, link...) é escapado antes de entrar no HTML dos e-mails. Sem isso, um
@@ -10,10 +12,6 @@ import { test, expect } from '@playwright/test'
 // todos os campos e lê o e-mail que o Resend receberia (o SDK aponta pra um
 // receptor local via RESEND_BASE_URL). Se um template novo esquecer de escapar
 // algum campo, o teste falha.
-
-// Precisam estar definidos ANTES de importar lib/email (o cliente do Resend lê no carregamento)
-process.env.RESEND_API_KEY ??= 're_chave_de_teste'
-process.env.RESEND_BASE_URL = 'http://127.0.0.1:3199'
 
 const HOSTIL = `<img src=x onerror=alert(1)>"'&`
 const HOSTIL_ESCAPADO = '&lt;img src=x onerror=alert(1)&gt;&quot;&#39;&amp;'
@@ -41,7 +39,7 @@ const rdoBase = { numero: 7, projeto: HOSTIL, data: '2026-09-01', link: `https:/
 
 // Um chamador por template: todos os campos de texto recebem o texto hostil
 // (menos números e datas). Ao criar um template novo, acrescente-o aqui.
-const templates: Array<[string, (m: typeof import('../../lib/email')) => Promise<unknown>]> = [
+const templates: Array<[string, (m: typeof email) => Promise<unknown>]> = [
   ['convite de usuário', m => m.enviarConviteUsuario({ email: HOSTIL, nome: HOSTIL, nomeEmpresa: HOSTIL, perfil: HOSTIL, token: HOSTIL, expiradoEm: new Date() })],
   ['aviso de conta criada', m => m.enviarContaCriada({ email: HOSTIL, nome: HOSTIL, nomeEmpresa: HOSTIL, perfil: HOSTIL, origem: 'empresa' })],
   ['boas-vindas da empresa', m => m.enviarBoasVindasEmpresa({ email: HOSTIL, nomeAdmin: HOSTIL, nomeEmpresa: HOSTIL, plano: HOSTIL, token: HOSTIL })],
@@ -60,7 +58,6 @@ const templates: Array<[string, (m: typeof import('../../lib/email')) => Promise
 
 for (const [nome, enviar] of templates) {
   test(`e-mail "${nome}" escapa o texto hostil`, async () => {
-    const email = await import('../../lib/email')
     recebidos = []
     await enviar(email)
     expect(recebidos.length, 'o e-mail chegou ao receptor').toBeGreaterThan(0)
@@ -76,7 +73,6 @@ for (const [nome, enviar] of templates) {
 }
 
 test('o cabeçalho e o título do e-mail (layout) também escapam', async () => {
-  const email = await import('../../lib/email')
   recebidos = []
   // o título do convite é montado com o nome da empresa
   await email.enviarConviteUsuario({ email: 'a@b.c', nomeEmpresa: HOSTIL, perfil: 'ADMIN', token: 't', expiradoEm: new Date() })
