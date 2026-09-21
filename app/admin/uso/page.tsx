@@ -67,7 +67,7 @@ function UsoContent() {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
           {[
             { l:'Empresas ativas', v: empresas.filter((e: Tenant) => e.status==='ATIVO').length, cor:'#29B6D8' },
-            { l:'Usuários totais',  v: totalUsuarios, cor:'#E8EAF0' },
+            { l:'Usuários ativos',  v: totalUsuarios, cor:'#E8EAF0' },
             { l:'Projetos totais',  v: totalProjetos, cor:'#E8EAF0' },
             { l:'RDOs totais',      v: totalRdos,     cor:'#4CAF7D' },
           ].map(k => (

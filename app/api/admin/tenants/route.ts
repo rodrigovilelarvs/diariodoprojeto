@@ -43,7 +43,9 @@ export async function GET(req: NextRequest) {
     include: {
       _count: {
         select: {
-          usuarios: true,
+          // Só usuários ATIVOS: é a contagem que a trava de novos cadastros usa
+          // (app/api/app/usuarios). Inativos e convites pendentes não ocupam vaga.
+          usuarios: { where: { status: UsuarioStatus.ATIVO } },
           projetos: true,
           logs:     true,
         },

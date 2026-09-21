@@ -170,7 +170,7 @@ function EmpresasContent() {
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11.5 }}>
             <thead>
               <tr style={{ background:'#161B25' }}>
-                {['Empresa','Responsável','Plano','Usuários','Criada em','Status','Ações'].map(h => (
+                {['Empresa','Responsável','Plano','Usuários ativos','Criada em','Status','Ações'].map(h => (
                   <th key={h} style={{ padding:'8px 12px', textAlign:'left', fontSize:10, fontWeight:500, color:'#8B95A8', borderBottom:'.5px solid rgba(255,255,255,.07)' }}>{h}</th>
                 ))}
               </tr>

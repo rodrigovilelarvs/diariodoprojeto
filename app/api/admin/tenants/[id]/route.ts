@@ -43,7 +43,9 @@ export async function GET(req: NextRequest, { params }: Params) {
         select: { id: true, email: true, perfil: true, expiradoEm: true },
       },
       _count: {
-        select: { usuarios: true, projetos: true, logs: true },
+        // usuarios: só os ATIVOS (a contagem da trava de limite); a lista completa
+        // de usuários vem no include acima
+        select: { usuarios: { where: { status: UsuarioStatus.ATIVO } }, projetos: true, logs: true },
       },
     },
   })

@@ -63,16 +63,26 @@ const SUPERADMIN = {
 
 // Empresas que aparecem no painel do super-admin. Ficam separadas do tenant t1
 // (o das telas do app), então mexer nos limites delas não afeta os outros testes.
-const empresaAdmin = (id: string, nome: string, plano: string, lim: [number, number, number]) => ({
+// `pessoas` = todos os usuários da empresa, com o status de cada um (o _count
+// devolvido pelo findMany respeita o filtro de status pedido pela rota)
+const empresaAdmin = (id: string, nome: string, plano: string, lim: [number, number, number], pessoas: string[]) => ({
   id, nome, plano, status: 'ATIVO', cnpj: null, criadoEm: AGORA, atualizadoEm: AGORA, dataVencimentoPlano: null,
   limiteUsuarios: lim[0], limiteRdosMes: lim[1], limiteProjetos: lim[2],
-  _count: { usuarios: 1, projetos: 0, logs: 0 }, usuarios: [],
+  pessoas, usuarios: [],
 })
 const TENANTS_ADMIN = [
-  empresaAdmin('ta', 'Empresa A (Starter)', 'STARTER', [3, 30, 2]),
-  empresaAdmin('tb', 'Empresa B (Starter)', 'STARTER', [3, 30, 2]),
-  empresaAdmin('tc', 'Empresa C (Pro)', 'PRO', [10, 100, 10]),
+  // A: 3 ativos + 1 inativo → ocupa 3 vagas, não 4
+  empresaAdmin('ta', 'Empresa A (Starter)', 'STARTER', [3, 30, 2], ['ATIVO', 'ATIVO', 'ATIVO', 'INATIVO']),
+  // B: 1 ativo + 1 convite pendente → ocupa 1 vaga
+  empresaAdmin('tb', 'Empresa B (Starter)', 'STARTER', [3, 30, 2], ['ATIVO', 'CONVIDADO']),
+  empresaAdmin('tc', 'Empresa C (Pro)', 'PRO', [10, 100, 10], ['ATIVO']),
 ]
+// Forma que o Prisma devolve: _count com a contagem de usuários já filtrada
+const comContagem = (t: (typeof TENANTS_ADMIN)[number], include?: any) => {
+  const filtro = include?._count?.select?.usuarios?.where?.status
+  const usuarios = filtro ? t.pessoas.filter(p => p === filtro).length : t.pessoas.length
+  return { ...t, _count: { usuarios, projetos: 0, logs: 0 } }
+}
 const planoBase = (tipo: string, preco: number, lim: [number, number, number]) => ({
   id: `plano-${tipo}`, tipo, precoMensal: preco, limiteUsuarios: lim[0], limiteRdosMes: lim[1], limiteProjetos: lim[2],
   temRelatorios: false, temExportPdf: true, temApi: false, temSuporteDedicado: false, descricao: null, tenantId: null,
@@ -148,8 +158,10 @@ const fakeDbBase = {
 
   tenant: modelo({
     findUnique: async ({ where }: any) => (where.id === TENANT_ID ? TENANT : null),
-    findMany: async ({ where }: any) =>
-      TENANTS_ADMIN.filter(t => (!where?.plano || t.plano === where.plano) && (!where?.status || t.status === where.status)),
+    findMany: async ({ where, include }: any) =>
+      TENANTS_ADMIN
+        .filter(t => (!where?.plano || t.plano === where.plano) && (!where?.status || t.status === where.status))
+        .map(t => comContagem(t, include)),
     count: async ({ where }: any = {}) =>
       TENANTS_ADMIN.filter(t => (!where?.plano || t.plano === where.plano) && (!where?.status || t.status === where.status)).length,
     // atualização em massa: aplica `data` nas empresas do plano e devolve quantas mudaram
