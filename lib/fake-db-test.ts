@@ -325,14 +325,51 @@ const fakeDbBase = {
     create: async ({ data }: any) => ({ id: 'midia-nova', ...data }),
   }),
 
+  // Mão de obra / equipamento / atividade de um RDO — o POST de criação (ver
+  // app/api/app/rdos/route.ts) grava aqui a cópia do RDO anterior. Sem isso,
+  // o teste de regressão da cópia não teria como enxergar o resultado (a
+  // resposta do POST vem do rdo.findUnique logo em seguida, que devolve o
+  // registro salvo em rdosCriados/rdosConcluido).
+  maoDeObra: modelo({
+    create: async ({ data }: any) => {
+      const rdo = rdosCriados.get(data.rdoId) ?? rdosConcluido.get(data.rdoId)
+      const item = { id: `mo-fake-${Math.random().toString(36).slice(2, 8)}`, ...data }
+      if (rdo) rdo.maoDeObra.push(item)
+      return item
+    },
+  }),
+  equipamentoUso: modelo({
+    create: async ({ data }: any) => {
+      const rdo = rdosCriados.get(data.rdoId) ?? rdosConcluido.get(data.rdoId)
+      const item = { id: `eq-fake-${Math.random().toString(36).slice(2, 8)}`, ...data }
+      if (rdo) rdo.equipamentos.push(item)
+      return item
+    },
+  }),
+  registroRdoAtividade: modelo({
+    create: async ({ data }: any) => {
+      const rdo = rdosCriados.get(data.rdoId) ?? rdosConcluido.get(data.rdoId)
+      const item = { id: `ra-fake-${Math.random().toString(36).slice(2, 8)}`, atividade: null, ...data }
+      if (rdo) rdo.atividadeRegistros.push(item)
+      return item
+    },
+  }),
+
   rdo: modelo({
     findFirst: async ({ where, orderBy }: any) => {
       // GET /api/app/rdos/[id] — resposta completa de um RDO já criado
       if (where?.id && rdosCriados.has(where.id)) return rdosCriados.get(where.id)
       if (where?.id && rdosConcluido.has(where.id)) return rdosConcluido.get(where.id)
-      // "próximo número" (orderBy numero desc) e "RDO anterior pra copiar" —
-      // sem histórico no banco falso, sempre "nenhum anterior"
-      void orderBy
+      // "próximo número" e "RDO anterior pra copiar" (POST /api/app/rdos) —
+      // ambos buscam sem id: { where: { projetoId }, orderBy: { numero: 'desc' } }.
+      // O mais recente do projeto, qualquer status (ver o bug real corrigido
+      // em app/api/app/rdos/route.ts: não filtra mais por status aqui).
+      if (where?.projetoId) {
+        let todos = [...rdosCriados.values(), ...rdosConcluido.values()].filter((r) => r.projetoId === where.projetoId)
+        if (where.status?.in) todos = todos.filter((r) => where.status.in.includes(r.status))
+        if (orderBy?.numero === 'desc') todos.sort((a, b) => b.numero - a.numero)
+        return todos[0] ?? null
+      }
       return null
     },
     findMany: async ({ where, take }: any) => {
@@ -403,6 +440,22 @@ for (const r of [
   montarRdo({ id: 'rg1', numero: 1, projeto: PROJETO_GRANDE, dataRdo: new Date('2026-08-20'), status: 'APROVADO',
     midias: [1, 2, 3, 4, 5, 6, 7].map(n => midia(`mg${n}`, 'rg1', 'FOTO', `f${n}.png`)) }),
 ]) rdosConcluido.set(r.id, r)
+
+// RDO anterior do projeto p1, com horários/mão de obra/equipamento/atividade
+// avulsa preenchidos, em RASCUNHO (o cenário do bug real: o último RDO do
+// projeto ainda não tinha sido enviado pra aprovação, e a cópia não achava
+// nada). Número bem alto pra continuar sendo "o mais recente" (orderBy numero
+// desc) mesmo depois de outros testes criarem RDOs novos em p1 durante a suíte.
+export const RDO_ANTERIOR_ID = 'rdo-anterior-fixture'
+const rdoAnteriorFixture = {
+  ...montarRdo({ id: RDO_ANTERIOR_ID, numero: 900, projeto: PROJETO, dataRdo: new Date('2026-09-01'), status: 'RASCUNHO' }),
+  horaInicio: '07:00', horaTermino: '17:00', intervaloHoras: 1, totalHoras: 9,
+  maoDeObra: [{ id: 'mo-fixture', funcaoNome: 'Pedreiro', categoria: 'DIRETA', quantidade: 3, horaEntrada: '07:00', horaSaida: '17:00', totalHH: 27 }],
+  equipamentos: [{ id: 'eq-fixture', equipamentoNome: 'Betoneira', quantidade: 1, observacao: null }],
+  // avulsa (sem atividadeId/etapa da EAP) — não depende do fixture de atividades
+  atividadeRegistros: [{ id: 'ra-fixture', atividadeId: null, pctAnterior: 20, pctAtual: 40, deltaHoje: 20, avulsa: true, avulsaEtapa: '1.0', avulsaNome: 'Serviço avulso', atividade: null }],
+}
+rdosCriados.set(RDO_ANTERIOR_ID, rdoAnteriorFixture)
 
 const fakeDbFull = {
   ...fakeDbBase,

@@ -198,10 +198,14 @@ export async function POST(req: NextRequest) {
   })
   const numero = (ultimo?.numero ?? 0) + 1
 
-  // Busca RDO anterior para cópia
+  // Busca RDO anterior para cópia — o mais recente do projeto, qualquer que
+  // seja o status. Bug real: antes só considerava APROVADO/PENDENTE_APROVACAO,
+  // então se o último RDO ainda estivesse em RASCUNHO (o caso mais comum —
+  // o de ontem sem ter sido enviado pra aprovação) ou REJEITADO, a busca não
+  // achava nada e a cópia ficava sempre vazia, mesmo com a opção marcada.
   const rdoAnterior: RdoAnterior | null = copiarAnterior
     ? await prisma.rdo.findFirst({
-        where:   { projetoId, status: { in: ['APROVADO', 'PENDENTE_APROVACAO'] } },
+        where:   { projetoId },
         orderBy: { numero: 'desc' },
         include: {
           atividadeRegistros: {
