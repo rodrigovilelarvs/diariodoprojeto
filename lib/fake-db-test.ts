@@ -450,7 +450,11 @@ export const RDO_ANTERIOR_ID = 'rdo-anterior-fixture'
 const rdoAnteriorFixture = {
   ...montarRdo({ id: RDO_ANTERIOR_ID, numero: 900, projeto: PROJETO, dataRdo: new Date('2026-09-01'), status: 'RASCUNHO' }),
   horaInicio: '07:00', horaTermino: '17:00', intervaloHoras: 1, totalHoras: 9,
-  maoDeObra: [{ id: 'mo-fixture', funcaoNome: 'Pedreiro', categoria: 'DIRETA', quantidade: 3, horaEntrada: '07:00', horaSaida: '17:00', totalHH: 27 }],
+  // categoria INDIRETA de propósito: é o valor que o bug real trocava por
+  // DIRETA ao copiar (o schema tem @default(DIRETA) na coluna, e o create da
+  // cópia esquecia de mandar o campo) — DIRETA já era o padrão do banco, não
+  // pegaria essa regressão.
+  maoDeObra: [{ id: 'mo-fixture', funcaoNome: 'Mestre de obras', categoria: 'INDIRETA', quantidade: 3, horaEntrada: '07:00', horaSaida: '17:00', totalHH: 27 }],
   equipamentos: [{ id: 'eq-fixture', equipamentoNome: 'Betoneira', quantidade: 1, observacao: null }],
   // avulsa (sem atividadeId/etapa da EAP) — não depende do fixture de atividades
   atividadeRegistros: [{ id: 'ra-fixture', atividadeId: null, pctAnterior: 20, pctAtual: 40, deltaHoje: 20, avulsa: true, avulsaEtapa: '1.0', avulsaNome: 'Serviço avulso', atividade: null }],

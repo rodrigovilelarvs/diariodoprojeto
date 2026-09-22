@@ -2,7 +2,7 @@
 // GET  /api/app/rdos  — listar RDOs do tenant
 // POST /api/app/rdos  — criar novo RDO
 
-import { AtividadeStatus, LogCategoria, LogNivel, RdoStatus } from '@/lib/prisma-enums'
+import { AtividadeStatus, LogCategoria, LogNivel, MaoDeObraCategoria, RdoStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -20,7 +20,7 @@ type RdoAnterior = {
     atividade: { status: string } | null
   }>
   maoDeObra: Array<{
-    funcaoCadastroId: string | null; funcaoNome: string
+    funcaoCadastroId: string | null; funcaoNome: string; categoria: MaoDeObraCategoria
     quantidade: number; horaEntrada: string; horaSaida: string; totalHH: number
   }>
   equipamentos: Array<{
@@ -259,13 +259,17 @@ export async function POST(req: NextRequest) {
         })
       }
 
-      // Copia mão de obra
+      // Copia mão de obra — bug real: faltava `categoria` aqui, então toda
+      // linha copiada (direta, indireta ou terceirizada) virava DIRETA no RDO
+      // novo, porque a coluna tem @default(DIRETA) no schema e um create sem
+      // o campo aplica o padrão em silêncio, sem erro nenhum.
       for (const mo of rdoAnterior.maoDeObra) {
         await tx.maoDeObra.create({
           data: {
             rdoId:               novoRdo.id,
             funcaoCadastroId:    mo.funcaoCadastroId ?? undefined,
             funcaoNome:          mo.funcaoNome,
+            categoria:           mo.categoria,
             quantidade:          mo.quantidade,
             horaEntrada:         mo.horaEntrada,
             horaSaida:           mo.horaSaida,

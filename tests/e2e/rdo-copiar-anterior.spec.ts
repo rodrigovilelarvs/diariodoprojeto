@@ -9,10 +9,16 @@ import { PROJETO_ID } from '../../lib/fake-db-test'
 // aprovação), então a cópia falhava silenciosamente na maioria das vezes.
 // Ver app/api/app/rdos/route.ts.
 //
+// Segundo bug real, achado ao investigar uma mão de obra INDIRETA que "sumia"
+// nos RDOs copiados: o `tx.maoDeObra.create` da cópia não mandava a coluna
+// `categoria` — como ela tem @default(DIRETA) no schema, o Postgres aplicava
+// o padrão em silêncio, e toda mão de obra copiada virava DIRETA, não importa
+// o que era no RDO original.
+//
 // O banco falso (lib/fake-db-test.ts) tem um RDO fixo em RASCUNHO no projeto
 // p1 (RDO_ANTERIOR_ID, número bem alto pra continuar sendo "o mais recente"
-// mesmo com outros RDOs criados durante a suíte), com horários, 1 mão de obra,
-// 1 equipamento e 1 atividade avulsa preenchidos.
+// mesmo com outros RDOs criados durante a suíte), com horários, 1 mão de obra
+// INDIRETA, 1 equipamento e 1 atividade avulsa preenchidos.
 
 test('copiarAnterior=true copia horários, mão de obra, equipamento e atividade do RDO em RASCUNHO', async ({ playwright }) => {
   const api = await apiComo(playwright)
@@ -23,8 +29,11 @@ test('copiarAnterior=true copia horários, mão de obra, equipamento e atividade
 
   expect([rdo.horaInicio, rdo.horaTermino, rdo.intervaloHoras, rdo.totalHoras]).toEqual(['07:00', '17:00', 1, 9])
 
+  // categoria é o segundo bug real encontrado: a cópia esquecia esse campo, e
+  // a coluna tem @default(DIRETA) no schema — toda mão de obra copiada (direta,
+  // indireta ou terceirizada) virava DIRETA em silêncio, sem erro nenhum.
   expect(rdo.maoDeObra).toHaveLength(1)
-  expect(rdo.maoDeObra[0]).toMatchObject({ funcaoNome: 'Pedreiro', quantidade: 3, totalHH: 27 })
+  expect(rdo.maoDeObra[0]).toMatchObject({ funcaoNome: 'Mestre de obras', categoria: 'INDIRETA', quantidade: 3, totalHH: 27 })
 
   expect(rdo.equipamentos).toHaveLength(1)
   expect(rdo.equipamentos[0]).toMatchObject({ equipamentoNome: 'Betoneira', quantidade: 1 })
