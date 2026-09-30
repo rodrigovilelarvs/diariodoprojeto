@@ -134,7 +134,7 @@ export default function ProjetoAcessoPage() {
                   <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '.5px solid var(--b)', borderRadius: 'var(--r)', background: 'var(--s1)' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.usuario.nome}</div>
-                      <div style={{ fontSize: 10, color: 'var(--tm)' }}>{a.usuario.email}</div>
+                      <div style={{ fontSize: 10, color: 'var(--tm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.usuario.email}</div>
                     </div>
                     <Select value={a.nivel} style={{ width: 190 }}
                       onChange={e => handleAlterarNivel(a.usuarioId, e.target.value as ProjetoAcessoNivel)}>

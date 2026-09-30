@@ -645,12 +645,12 @@ export default function UsuariosPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {convites.map(c => (
-                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--s1)', borderRadius: 'var(--r)', border: '.5px solid var(--b)' }}>
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--s1)', borderRadius: 'var(--r)', border: '.5px solid var(--b)', flexWrap: 'wrap' }}>
                     <div className="av" style={{ width: 28, height: 28, fontSize: 10, background: 'var(--s2)', color: 'var(--tm)' }}>
                       {c.email.slice(0, 2).toUpperCase()}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500 }}>{c.email}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.email}>{c.email}</div>
                       <div style={{ fontSize: 10, color: 'var(--ts)' }}>
                         {PERFIL_L[c.perfil]} · Expira {new Date(c.expiradoEm).toLocaleDateString('pt-BR')}
                       </div>
