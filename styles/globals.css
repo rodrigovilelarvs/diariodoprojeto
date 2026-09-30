@@ -547,4 +547,10 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
   .admin-tw-auditoria table { font-size: 10.5px !important; }
   .admin-tw-auditoria th:nth-child(2), .admin-tw-auditoria td:nth-child(2),
   .admin-tw-auditoria th:nth-child(4), .admin-tw-auditoria td:nth-child(4) { display: none; }
+
+  /* Relatórios: grid de 2 colunas sem classe nenhuma (só inline style) —
+     cortava a rosca de Status dos RDOs pela metade, espremida numa coluna
+     de ~170px. Cada card já tem largura própria mínima (rosca+legenda,
+     funil de 200px de SVG etc.), então em 1 coluna cheia eles cabem certo. */
+  .rel-grid { grid-template-columns: 1fr !important; }
 }

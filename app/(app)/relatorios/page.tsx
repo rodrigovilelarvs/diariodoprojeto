@@ -296,7 +296,7 @@ export default function RelatoriosPage() {
         </div>
 
         {isLoading ? <Skeleton h={400} /> : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div className="rel-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
 
             {/* H/H por categoria (direta/indireta/terceirizada) */}
             <div className="sec" style={{ marginBottom: 0 }}>

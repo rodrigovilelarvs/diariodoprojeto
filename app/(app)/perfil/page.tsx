@@ -229,10 +229,10 @@ export default function PerfilPage() {
                   {pedirSenhaId === emp.tenantId && (
                     <form
                       onSubmit={e => { e.preventDefault(); trocarEmpresa(emp.tenantId, senhaTroca) }}
-                      style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '0 12px 6px' }}
+                      style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '0 12px 6px', flexWrap: 'wrap' }}
                     >
-                      <span style={{ fontSize: 11, color: 'var(--ts)', flexShrink: 0 }}>A senha desta empresa é diferente. Digite-a:</span>
-                      <Input type="password" value={senhaTroca} onChange={e => setSenhaTroca(e.target.value)} autoComplete="current-password" />
+                      <span style={{ fontSize: 11, color: 'var(--ts)' }}>A senha desta empresa é diferente. Digite-a:</span>
+                      <Input type="password" value={senhaTroca} onChange={e => setSenhaTroca(e.target.value)} autoComplete="current-password" style={{ flex: 1, minWidth: 140 }} />
                       <button className="btn btn-p btn-sm" type="submit" disabled={!senhaTroca || trocandoId === emp.tenantId}>Confirmar</button>
                     </form>
                   )}
