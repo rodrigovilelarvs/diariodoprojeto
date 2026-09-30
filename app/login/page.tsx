@@ -45,7 +45,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-wrap" style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#0F1117', fontFamily:'system-ui,-apple-system,sans-serif' }}>
+    <div className="login-wrap" style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100dvh', background:'#0F1117', fontFamily:'system-ui,-apple-system,sans-serif' }}>
       <div className="login-card" style={{ display:'flex', width:800, height:520, borderRadius:16, overflow:'hidden', border:'.5px solid rgba(255,255,255,.14)' }}>
         {/* Painel esquerdo */}
         <div className="login-left" style={{ width:'44%', background:'#131B2A', display:'flex', flexDirection:'column', justifyContent:'space-between', padding:'28px 26px', position:'relative', overflow:'hidden' }}>

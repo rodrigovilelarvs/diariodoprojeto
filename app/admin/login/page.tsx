@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      height: '100vh', background: '#090C12',
+      height: '100dvh', background: '#090C12',
       fontFamily: 'system-ui, -apple-system, sans-serif',
     }}>
       <div style={{

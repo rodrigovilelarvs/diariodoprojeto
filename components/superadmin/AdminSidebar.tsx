@@ -40,7 +40,7 @@ export function AdminSidebar() {
       <input type="checkbox" id="admin-sb-toggle" className="admin-sb-toggle-input" />
       <label htmlFor="admin-sb-toggle" className="admin-sb-hamburger" aria-label="Abrir menu">☰</label>
       <label htmlFor="admin-sb-toggle" className="admin-sb-overlay" aria-hidden="true" />
-      <div className="admin-sb" style={{ width:200, background:'#0F1520', borderRight:'.5px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', flexShrink:0, height:'100vh' }}>
+      <div className="admin-sb" style={{ width:200, background:'#0F1520', borderRight:'.5px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', flexShrink:0, height:'100dvh' }}>
       <div style={{ padding:'14px', borderBottom:'.5px solid rgba(255,255,255,.07)' }}>
         <div style={{ fontSize:10, fontWeight:700, color:'#F59E0B', letterSpacing:'.08em' }}>DIÁRIO DO PROJETO</div>
         <div style={{ fontSize:9, color:'#4A5568', marginTop:2 }}>Painel do Proprietário</div>

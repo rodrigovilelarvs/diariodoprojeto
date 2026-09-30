@@ -107,7 +107,7 @@ function EmpresasContent() {
   ]
 
   return (
-    <div style={{ display:'flex', height:'100vh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
+    <div style={{ display:'flex', height:'100dvh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
       {/* Sidebar — mesma gaveta off-canvas no celular que AdminSidebar.tsx usa
           (esta tela duplica o menu em vez de reaproveitar o componente) */}
       <input type="checkbox" id="admin-sb-toggle" className="admin-sb-toggle-input" />

@@ -26,7 +26,7 @@ function AuditoriaContent() {
   const total = data?.total ?? 0
 
   return (
-    <div style={{ display:'flex', height:'100vh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
+    <div style={{ display:'flex', height:'100dvh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
       <AdminSidebar />
       <div style={{ flex:1, overflow:'auto', padding:16 }}>
         <div style={{ marginBottom:16 }}>

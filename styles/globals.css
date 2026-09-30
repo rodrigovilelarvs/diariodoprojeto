@@ -75,12 +75,19 @@ html, body {
   font-family: system-ui, -apple-system, sans-serif;
   background: var(--s0);
   color: var(--tp);
+  /* 100vh é a MAIOR altura possível (barra do navegador recolhida) — no
+     celular, com a barra visível (estado inicial normal), o conteúdo real
+     ficava mais baixo que isso, e como overflow é hidden aqui, esse pedaço
+     de baixo ficava inacessível (cortado, sem rolagem que alcançasse).
+     100dvh acompanha a altura visível de verdade; navegador sem suporte
+     (raro hoje) ignora a linha e fica só com o 100vh de cima. */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
 /* ── Shell ──────────────────────────────────────────────────── */
-.shell { display: flex; height: 100vh; overflow: hidden; }
+.shell { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
 
 /* ── Sidebar ────────────────────────────────────────────────── */
 .sb       { width: 192px; flex-shrink: 0; background: var(--s1); border-right: .5px solid var(--b); display: flex; flex-direction: column; }
@@ -374,7 +381,7 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
   .sb-hamburger:hover { background: var(--s2); }
 
   .sb {
-    position: fixed; top: 0; left: 0; height: 100vh; z-index: 60;
+    position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; z-index: 60;
     transform: translateX(-100%);
     transition: transform .22s ease;
     box-shadow: 4px 0 24px rgba(0,0,0,.35);

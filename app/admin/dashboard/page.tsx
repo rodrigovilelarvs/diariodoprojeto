@@ -18,7 +18,7 @@ function DashboardContent() {
   const k = data?.kpis
 
   return (
-    <div style={{ display:'flex', height:'100vh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
+    <div style={{ display:'flex', height:'100dvh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
       <AdminSidebar />
 
       {/* Conteúdo */}

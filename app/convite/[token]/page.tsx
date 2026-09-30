@@ -71,7 +71,7 @@ export default function ConvitePage() {
   }
 
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#0F1117', fontFamily:'system-ui,-apple-system,sans-serif' }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100dvh', background:'#0F1117', fontFamily:'system-ui,-apple-system,sans-serif' }}>
       <div style={{ width:380, background:'#1C2333', border:'.5px solid rgba(255,255,255,.1)', borderRadius:14, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,.7)' }}>
         <div style={{ background:'#151D2B', padding:'22px 26px', borderBottom:'.5px solid rgba(255,255,255,.07)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
