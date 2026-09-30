@@ -1141,7 +1141,7 @@ export function FormularioRdo({ rdoId }: Props) {
                     </div>
                     <div className="rdo-pct-col" style={{ flex:1, minWidth:120 }}>
                       <div className="pt-bg">
-                        <div className="pt-f" style={{ width:`${pct}%`, background: cor }} />
+                        <div className="pt-f" style={{ width:`${Math.min(100, Math.max(0, pct))}%`, background: cor }} />
                       </div>
                       <input type="range" className="pct-range" style={{ marginBottom:0 }}
                         min={reg.pctAnterior} max={100} value={pct}
@@ -1173,10 +1173,20 @@ export function FormularioRdo({ rdoId }: Props) {
                             }}>
                             <i className="ti ti-minus" />
                           </button>
+                          {/* Clicar e digitar por cima também precisa funcionar (não só as
+                              setas): onFocus seleciona o valor atual pra digitar já substitui
+                              em vez de inserir no meio ("40" virando "405" ao digitar "5"), e o
+                              limite (não pode ficar abaixo do % anterior nem passar de 100) só é
+                              aplicado ao sair do campo — aplicar a cada tecla digitada trava o
+                              meio da digitação (ex.: querendo 55 a partir de 40, o primeiro "5"
+                              já seria descartado por ser menor que 40). */}
                           <input type="number" className="fi" min={reg.pctAnterior} max={100} value={pct}
                             disabled={!podeSalvar}
                             style={{ width:44, textAlign:'center', fontSize:13, fontWeight:500 }}
-                            onChange={e => setPct(ri, Math.max(reg.pctAnterior, Math.min(100, Number(e.target.value))))} />
+                            onFocus={e => e.target.select()}
+                            onChange={e => setPct(ri, e.target.value === '' ? 0 : Number(e.target.value))}
+                            onBlur={e => setPct(ri, Math.max(reg.pctAnterior, Math.min(100, Number(e.target.value) || reg.pctAnterior)))}
+                            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }} />
                           <button type="button" title="Aumentar 1%"
                             disabled={!podeSalvar || pct >= 100}
                             onClick={() => setPct(ri, Math.min(100, pct + 1))}
