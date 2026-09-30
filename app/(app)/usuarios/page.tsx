@@ -508,7 +508,7 @@ export default function UsuariosPage() {
 
         {/* ABA USUÁRIOS */}
         {aba === 'usuarios' && (
-          <div className="tw">
+          <div className="tw tw-usuarios">
             <table className="tbl">
               <thead><tr><th>Usuário</th><th>Perfil</th><th style={{ textAlign: 'center' }}>Projetos</th><th>Último acesso</th><th>Status</th><th style={{ width: 80 }}></th></tr></thead>
               <tbody>

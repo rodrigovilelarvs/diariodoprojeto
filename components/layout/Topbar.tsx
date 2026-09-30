@@ -22,7 +22,10 @@ export function Topbar({ titulo, subtitulo, acoes }: Props) {
         </div>
       </div>
       {acoes && (
-        <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+        // flexWrap sempre ligado: no desktop nunca precisa (os botões cabem
+        // numa linha só), mas no celular evita que o grupo de ações de
+        // páginas com vários botões saia cortado fora da tela.
+        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap', rowGap: 6 }}>
           {acoes}
         </div>
       )}

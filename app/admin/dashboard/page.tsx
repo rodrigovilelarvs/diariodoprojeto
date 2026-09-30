@@ -33,7 +33,7 @@ function DashboardContent() {
         ) : (
           <>
             {/* KPIs */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:9, marginBottom:16 }}>
+            <div className="admin-kgrid" style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:9, marginBottom:16 }}>
               {[
                 { label:'Empresas ativas',  valor: k?.empresas.ativas ?? 0,      cor:'#29B6D8' },
                 { label:'Usuários totais',  valor: k?.usuarios.total ?? 0,       cor:'#E8EAF0' },
@@ -49,7 +49,7 @@ function DashboardContent() {
             </div>
 
             {/* Receita por plano */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            <div className="admin-2col" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
               <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.08)', borderRadius:12, overflow:'hidden' }}>
                 <div style={{ padding:'9px 14px', borderBottom:'.5px solid rgba(255,255,255,.07)', background:'#161B25', fontSize:12, fontWeight:500 }}>Receita por plano</div>
                 <div style={{ padding:'13px 14px' }}>

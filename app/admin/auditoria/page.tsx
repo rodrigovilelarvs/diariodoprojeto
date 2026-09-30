@@ -35,7 +35,7 @@ function AuditoriaContent() {
         </div>
 
         {/* Stats */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
+        <div className="admin-kgrid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
           {[
             { l:'Total',    v: total,           cor:'#29B6D8' },
             { l:'Avisos',   v: data?.kpis?.porNivel?.AVISO ?? 0,   cor:'#E6A817' },
@@ -76,7 +76,7 @@ function AuditoriaContent() {
         </div>
 
         {/* Tabela */}
-        <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.08)', borderRadius:12, overflow:'hidden' }}>
+        <div className="admin-tw-auditoria" style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.08)', borderRadius:12, overflow:'hidden' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11.5 }}>
             <thead>
               <tr style={{ background:'#161B25' }}>

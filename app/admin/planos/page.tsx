@@ -87,7 +87,7 @@ function PlanosContent() {
 
         {/* Distribuição */}
         {distribuicao.length > 0 && (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:9, marginBottom:16 }}>
+          <div className="admin-dist-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:9, marginBottom:16 }}>
             {distribuicao.map((d) => (
               <div key={d.plano} style={{ background:'#1C2333', border:`.5px solid ${PLANO_COR[d.plano]}30`, borderRadius:12, padding:'11px 13px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
@@ -107,7 +107,7 @@ function PlanosContent() {
         {isLoading ? (
           <div style={{ color:'#8B95A8', fontSize:12, padding:32, textAlign:'center' }}>Carregando...</div>
         ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
+          <div className="admin-plans-grid" style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
             {planos.map((plano) => {
               const cor  = PLANO_COR[plano.tipo]
               const isEd = editando === plano.tipo

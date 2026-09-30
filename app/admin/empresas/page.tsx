@@ -108,8 +108,12 @@ function EmpresasContent() {
 
   return (
     <div style={{ display:'flex', height:'100vh', background:'#090C12', fontFamily:'system-ui,-apple-system,sans-serif' }}>
-      {/* Sidebar */}
-      <div style={{ width:200, background:'#0F1520', borderRight:'.5px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', flexShrink:0 }}>
+      {/* Sidebar — mesma gaveta off-canvas no celular que AdminSidebar.tsx usa
+          (esta tela duplica o menu em vez de reaproveitar o componente) */}
+      <input type="checkbox" id="admin-sb-toggle" className="admin-sb-toggle-input" />
+      <label htmlFor="admin-sb-toggle" className="admin-sb-hamburger" aria-label="Abrir menu">☰</label>
+      <label htmlFor="admin-sb-toggle" className="admin-sb-overlay" aria-hidden="true" />
+      <div className="admin-sb" style={{ width:200, background:'#0F1520', borderRight:'.5px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', flexShrink:0 }}>
         <div style={{ padding:'14px', borderBottom:'.5px solid rgba(255,255,255,.07)' }}>
           <div style={{ fontSize:10, fontWeight:700, color:'#F59E0B', letterSpacing:'.08em' }}>DIÁRIO DO PROJETO</div>
           <div style={{ fontSize:9, color:'#4A5568', marginTop:2 }}>Painel do Proprietário</div>
@@ -151,7 +155,7 @@ function EmpresasContent() {
         {ok && <div style={{ background:'rgba(76,175,125,.1)', border:'.5px solid rgba(76,175,125,.3)', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#4CAF7D', marginBottom:12 }}>{ok}</div>}
 
         {/* KPIs */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
+        <div className="admin-kgrid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
           {[
             { l:'Total',      v: r?.total      ?? 0, cor:'#29B6D8' },
             { l:'Ativas',     v: r?.ativos     ?? 0, cor:'#4CAF7D' },
@@ -166,7 +170,7 @@ function EmpresasContent() {
         </div>
 
         {/* Tabela */}
-        <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.08)', borderRadius:12, overflow:'hidden' }}>
+        <div className="admin-tw-empresas" style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.08)', borderRadius:12, overflow:'hidden' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11.5 }}>
             <thead>
               <tr style={{ background:'#161B25' }}>
@@ -235,7 +239,7 @@ function EmpresasContent() {
       {modal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
           onClick={e => e.target === e.currentTarget && setModal(false)}>
-          <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.14)', borderRadius:14, width:540, maxHeight:'90vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.14)', borderRadius:14, width:540, maxWidth:'calc(100vw - 32px)', maxHeight:'90vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <div style={{ padding:'14px 18px', borderBottom:'.5px solid rgba(255,255,255,.07)', background:'#161B25', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <span style={{ fontSize:13, fontWeight:500, color:'#29B6D8' }}>🏢 Cadastrar nova empresa</span>
               <button onClick={() => setModal(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#4A5568', fontSize:18 }}>✕</button>
@@ -331,7 +335,7 @@ function EmpresasContent() {
       {editando && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
           onClick={e => e.target === e.currentTarget && setEditando(null)}>
-          <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.14)', borderRadius:14, width:440, maxHeight:'90vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ background:'#1C2333', border:'.5px solid rgba(255,255,255,.14)', borderRadius:14, width:440, maxWidth:'calc(100vw - 32px)', maxHeight:'90vh', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <div style={{ padding:'14px 18px', borderBottom:'.5px solid rgba(255,255,255,.07)', background:'#161B25', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
               <span style={{ fontSize:13, fontWeight:500, color:'#29B6D8' }}>✏ Editar empresa</span>
               <button onClick={() => setEditando(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'#4A5568', fontSize:18 }}>✕</button>

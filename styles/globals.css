@@ -360,6 +360,9 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
 .sb-toggle-input { display: none; }
 .sb-hamburger    { display: none; }
 .sb-overlay      { display: none; }
+.admin-sb-toggle-input { display: none; }
+.admin-sb-hamburger    { display: none; }
+.admin-sb-overlay      { display: none; }
 
 @media (max-width: 860px) {
   .sb-hamburger {
@@ -386,6 +389,40 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
 
   .main   { width: 100%; min-width: 0; }
   .topbar { flex-wrap: wrap; row-gap: 6px; }
+
+  /* Painel do super-admin (dono da plataforma): tem seu próprio menu fixo de
+     200px, sem topbar/hamburger — cada página monta layout inline (ver
+     AdminSidebar.tsx e o próprio app/admin/empresas/page.tsx, que duplica o
+     menu em vez de usar o componente). No celular esse menu sozinho tomava
+     mais da metade da tela — mesmo truque de gaveta off-canvas do app. */
+  .admin-sb-hamburger {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; top: 10px; left: 10px; z-index: 70;
+    width: 34px; height: 34px; border-radius: var(--r); flex-shrink: 0;
+    border: .5px solid rgba(255,255,255,.14); background: #0F1520; color: #E8EAF0;
+    cursor: pointer; font-size: 16px;
+  }
+  .admin-sb {
+    position: fixed; top: 0; left: 0; z-index: 60;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,.35);
+  }
+  .admin-sb-toggle-input:checked ~ .admin-sb { transform: translateX(0); }
+  /* O botão ☰ é fixed e fica por cima (z-70) pra abrir a gaveta — mas com
+     ela aberta ele sobrepõe o cabeçalho "DIÁRIO DO PROJETO" do próprio
+     menu, que começa no mesmo canto. Some enquanto a gaveta está aberta;
+     o overlay escuro já fecha ao tocar fora. */
+  .admin-sb-toggle-input:checked ~ .admin-sb-hamburger { display: none; }
+  .admin-sb-overlay {
+    display: block; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 55; opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  .admin-sb-toggle-input:checked ~ .admin-sb-overlay { opacity: 1; pointer-events: auto; }
+  /* A área de conteúdo é a única outra irmã no mesmo container flex — sobra
+     espaço todo pra ela (o menu virou position:fixed, saiu do fluxo) e ganha
+     espaço no topo pra não ficar embaixo do botão ☰. */
+  .admin-sb ~ div { width: 100%; padding-top: 54px !important; }
 }
 
 @media (max-width: 640px) {
@@ -400,4 +437,114 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
   .sig-grid   { grid-template-columns: 1fr; }
   .kv    { font-size: 18px; }
   .kicon { font-size: 20px; }
+
+  /* ── Toque: campos/botões foram desenhados pra mouse (densos, letra
+     pequena) — no celular precisam de letra e área maiores.
+     font-size:16px nos campos não é só estética: abaixo disso o Safari do
+     iPhone dá zoom na tela sozinho ao focar o campo (padrão do navegador,
+     não dá pra desligar por CSS a não ser evitando a causa). */
+  .fi, .si, .fsel, .mf, .cmt-ta { font-size: 16px; }
+  .fi, .si, .fsel { padding-top: 10px; padding-bottom: 10px; }
+  .btn { padding-top: 8px; padding-bottom: 8px; font-size: 13px; }
+  .ic-btn, .rb { width: 32px; height: 32px; }
+  .ic-btn i, .rb i { font-size: 14px; }
+  /* Toda linha de tabela em .tw é clicável (abre o item) — precisa de altura
+     de dedo, não só de espaço de leitura */
+  .tbl td { padding-top: 11px; padding-bottom: 11px; }
+
+  /* Lista de RDOs: Gestor e Clima são as colunas de menor prioridade — sem
+     elas, Status (a mais importante) fica visível sem precisar rolar de lado. */
+  .tw-rdos .tbl th:nth-child(4), .tw-rdos .tbl td:nth-child(4),
+  .tw-rdos .tbl th:nth-child(6), .tw-rdos .tbl td:nth-child(6) { display: none; }
+
+  /* Formulário do RDO — cabeçalho de Identificação: essas duas fileiras são
+     flex numa linha só (largura de sobra no desktop); no celular precisam
+     quebrar, senão "Prazo contratual" saía cortado fora da tela. Nº do
+     RDO/Data (row1) ficam lado a lado naturalmente (são estreitos); Pedido/
+     Empresa/Gestor/Prazo (row2) — cada um cabe melhor ocupando a linha toda. */
+  .rdo-id-row1 { flex-wrap: wrap; }
+  .rdo-id-row2 { flex-wrap: wrap; }
+  .rdo-id-row2 > * { flex-basis: 100% !important; }
+
+  /* Barra de ações do RDO (Cancelar/Excluir/Rascunho/PDF/Enviar) — em nowrap
+     os botões saíam cortados fora da tela, inalcançáveis. Bug real, não só
+     falta de espaço: no celular é a única forma de salvar o RDO. */
+  .ab { flex-wrap: wrap; row-gap: 6px; }
+  .ab > div { flex-wrap: wrap; }
+
+  /* Cartões de mão de obra/equipamento do RDO: repeat(4,1fr) no inline style
+     é pro desktop (grade densa, ver memória do usuário sobre isso). No
+     celular, com 2+ itens, a 2ª coluna saía cortada fora da tela — bug real
+     de sobreposição/corte, não só estética: cada cartão precisa da linha toda. */
+  .rdo-item-grid { grid-template-columns: 1fr !important; }
+
+  /* % acumulado por atividade: no desktop é uma linha só (nome + barra +
+     anterior/atual/ajuste/avanço/remover), densa de propósito. No celular
+     essa linha não cabe de jeito nenhum — "Ajuste fino" saía cortado fora da
+     tela. Cada bloco (nome, barra, estatísticas) passa a ocupar a linha
+     toda, e dentro do bloco de estatísticas os itens quebram entre si. */
+  .rdo-pct-row { flex-wrap: wrap; row-gap: 10px; }
+  .rdo-pct-row > .rdo-pct-col { flex-basis: 100% !important; width: auto !important; }
+  .rdo-pct-stats { flex-wrap: wrap; row-gap: 8px; }
+
+  /* Página do projeto: "RDOs recentes"/"Fotos recentes" lado a lado (1fr 1fr)
+     sobravam ~160px cada — a tabela de RDOs precisava rolar de lado pra
+     mostrar Status. Empilha em duas linhas cheias. "Informações do projeto"
+     era 6 colunas (pedido do usuário, pra desktop) — no celular vira 2,
+     igual ao .kgrid; e a linha de Pedido/Empresa/Descrição vira 1 coluna. */
+  .proj-two-col { grid-template-columns: 1fr !important; }
+  .proj-info-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .proj-info-sub { grid-template-columns: 1fr !important; }
+  /* .proj-two-col tinha flex:1 + minHeight:0 pra se espremer e sobrar espaço
+     pro resto da página dentro de uma altura de tela fixa (jeito desktop,
+     tipo painel). "Informações do projeto" em 2 colunas ficou bem mais alta
+     no celular, e sem essa flexibilização ela empurra a página toda — o que
+     tomava esse espaço (RDOs recentes/Fotos recentes) era o único item
+     "espremível" e colapsava quase a zero. No celular a rolagem natural da
+     página já resolve; cada painel guarda só uma altura máxima com rolagem
+     própria, sem precisar disputar espaço com os vizinhos. */
+  .proj-two-col { flex: 0 0 auto !important; }
+  .proj-two-col .sec-body { height: auto !important; max-height: 320px; overflow-y: auto !important; }
+
+  /* Lista de tarefas (EAP): 7 colunas fixas (Cód/Descrição/Período/%Realizada/
+     %Planejado/Status/Ações) somam bem mais que a tela — texto de colunas
+     vizinhas ficava colado (gap:0 é proposital no desktop, denso). No celular
+     mantém só Cód/Descrição/%Realizada/Status; Período, %Planejado e Ações
+     ficam de fora (a linha já é clicável e abre a atividade). */
+  .eap-head, .eap-ativ { grid-template-columns: 40px 1fr 56px 74px !important; column-gap: 6px !important; }
+  .eap-head > *:nth-child(3), .eap-ativ > *:nth-child(3),
+  .eap-head > *:nth-child(5), .eap-ativ > *:nth-child(5),
+  .eap-head > *:nth-child(7), .eap-ativ > *:nth-child(7) { display: none; }
+
+  /* Lista de Usuários: Projetos/Último acesso/Status saem pra caber Usuário
+     (o mais importante) + Perfil sem rolar; Ações continua rolável se precisar
+     (tem vários botões com texto, de propósito — gerenciar equipe é raro
+     o bastante no celular pra não valer a pena virar ícones só). */
+  .tw-usuarios .tbl th:nth-child(3), .tw-usuarios .tbl td:nth-child(3),
+  .tw-usuarios .tbl th:nth-child(4), .tw-usuarios .tbl td:nth-child(4),
+  .tw-usuarios .tbl th:nth-child(5), .tw-usuarios .tbl td:nth-child(5) { display: none; }
+
+  /* Painel super-admin: cada tela monta seus cards/tabelas com grid+estilo
+     inline próprio (não usa .kgrid/.tbl do app principal) — mesmo
+     tratamento das outras telas, adaptado pra esses seletores. */
+  .admin-kgrid { grid-template-columns: repeat(2, 1fr) !important; }
+  .admin-2col, .admin-dist-grid, .admin-plans-grid { grid-template-columns: 1fr !important; }
+
+  /* Empresas: tabela de 7 colunas, corta Responsável e Criada em. */
+  .admin-tw-empresas table { font-size: 10.5px !important; }
+  /* Responsável, Usuários ativos e Criada em saem: com 7 colunas + botões de
+     Ações lado a lado (Editar + Ativar/Suspender) não cabia nem cortando só
+     2 — a tabela ainda empurrava pra fora do card, cortada pelo
+     overflow:hidden dos cantos arredondados. Empresa/Plano/Status/Ações
+     dizem o essencial; o resto está a um toque em "Editar". */
+  .admin-tw-empresas th:nth-child(2), .admin-tw-empresas td:nth-child(2),
+  .admin-tw-empresas th:nth-child(4), .admin-tw-empresas td:nth-child(4),
+  .admin-tw-empresas th:nth-child(5), .admin-tw-empresas td:nth-child(5) { display: none; }
+  .admin-tw-empresas td:last-child > div { flex-wrap: wrap; }
+
+  /* Auditoria: tabela de 6 colunas, corta Categoria e Empresa (a mensagem e
+     o nível já dizem o essencial pra decidir se vale abrir o log). */
+  .admin-tw-auditoria table { font-size: 10.5px !important; }
+  .admin-tw-auditoria th:nth-child(2), .admin-tw-auditoria td:nth-child(2),
+  .admin-tw-auditoria th:nth-child(4), .admin-tw-auditoria td:nth-child(4) { display: none; }
 }

@@ -64,7 +64,7 @@ function UsoContent() {
         </div>
 
         {/* Totais */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
+        <div className="admin-kgrid" style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:9, marginBottom:16 }}>
           {[
             { l:'Empresas ativas', v: empresas.filter((e: Tenant) => e.status==='ATIVO').length, cor:'#29B6D8' },
             { l:'Usuários ativos',  v: totalUsuarios, cor:'#E8EAF0' },
@@ -82,7 +82,7 @@ function UsoContent() {
         {isLoading ? (
           <div style={{ color:'#8B95A8', fontSize:12, padding:32, textAlign:'center' }}>Carregando...</div>
         ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
+          <div className="admin-2col" style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
             {empresas.map((e: Tenant) => {
               // Limite que vale de verdade pra esta empresa (o mesmo que o sistema aplica ao
               // barrar novos usuários/projetos/RDOs) — não um número fixo por plano.

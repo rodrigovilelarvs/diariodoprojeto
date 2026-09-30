@@ -234,7 +234,7 @@ export default function ProjetoResumoPage() {
         </div>
 
         {/* RDOs recentes + Fotos recentes */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
+        <div className="proj-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
           <div className="sec" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="sec-h">
               <span className="sec-title">RDOs recentes</span>
@@ -301,7 +301,7 @@ export default function ProjetoResumoPage() {
             ) : (
               <div style={{ width: 56, height: 56, borderRadius: 12, background: projeto.cor, flexShrink: 0 }} />
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 12, flex: 1 }}>
+            <div className="proj-info-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 12, flex: 1 }}>
               <InfoItem label="Status"><Badge variant={STATUS_V[projeto.status] ?? 'gray'}>{STATUS_L[projeto.status] ?? projeto.status}</Badge></InfoItem>
               <InfoItem label="Planejado"><span style={{ color: 'var(--tsu)', fontWeight: 600 }}>{kpis.pctPlanejado}%</span></InfoItem>
               <InfoItem label="Progresso"><span style={{ color: 'var(--ta)', fontWeight: 600 }}>{kpis.pctReal}%</span></InfoItem>
@@ -324,7 +324,7 @@ export default function ProjetoResumoPage() {
                 </div>
               )}
               {(projeto.pedidoCompraContrato || projeto.empresaContratada || projeto.descricao) && (
-                <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12 }}>
+                <div className="proj-info-sub" style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12 }}>
                   {projeto.pedidoCompraContrato && (
                     <InfoItem label="Pedido de compra ou contrato">{projeto.pedidoCompraContrato}</InfoItem>
                   )}

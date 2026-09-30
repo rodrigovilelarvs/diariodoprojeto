@@ -29,7 +29,18 @@ export function AdminSidebar() {
   ]
 
   return (
-    <div style={{ width:200, background:'#0F1520', borderRight:'.5px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', flexShrink:0, height:'100vh' }}>
+    <>
+      {/* Menu do painel do super-admin: fixo, sempre visível (largura própria,
+          200px) — pensado pro dono da plataforma no desktop. No celular
+          sozinho já tomava boa parte da tela; vira gaveta off-canvas abaixo
+          de 860px, mesmo truque de checkbox usado no menu do app (ver
+          .sb-toggle-input em styles/globals.css) — sem JS/estado, funciona
+          via seletor de irmão porque tudo aqui é renderizado antes do
+          conteúdo da página, no mesmo container flex. */}
+      <input type="checkbox" id="admin-sb-toggle" className="admin-sb-toggle-input" />
+      <label htmlFor="admin-sb-toggle" className="admin-sb-hamburger" aria-label="Abrir menu">☰</label>
+      <label htmlFor="admin-sb-toggle" className="admin-sb-overlay" aria-hidden="true" />
+      <div className="admin-sb" style={{ width:200, background:'#0F1520', borderRight:'.5px solid rgba(255,255,255,.07)', display:'flex', flexDirection:'column', flexShrink:0, height:'100vh' }}>
       <div style={{ padding:'14px', borderBottom:'.5px solid rgba(255,255,255,.07)' }}>
         <div style={{ fontSize:10, fontWeight:700, color:'#F59E0B', letterSpacing:'.08em' }}>DIÁRIO DO PROJETO</div>
         <div style={{ fontSize:9, color:'#4A5568', marginTop:2 }}>Painel do Proprietário</div>
@@ -58,6 +69,7 @@ export function AdminSidebar() {
           <button onClick={sair} style={{ background:'none', border:'none', cursor:'pointer', fontSize:10, color:'#4A5568', fontFamily:'inherit', padding:0 }}>Sair</button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

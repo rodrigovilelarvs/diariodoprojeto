@@ -103,12 +103,16 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
             <option value="PENDENTE_APROVACAO">Pendente</option>
             <option value="RASCUNHO">Rascunho</option>
           </select>
-          <button className="btn btn-p btn-sm" onClick={() => router.push('/rdos/novo')}>
-            <i className="ti ti-plus" /> Novo RDO
-          </button>
+          {/* Só aqui dentro do modal "RDOs do projeto" (sem Topbar, ver abaixo)
+              — na página normal esse botão duplicava o do Topbar. */}
+          {projetoIdFixo && (
+            <button className="btn btn-p btn-sm" onClick={() => router.push('/rdos/novo')}>
+              <i className="ti ti-plus" /> Novo RDO
+            </button>
+          )}
         </div>
 
-        <div className="tw">
+        <div className="tw tw-rdos">
           <table className="tbl">
             <thead>
               <tr>

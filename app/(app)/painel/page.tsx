@@ -51,6 +51,12 @@ export default function PainelPage() {
       setFiltSt(p.filtSt ?? '')
       setFiltGrupo(p.filtGrupo ?? '')
       setView(p.view === 'cards' ? 'cards' : 'table')
+    } else if (window.innerWidth < 640) {
+      // Sem preferência salva (primeira visita) e tela de celular: cartões
+      // cabem inteiros na largura; a tabela precisa rolar de lado pra mostrar
+      // Grupo/Gestor. Só vale pra quem ainda não escolheu — depois de
+      // escolher uma vez, a preferência é respeitada em qualquer tamanho.
+      setView('cards')
     }
     setPrefsCarregadas(true)
   }, [])

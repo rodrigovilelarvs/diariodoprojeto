@@ -260,7 +260,7 @@ export default function AprovacaoPage() {
             <div className="sec">
               <div className="sec-h"><span className="sec-num">1</span><span className="sec-title">Identificação</span></div>
               <div className="sec-body">
-                <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                <div className="rdo-id-row1" style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
                   <div className="fr" style={{ flex:'0 0 84px' }}>
                     <label className="fl">Nº do RDO</label>
                     <div className="fi" style={{ background:'var(--s2)', color:'var(--ta)', fontWeight:600, cursor:'default' }}>
@@ -280,7 +280,7 @@ export default function AprovacaoPage() {
                     </div>
                   </div>
                 </div>
-                <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                <div className="rdo-id-row2" style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
                   {rdo.projeto.pedidoCompraContrato && (
                     <div className="fr" style={{ flex:'1 1 200px' }}>
                       <label className="fl">Pedido de compra ou contrato</label>

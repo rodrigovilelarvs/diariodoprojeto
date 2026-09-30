@@ -214,9 +214,9 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
           <KpiCard icon="ti-calendar-time"    valor={`${kpis.pctPlanejado}%`} label="% Planejado" cor="var(--tsu)" />
         </div>
 
-        <div className="tw">
+        <div className="tw eap-table">
           {/* Cabeçalho */}
-          <div style={{ display: 'grid', gridTemplateColumns: EAP_COLS, padding: '6px 11px', background: 'var(--s1)', borderBottom: '.5px solid var(--b)', fontSize: 10, fontWeight: 500, color: 'var(--ts)' }}>
+          <div className="eap-head" style={{ display: 'grid', gridTemplateColumns: EAP_COLS, padding: '6px 11px', background: 'var(--s1)', borderBottom: '.5px solid var(--b)', fontSize: 10, fontWeight: 500, color: 'var(--ts)' }}>
             <div>Cód.</div><div>Descrição</div><div>Período</div>
             <div style={{ textAlign: 'center' }}>% Realizada</div>
             <div style={{ textAlign: 'center' }}>% Planejado</div>

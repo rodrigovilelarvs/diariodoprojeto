@@ -136,11 +136,17 @@ export default function LoginPage() {
         @keyframes spin{to{transform:rotate(360deg)}}
         input:focus{outline:none;border-color:rgba(41,182,216,.5)!important}
         *{box-sizing:border-box}
+        /* abaixo de 16px o Safari do iPhone dá zoom na tela sozinho ao focar o campo */
+        input{font-size:16px!important}
         @media (max-width:680px){
           .login-wrap{ padding:20px 14px; height:auto!important; }
           .login-card{ flex-direction:column!important; width:100%!important; max-width:400px!important; height:auto!important; }
-          .login-left{ width:100%!important; padding:22px 20px!important; }
-          .login-right{ padding:24px 20px!important; }
+          /* No celular quem entra é sobretudo gente que já usa o sistema todo
+             dia (equipe de campo) — o painel de apresentação só empurrava o
+             formulário pra fora da tela, exigindo rolar antes de conseguir
+             logar. Ele fica só no desktop; a logo já repete no formulário. */
+          .login-left{ display:none!important; }
+          .login-right{ padding:28px 22px!important; }
         }
       `}</style>
     </div>

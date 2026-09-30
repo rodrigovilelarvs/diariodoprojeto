@@ -572,7 +572,7 @@ export function FormularioRdo({ rdoId }: Props) {
             <span className="sec-title">Identificação</span>
           </div>
           <div className="sec-body">
-            <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+            <div className="rdo-id-row1" style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
               <div className="fr" style={{ flex:'0 0 84px' }}>
                 <label className="fl">Nº do RDO</label>
                 {podeSalvar ? (
@@ -608,7 +608,7 @@ export function FormularioRdo({ rdoId }: Props) {
                 </div>
               </div>
             </div>
-            <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+            <div className="rdo-id-row2" style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
               {rdo.projeto.pedidoCompraContrato && (
                 <div className="fr" style={{ flex:'1 1 200px' }}>
                   <label className="fl">Pedido de compra ou contrato</label>
@@ -777,15 +777,15 @@ export function FormularioRdo({ rdoId }: Props) {
 
               return (
                 <div key={reg.atividadeId ?? ri} className="acb">
-                  <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-                    <div style={{ width:'50%', display:'flex', flexDirection:'column', gap:1, minWidth:0 }}>
+                  <div className="rdo-pct-row" style={{ display:'flex', alignItems:'center', gap:14 }}>
+                    <div className="rdo-pct-col" style={{ width:'50%', display:'flex', flexDirection:'column', gap:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:0 }}>
                         <i className="ti ti-trending-up" style={{ color:'var(--ta)', flexShrink:0, fontSize:11 }} />
                         <span style={{ fontSize:10, color:'var(--tm)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{etapaLabel}</span>
                       </div>
                       <span style={{ fontSize:11, color:'var(--ts)', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', paddingLeft:16 }}>{atividadeLabel}</span>
                     </div>
-                    <div style={{ flex:1, minWidth:120 }}>
+                    <div className="rdo-pct-col" style={{ flex:1, minWidth:120 }}>
                       <div className="pt-bg">
                         <div className="pt-f" style={{ width:`${pct}%`, background: cor }} />
                       </div>
@@ -794,7 +794,7 @@ export function FormularioRdo({ rdoId }: Props) {
                         disabled={!podeSalvar}
                         onChange={e => setPct(ri, Number(e.target.value))} />
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:9, flexShrink:0 }}>
+                    <div className="rdo-pct-col rdo-pct-stats" style={{ display:'flex', alignItems:'center', gap:9, flexShrink:0 }}>
                       <div style={{ fontSize:10, color:'var(--tm)', background:'var(--s2)', border:'.5px solid var(--b)', borderRadius:20, padding:'2px 8px', whiteSpace:'nowrap' }}>
                         Anterior: <strong>{reg.pctAnterior}%</strong>
                       </div>
@@ -893,7 +893,7 @@ export function FormularioRdo({ rdoId }: Props) {
             ))}
           </div>
           <div className="sec-body">
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
+            <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
               {form.maoDeObra.map((mo, i) => (
                 <div key={i} style={{ position:'relative', border:'.5px solid var(--b)', borderRadius:'var(--r)', padding:8, background:'var(--s1)' }}>
                   {podeSalvar && (
@@ -975,7 +975,7 @@ export function FormularioRdo({ rdoId }: Props) {
             )}
           </div>
           <div className="sec-body">
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
+            <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
               {form.equipamentos.map((eq, i) => {
                 const equipamentoSel = equipamentosCadastro?.find(ec => ec.id === eq.equipamentoCadastroId)
                 return (

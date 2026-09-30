@@ -100,7 +100,9 @@ export default function RedefinirSenhaPage() {
           )}
         </div>
       </div>
-      <style>{`* { box-sizing: border-box; } input:focus { outline: none; border-color: rgba(41,182,216,.5) !important; }`}</style>
+      {/* font-size:16px nos campos: abaixo disso o Safari do iPhone dá zoom
+          na tela sozinho ao focar o campo — não é só estética. */}
+      <style>{`* { box-sizing: border-box; } input:focus { outline: none; border-color: rgba(41,182,216,.5) !important; } input { font-size: 16px !important; }`}</style>
     </div>
   )
 }
