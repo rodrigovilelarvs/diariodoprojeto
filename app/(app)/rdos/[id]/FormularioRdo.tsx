@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { useRdo, useSalvarRdo, useEnviarRdo, useMinhaAssinatura, useEnviarComentario, useExcluirComentario, useEap, useFuncoes, useCriarFuncao, useEquipamentosCadastro, useCriarEquipamentoCadastro, useOcorrenciaTipos, useCriarOcorrenciaTipo, useExcluirRdo } from '@/hooks/useEmpresa'
+import { useRdo, useSalvarRdo, useEnviarRdo, useMinhaAssinatura, useEnviarComentario, useExcluirComentario, useEap, useFuncoes, useCriarFuncao, useEditarFuncao, useExcluirFuncao, useEquipamentosCadastro, useCriarEquipamentoCadastro, useEditarEquipamentoCadastro, useExcluirEquipamentoCadastro, useOcorrenciaTipos, useCriarOcorrenciaTipo, useExcluirRdo } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { api, LimitePlanoError, mensagemErro } from '@/lib/api'
 import { gerarPdfRdo }   from '@/lib/pdf'
@@ -15,7 +15,7 @@ import { numeroRdo, fmtData } from '@/lib/format'
 import type {
   MaoDeObraItem, EquipamentoItem, OcorrenciaItem,
   RegistroAtividade, ClimaCondicao, AssinaturaItem, MidiaItem, Rdo,
-  MaoDeObraCategoria, EquipamentoTipo,
+  MaoDeObraCategoria, EquipamentoTipo, FuncaoCadastro, EquipamentoCadastro,
 } from '@/lib/types'
 import { UploadZona } from '@/components/rdos/UploadZona'
 import {
@@ -82,6 +82,344 @@ function estadoInicial(rdo: NonNullable<ReturnType<typeof useRdo>['data']>): For
   }
 }
 
+// ── Modal "Adicionar mão de obra" — escolhe várias funções do catálogo de
+// uma vez (antes só dava pra clicar "Adicionar" e escolher uma função por
+// vez, uma de cada vez, pra cada pessoa do dia) e também gerencia o próprio
+// catálogo (editar/excluir função cadastrada) sem precisar sair daqui.
+function SeletorFuncoesModal({
+  funcoes, onFechar, onAdicionar, criarFuncao, editarFuncao, excluirFuncao,
+}: {
+  funcoes:       FuncaoCadastro[]
+  onFechar:      () => void
+  onAdicionar:   (escolhidas: FuncaoCadastro[]) => void
+  criarFuncao:   ReturnType<typeof useCriarFuncao>
+  editarFuncao:  ReturnType<typeof useEditarFuncao>
+  excluirFuncao: ReturnType<typeof useExcluirFuncao>
+}) {
+  const [selecionados, setSelecionados]   = useState<Record<string, boolean>>({})
+  const [busca, setBusca]                 = useState('')
+  const [editandoId, setEditandoId]       = useState<string | null>(null)
+  const [editNome, setEditNome]           = useState('')
+  const [editCategoria, setEditCategoria] = useState<MaoDeObraCategoria>('DIRETA')
+  const [novoNome, setNovoNome]           = useState('')
+  const [novaCategoria, setNovaCategoria] = useState<MaoDeObraCategoria>('DIRETA')
+
+  const buscaNorm = busca.trim().toLowerCase()
+  const filtradas  = buscaNorm ? funcoes.filter(f => f.nome.toLowerCase().includes(buscaNorm)) : funcoes
+  const idsSelecionados = Object.keys(selecionados).filter(id => selecionados[id])
+
+  function toggle(id: string) {
+    setSelecionados(s => ({ ...s, [id]: !s[id] }))
+  }
+  function iniciarEdicao(f: FuncaoCadastro) {
+    setEditandoId(f.id); setEditNome(f.nome); setEditCategoria(f.categoria)
+  }
+  async function salvarEdicao() {
+    const nome = editNome.trim()
+    if (!nome) { toast.error('Informe o nome da função.'); return }
+    try {
+      await editarFuncao.mutateAsync({ id: editandoId!, nome, categoria: editCategoria })
+      setEditandoId(null)
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao editar função.'))
+    }
+  }
+  async function excluir(f: FuncaoCadastro) {
+    if (!window.confirm(`Remover "${f.nome}" do catálogo de funções? RDOs que já usaram essa função não são afetados.`)) return
+    try {
+      await excluirFuncao.mutateAsync(f.id)
+      setSelecionados(s => { const n = { ...s }; delete n[f.id]; return n })
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao excluir função.'))
+    }
+  }
+  async function criar() {
+    const nome = novoNome.trim()
+    if (!nome) { toast.error('Informe o nome da função.'); return }
+    try {
+      const funcao = await criarFuncao.mutateAsync({ nome, categoria: novaCategoria })
+      setSelecionados(s => ({ ...s, [funcao.id]: true }))
+      setNovoNome('')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao criar função.'))
+    }
+  }
+
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onFechar()}>
+      <div className="modal" style={{ width:440 }}>
+        <div className="mh">
+          <div className="mh-t"><i className="ti ti-users" /> Adicionar mão de obra</div>
+          <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:17 }}
+            onClick={onFechar}><i className="ti ti-x" /></button>
+        </div>
+        <div className="mb">
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+            <label className="fl" style={{ margin:0 }}>Funções cadastradas</label>
+            {filtradas.length > 0 && (
+              <button type="button" style={{ fontSize:10.5, color:'var(--ta)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}
+                onClick={() => {
+                  const todasMarcadas = filtradas.every(f => selecionados[f.id])
+                  setSelecionados(s => {
+                    const novo = { ...s }
+                    filtradas.forEach(f => { novo[f.id] = !todasMarcadas })
+                    return novo
+                  })
+                }}>
+                {filtradas.every(f => selecionados[f.id]) ? 'Limpar seleção' : 'Selecionar todas'}
+              </button>
+            )}
+          </div>
+
+          <div style={{ position:'relative', marginBottom:8 }}>
+            <i className="ti ti-search" style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', fontSize:13, color:'var(--tm)' }} />
+            <input className="fi" value={busca} onChange={e => setBusca(e.target.value)}
+              placeholder="Buscar função..." style={{ paddingLeft:30 }} />
+          </div>
+
+          <div style={{ maxHeight:220, overflowY:'auto', border:'.5px solid var(--b)', borderRadius:'var(--r)', background:'var(--s1)', marginBottom:10 }}>
+            {filtradas.length === 0 ? (
+              <div style={{ textAlign:'center', padding:14, color:'var(--tm)', fontSize:11 }}>
+                Nenhuma função encontrada.
+              </div>
+            ) : CATEGORIAS.map(cat => {
+              const lista = filtradas.filter(f => f.categoria === cat)
+              if (!lista.length) return null
+              return (
+                <div key={cat}>
+                  <div style={{ padding:'5px 10px', fontSize:9.5, fontWeight:600, color:'var(--tm)', textTransform:'uppercase', letterSpacing:'.04em', background:'var(--s2)' }}>
+                    {CATEGORIA_L[cat]}
+                  </div>
+                  {lista.map(f => editandoId === f.id ? (
+                    <div key={f.id} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 10px', borderBottom:'.5px solid var(--b)' }}>
+                      <input className="fi" value={editNome} onChange={e => setEditNome(e.target.value)}
+                        style={{ flex:1, minWidth:0 }} autoFocus />
+                      <select className="fi" value={editCategoria} style={{ width:110, flexShrink:0 }}
+                        onChange={e => setEditCategoria(e.target.value as MaoDeObraCategoria)}>
+                        {CATEGORIAS.map(c => <option key={c} value={c}>{CATEGORIA_L[c]}</option>)}
+                      </select>
+                      <button title="Salvar" onClick={salvarEdicao} disabled={editarFuncao.isPending}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tsu)', fontSize:14, flexShrink:0 }}>
+                        <i className="ti ti-check" />
+                      </button>
+                      <button title="Cancelar" onClick={() => setEditandoId(null)}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:14, flexShrink:0 }}>
+                        <i className="ti ti-x" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label key={f.id}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderBottom:'.5px solid var(--b)', cursor:'pointer' }}>
+                      <input type="checkbox" checked={!!selecionados[f.id]} onChange={() => toggle(f.id)} />
+                      <span style={{ flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>
+                        {f.nome}
+                      </span>
+                      <button type="button" title="Editar" onClick={e => { e.preventDefault(); iniciarEdicao(f) }}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:12, flexShrink:0 }}>
+                        <i className="ti ti-pencil" />
+                      </button>
+                      <button type="button" title="Excluir" onClick={e => { e.preventDefault(); excluir(f) }}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--td)', fontSize:12, flexShrink:0 }}>
+                        <i className="ti ti-trash" />
+                      </button>
+                    </label>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <input className="fi" value={novoNome} onChange={e => setNovoNome(e.target.value)}
+              placeholder="Nova função..." style={{ flex:1, minWidth:0 }} />
+            <select className="fi" value={novaCategoria} style={{ width:110, flexShrink:0 }}
+              onChange={e => setNovaCategoria(e.target.value as MaoDeObraCategoria)}>
+              {CATEGORIAS.map(c => <option key={c} value={c}>{CATEGORIA_L[c]}</option>)}
+            </select>
+            <button className="btn" type="button" onClick={criar} disabled={criarFuncao.isPending} style={{ flexShrink:0 }}>
+              <i className="ti ti-plus" />
+            </button>
+          </div>
+        </div>
+        <div className="mf2">
+          <button className="btn" onClick={onFechar}>Cancelar</button>
+          <button className="btn btn-p" onClick={() => onAdicionar(funcoes.filter(f => selecionados[f.id]))} disabled={idsSelecionados.length === 0}>
+            <i className="ti ti-plus" /> {idsSelecionados.length > 1 ? `Adicionar (${idsSelecionados.length})` : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Modal "Adicionar equipamento" — mesma ideia do seletor de mão de obra,
+// pro catálogo de equipamentos.
+function SeletorEquipamentosModal({
+  equipamentos, onFechar, onAdicionar, criarEquipamento, editarEquipamento, excluirEquipamento,
+}: {
+  equipamentos:       EquipamentoCadastro[]
+  onFechar:           () => void
+  onAdicionar:        (escolhidos: EquipamentoCadastro[]) => void
+  criarEquipamento:   ReturnType<typeof useCriarEquipamentoCadastro>
+  editarEquipamento:  ReturnType<typeof useEditarEquipamentoCadastro>
+  excluirEquipamento: ReturnType<typeof useExcluirEquipamentoCadastro>
+}) {
+  const [selecionados, setSelecionados] = useState<Record<string, boolean>>({})
+  const [busca, setBusca]               = useState('')
+  const [editandoId, setEditandoId]     = useState<string | null>(null)
+  const [editNome, setEditNome]         = useState('')
+  const [editTipo, setEditTipo]         = useState<EquipamentoTipo>('PROPRIO')
+  const [novoNome, setNovoNome]         = useState('')
+  const [novoTipo, setNovoTipo]         = useState<EquipamentoTipo>('PROPRIO')
+
+  const buscaNorm = busca.trim().toLowerCase()
+  const filtrados  = buscaNorm ? equipamentos.filter(e => e.nome.toLowerCase().includes(buscaNorm)) : equipamentos
+  const idsSelecionados = Object.keys(selecionados).filter(id => selecionados[id])
+
+  function toggle(id: string) {
+    setSelecionados(s => ({ ...s, [id]: !s[id] }))
+  }
+  function iniciarEdicao(e: EquipamentoCadastro) {
+    setEditandoId(e.id); setEditNome(e.nome); setEditTipo(e.tipo)
+  }
+  async function salvarEdicao() {
+    const nome = editNome.trim()
+    if (!nome) { toast.error('Informe o nome do equipamento.'); return }
+    try {
+      await editarEquipamento.mutateAsync({ id: editandoId!, nome, tipo: editTipo })
+      setEditandoId(null)
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao editar equipamento.'))
+    }
+  }
+  async function excluir(e: EquipamentoCadastro) {
+    if (!window.confirm(`Remover "${e.nome}" do catálogo de equipamentos? RDOs que já usaram esse equipamento não são afetados.`)) return
+    try {
+      await excluirEquipamento.mutateAsync(e.id)
+      setSelecionados(s => { const n = { ...s }; delete n[e.id]; return n })
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao excluir equipamento.'))
+    }
+  }
+  async function criar() {
+    const nome = novoNome.trim()
+    if (!nome) { toast.error('Informe o nome do equipamento.'); return }
+    try {
+      const equipamento = await criarEquipamento.mutateAsync({ nome, tipo: novoTipo })
+      setSelecionados(s => ({ ...s, [equipamento.id]: true }))
+      setNovoNome('')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao criar equipamento.'))
+    }
+  }
+
+  return (
+    <div className="overlay" onClick={e => e.target === e.currentTarget && onFechar()}>
+      <div className="modal" style={{ width:440 }}>
+        <div className="mh">
+          <div className="mh-t"><i className="ti ti-tool" /> Adicionar equipamento</div>
+          <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:17 }}
+            onClick={onFechar}><i className="ti ti-x" /></button>
+        </div>
+        <div className="mb">
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+            <label className="fl" style={{ margin:0 }}>Equipamentos cadastrados</label>
+            {filtrados.length > 0 && (
+              <button type="button" style={{ fontSize:10.5, color:'var(--ta)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}
+                onClick={() => {
+                  const todosMarcados = filtrados.every(e => selecionados[e.id])
+                  setSelecionados(s => {
+                    const novo = { ...s }
+                    filtrados.forEach(e => { novo[e.id] = !todosMarcados })
+                    return novo
+                  })
+                }}>
+                {filtrados.every(e => selecionados[e.id]) ? 'Limpar seleção' : 'Selecionar todos'}
+              </button>
+            )}
+          </div>
+
+          <div style={{ position:'relative', marginBottom:8 }}>
+            <i className="ti ti-search" style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', fontSize:13, color:'var(--tm)' }} />
+            <input className="fi" value={busca} onChange={e => setBusca(e.target.value)}
+              placeholder="Buscar equipamento..." style={{ paddingLeft:30 }} />
+          </div>
+
+          <div style={{ maxHeight:220, overflowY:'auto', border:'.5px solid var(--b)', borderRadius:'var(--r)', background:'var(--s1)', marginBottom:10 }}>
+            {filtrados.length === 0 ? (
+              <div style={{ textAlign:'center', padding:14, color:'var(--tm)', fontSize:11 }}>
+                Nenhum equipamento encontrado.
+              </div>
+            ) : EQUIPAMENTO_TIPOS.map(tipo => {
+              const lista = filtrados.filter(e => e.tipo === tipo)
+              if (!lista.length) return null
+              return (
+                <div key={tipo}>
+                  <div style={{ padding:'5px 10px', fontSize:9.5, fontWeight:600, color:'var(--tm)', textTransform:'uppercase', letterSpacing:'.04em', background:'var(--s2)' }}>
+                    {EQUIPAMENTO_TIPO_L[tipo]}
+                  </div>
+                  {lista.map(eq => editandoId === eq.id ? (
+                    <div key={eq.id} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 10px', borderBottom:'.5px solid var(--b)' }}>
+                      <input className="fi" value={editNome} onChange={e => setEditNome(e.target.value)}
+                        style={{ flex:1, minWidth:0 }} autoFocus />
+                      <select className="fi" value={editTipo} style={{ width:120, flexShrink:0 }}
+                        onChange={e => setEditTipo(e.target.value as EquipamentoTipo)}>
+                        {EQUIPAMENTO_TIPOS.map(t => <option key={t} value={t}>{EQUIPAMENTO_TIPO_L[t]}</option>)}
+                      </select>
+                      <button title="Salvar" onClick={salvarEdicao} disabled={editarEquipamento.isPending}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tsu)', fontSize:14, flexShrink:0 }}>
+                        <i className="ti ti-check" />
+                      </button>
+                      <button title="Cancelar" onClick={() => setEditandoId(null)}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:14, flexShrink:0 }}>
+                        <i className="ti ti-x" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label key={eq.id}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderBottom:'.5px solid var(--b)', cursor:'pointer' }}>
+                      <input type="checkbox" checked={!!selecionados[eq.id]} onChange={() => toggle(eq.id)} />
+                      <span style={{ flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>
+                        {eq.nome}
+                      </span>
+                      <button type="button" title="Editar" onClick={e => { e.preventDefault(); iniciarEdicao(eq) }}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:12, flexShrink:0 }}>
+                        <i className="ti ti-pencil" />
+                      </button>
+                      <button type="button" title="Excluir" onClick={e => { e.preventDefault(); excluir(eq) }}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'var(--td)', fontSize:12, flexShrink:0 }}>
+                        <i className="ti ti-trash" />
+                      </button>
+                    </label>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <input className="fi" value={novoNome} onChange={e => setNovoNome(e.target.value)}
+              placeholder="Novo equipamento..." style={{ flex:1, minWidth:0 }} />
+            <select className="fi" value={novoTipo} style={{ width:120, flexShrink:0 }}
+              onChange={e => setNovoTipo(e.target.value as EquipamentoTipo)}>
+              {EQUIPAMENTO_TIPOS.map(t => <option key={t} value={t}>{EQUIPAMENTO_TIPO_L[t]}</option>)}
+            </select>
+            <button className="btn" type="button" onClick={criar} disabled={criarEquipamento.isPending} style={{ flexShrink:0 }}>
+              <i className="ti ti-plus" />
+            </button>
+          </div>
+        </div>
+        <div className="mf2">
+          <button className="btn" onClick={onFechar}>Cancelar</button>
+          <button className="btn btn-p" onClick={() => onAdicionar(equipamentos.filter(e => selecionados[e.id]))} disabled={idsSelecionados.length === 0}>
+            <i className="ti ti-plus" /> {idsSelecionados.length > 1 ? `Adicionar (${idsSelecionados.length})` : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ══════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════
@@ -98,8 +436,12 @@ export function FormularioRdo({ rdoId }: Props) {
   const { data: eap } = useEap(rdo?.projeto.id ?? '')
   const { data: funcoes } = useFuncoes()
   const criarFuncao = useCriarFuncao()
+  const editarFuncao = useEditarFuncao()
+  const excluirFuncao = useExcluirFuncao()
   const { data: equipamentosCadastro } = useEquipamentosCadastro()
   const criarEquipamentoCadastro = useCriarEquipamentoCadastro()
+  const editarEquipamentoCadastro = useEditarEquipamentoCadastro()
+  const excluirEquipamentoCadastro = useExcluirEquipamentoCadastro()
   const { data: ocorrenciaTipos } = useOcorrenciaTipos()
   const criarOcorrenciaTipo = useCriarOcorrenciaTipo()
 
@@ -121,6 +463,8 @@ export function FormularioRdo({ rdoId }: Props) {
   const [equipamentoEqIndex, setEquipamentoEqIndex] = useState<number | null>(null)
   const [novoEquipamentoNome, setNovoEquipamentoNome] = useState('')
   const [novoEquipamentoTipo, setNovoEquipamentoTipo] = useState<EquipamentoTipo>('PROPRIO')
+  const [modalSelecionarFuncoes, setModalSelecionarFuncoes] = useState(false)
+  const [modalSelecionarEquipamentos, setModalSelecionarEquipamentos] = useState(false)
   const [modalOcorrenciaTipo, setModalOcorrenciaTipo] = useState(false)
   const [ocorrenciaTipoOcIndex, setOcorrenciaTipoOcIndex] = useState<number | null>(null)
   const [novoOcorrenciaTipoNome, setNovoOcorrenciaTipoNome] = useState('')
@@ -274,18 +618,22 @@ export function FormularioRdo({ rdoId }: Props) {
   }
 
   // ── MO helpers ─────────────────────────────────────────
-  function addMO() {
+  // Uma linha por função escolhida no modal — permite marcar várias de uma
+  // vez em vez de "Adicionar" + escolher a função, um de cada vez, por pessoa.
+  function addMO(escolhidas: FuncaoCadastro[]) {
     setForm(f => {
       if (!f) return f
       const horaEntrada = f.horaInicio ?? '07:00'
       const horaSaida   = f.horaTermino ?? '17:00'
-      return { ...f, maoDeObra: [...f.maoDeObra, {
-        funcaoNome: '', categoria: 'DIRETA', quantidade: 1,
-        horaEntrada, horaSaida,
+      const novas: MaoDeObraItem[] = escolhidas.map(fn => ({
+        funcaoCadastroId: fn.id, funcaoNome: fn.nome, categoria: fn.categoria,
+        quantidade: 1, horaEntrada, horaSaida,
         totalHH: calcMoHH(horaEntrada, horaSaida, f.intervaloHoras, 1),
-      }] }
+      }))
+      return { ...f, maoDeObra: [...f.maoDeObra, ...novas] }
     })
     setDirty(true)
+    setModalSelecionarFuncoes(false)
   }
   function updMO(idx: number, campo: keyof MaoDeObraItem, val: string | number) {
     setForm(f => {
@@ -347,11 +695,17 @@ export function FormularioRdo({ rdoId }: Props) {
   const totalEQ = (form?.equipamentos ?? []).reduce((s,e) => s + Number(e.quantidade), 0)
 
   // ── EQ helpers ─────────────────────────────────────────
-  function addEQ() {
-    setForm(f => f ? { ...f, equipamentos: [...f.equipamentos, {
-      equipamentoNome: '', quantidade: 1,
-    }] } : f)
+  // Uma linha por equipamento escolhido no modal — mesma ideia do addMO.
+  function addEQ(escolhidos: EquipamentoCadastro[]) {
+    setForm(f => {
+      if (!f) return f
+      const novos: EquipamentoItem[] = escolhidos.map(ec => ({
+        equipamentoCadastroId: ec.id, equipamentoNome: ec.nome, quantidade: 1,
+      }))
+      return { ...f, equipamentos: [...f.equipamentos, ...novos] }
+    })
     setDirty(true)
+    setModalSelecionarEquipamentos(false)
   }
   function selecionarEquipamento(idx: number, equipamentoCadastroId: string) {
     if (equipamentoCadastroId === '__novo__') {
@@ -951,7 +1305,7 @@ export function FormularioRdo({ rdoId }: Props) {
               ))}
             </div>
             {podeSalvar && (
-              <button className="btn btn-sm" onClick={addMO}>
+              <button className="btn btn-sm" onClick={() => setModalSelecionarFuncoes(true)}>
                 <i className="ti ti-plus" /> Adicionar mão de obra
               </button>
             )}
@@ -1019,7 +1373,7 @@ export function FormularioRdo({ rdoId }: Props) {
               })}
             </div>
             {podeSalvar && (
-              <button className="btn btn-sm" onClick={addEQ}>
+              <button className="btn btn-sm" onClick={() => setModalSelecionarEquipamentos(true)}>
                 <i className="ti ti-plus" /> Adicionar equipamento
               </button>
             )}
@@ -1342,6 +1696,30 @@ export function FormularioRdo({ rdoId }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Modal selecionar mão de obra (várias funções de uma vez) ── */}
+      {modalSelecionarFuncoes && (
+        <SeletorFuncoesModal
+          funcoes={funcoes ?? []}
+          onFechar={() => setModalSelecionarFuncoes(false)}
+          onAdicionar={addMO}
+          criarFuncao={criarFuncao}
+          editarFuncao={editarFuncao}
+          excluirFuncao={excluirFuncao}
+        />
+      )}
+
+      {/* ── Modal selecionar equipamentos (vários de uma vez) ── */}
+      {modalSelecionarEquipamentos && (
+        <SeletorEquipamentosModal
+          equipamentos={equipamentosCadastro ?? []}
+          onFechar={() => setModalSelecionarEquipamentos(false)}
+          onAdicionar={addEQ}
+          criarEquipamento={criarEquipamentoCadastro}
+          editarEquipamento={editarEquipamentoCadastro}
+          excluirEquipamento={excluirEquipamentoCadastro}
+        />
       )}
 
       {/* ── Modal nova função ── */}

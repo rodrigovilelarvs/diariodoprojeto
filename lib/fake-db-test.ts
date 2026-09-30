@@ -161,6 +161,8 @@ const PROJETOS_CONCLUIDOS: Record<string, typeof PROJETO> = {
 const rdosCriados = new Map<string, any>()
 let proximoNumero = 1
 const rdosConcluido = new Map<string, any>()
+const FUNCOES_CADASTRO: any[] = []
+const EQUIPAMENTOS_CADASTRO: any[] = []
 
 function pick<T extends object>(obj: T, select?: Record<string, any>): any {
   if (!select) return obj
@@ -352,6 +354,77 @@ const fakeDbBase = {
       const item = { id: `ra-fake-${Math.random().toString(36).slice(2, 8)}`, atividade: null, ...data }
       if (rdo) rdo.atividadeRegistros.push(item)
       return item
+    },
+  }),
+
+  // Catálogo de funções/equipamentos do tenant (ver app/api/app/funcoes e
+  // app/api/app/equipamentos) — arrays soltos em memória porque o catálogo
+  // é editável pela própria tela de RDO (criar/editar/excluir), diferente
+  // dos fixtures estáticos de cima.
+  funcaoCadastro: modelo({
+    count:      async ({ where }: any) => FUNCOES_CADASTRO.filter(f => f.tenantId === where.tenantId).length,
+    createMany: async ({ data }: any) => {
+      FUNCOES_CADASTRO.push(...data.map((d: any) => ({ id: `fn-fake-${Math.random().toString(36).slice(2, 8)}`, ...d })))
+      return { count: data.length }
+    },
+    findMany: async ({ where }: any) =>
+      FUNCOES_CADASTRO.filter(f => f.tenantId === where.tenantId).sort((a, b) => a.nome.localeCompare(b.nome)),
+    findFirst: async ({ where }: any) => FUNCOES_CADASTRO.find(f => {
+      if (where.tenantId && f.tenantId !== where.tenantId) return false
+      if (where.nome && f.nome !== where.nome) return false
+      if (where.id) {
+        if (typeof where.id === 'string' && f.id !== where.id) return false
+        if (where.id?.not && f.id === where.id.not) return false
+      }
+      return true
+    }) ?? null,
+    create: async ({ data }: any) => {
+      const item = { id: `fn-fake-${Math.random().toString(36).slice(2, 8)}`, ...data }
+      FUNCOES_CADASTRO.push(item)
+      return item
+    },
+    update: async ({ where, data }: any) => {
+      const item = FUNCOES_CADASTRO.find(f => f.id === where.id)
+      if (item) Object.assign(item, data)
+      return item
+    },
+    delete: async ({ where }: any) => {
+      const idx = FUNCOES_CADASTRO.findIndex(f => f.id === where.id)
+      if (idx >= 0) FUNCOES_CADASTRO.splice(idx, 1)
+      return {}
+    },
+  }),
+  equipamentoCadastro: modelo({
+    count:      async ({ where }: any) => EQUIPAMENTOS_CADASTRO.filter(e => e.tenantId === where.tenantId).length,
+    createMany: async ({ data }: any) => {
+      EQUIPAMENTOS_CADASTRO.push(...data.map((d: any) => ({ id: `eq-cad-fake-${Math.random().toString(36).slice(2, 8)}`, ...d })))
+      return { count: data.length }
+    },
+    findMany: async ({ where }: any) =>
+      EQUIPAMENTOS_CADASTRO.filter(e => e.tenantId === where.tenantId).sort((a, b) => a.nome.localeCompare(b.nome)),
+    findFirst: async ({ where }: any) => EQUIPAMENTOS_CADASTRO.find(e => {
+      if (where.tenantId && e.tenantId !== where.tenantId) return false
+      if (where.nome && e.nome !== where.nome) return false
+      if (where.id) {
+        if (typeof where.id === 'string' && e.id !== where.id) return false
+        if (where.id?.not && e.id === where.id.not) return false
+      }
+      return true
+    }) ?? null,
+    create: async ({ data }: any) => {
+      const item = { id: `eq-cad-fake-${Math.random().toString(36).slice(2, 8)}`, ...data }
+      EQUIPAMENTOS_CADASTRO.push(item)
+      return item
+    },
+    update: async ({ where, data }: any) => {
+      const item = EQUIPAMENTOS_CADASTRO.find(e => e.id === where.id)
+      if (item) Object.assign(item, data)
+      return item
+    },
+    delete: async ({ where }: any) => {
+      const idx = EQUIPAMENTOS_CADASTRO.findIndex(e => e.id === where.id)
+      if (idx >= 0) EQUIPAMENTOS_CADASTRO.splice(idx, 1)
+      return {}
     },
   }),
 

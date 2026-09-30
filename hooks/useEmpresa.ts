@@ -424,6 +424,23 @@ export function useCriarFuncao() {
   })
 }
 
+export function useEditarFuncao() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; nome?: string; categoria?: MaoDeObraCategoria }) =>
+      api.patch<FuncaoCadastro>(`/api/app/funcoes/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.funcoes }),
+  })
+}
+
+export function useExcluirFuncao() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/app/funcoes/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.funcoes }),
+  })
+}
+
 // ════════════════════════════════════════
 // EQUIPAMENTOS — catálogo (próprio/alugado/terceirizado)
 // ════════════════════════════════════════
@@ -441,6 +458,23 @@ export function useCriarEquipamentoCadastro() {
   return useMutation({
     mutationFn: (body: { nome: string; tipo: EquipamentoTipo }) =>
       api.post<EquipamentoCadastro>('/api/app/equipamentos', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.equipamentosCadastro }),
+  })
+}
+
+export function useEditarEquipamentoCadastro() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; nome?: string; tipo?: EquipamentoTipo }) =>
+      api.patch<EquipamentoCadastro>(`/api/app/equipamentos/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: QK.equipamentosCadastro }),
+  })
+}
+
+export function useExcluirEquipamentoCadastro() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/app/equipamentos/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.equipamentosCadastro }),
   })
 }
