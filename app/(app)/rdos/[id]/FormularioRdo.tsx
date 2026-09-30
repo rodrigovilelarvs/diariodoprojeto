@@ -1154,11 +1154,42 @@ export function FormularioRdo({ rdoId }: Props) {
                       </div>
                       <div className="pct-big" style={{ color: cor }}>{pct}%</div>
                       <div>
-                        <div style={{ fontSize:10, color:'var(--tm)', marginBottom:2 }}>Ajuste fino</div>
-                        <input type="number" className="fi" min={reg.pctAnterior} max={100} value={pct}
-                          disabled={!podeSalvar}
-                          style={{ width:68, textAlign:'center', fontSize:13, fontWeight:500 }}
-                          onChange={e => setPct(ri, Math.max(reg.pctAnterior, Math.min(100, Number(e.target.value))))} />
+                        <div style={{ fontSize:10, color:'var(--tm)', marginBottom:2 }} title="Define o % acumulado da atividade — o mesmo número do card grande ao lado, não o avanço de hoje.">
+                          Ajuste fino (acumulado)
+                        </div>
+                        {/* Setas +/- ao lado do campo: o spinner nativo do <input type="number">
+                            não aparece nos teclados touch (iOS/Android não desenham as setinhas),
+                            então sem isso não tinha como ajustar o % no fino pelo celular. */}
+                        <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                          <button type="button" title="Diminuir 1%"
+                            disabled={!podeSalvar || pct <= reg.pctAnterior}
+                            onClick={() => setPct(ri, Math.max(reg.pctAnterior, pct - 1))}
+                            style={{
+                              width:22, height:22, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+                              borderRadius:6, border:'.5px solid var(--bs)', background:'var(--s1)', color:'var(--tp)',
+                              fontSize:12, lineHeight:1, fontFamily:'inherit',
+                              cursor: (!podeSalvar || pct <= reg.pctAnterior) ? 'not-allowed' : 'pointer',
+                              opacity: (!podeSalvar || pct <= reg.pctAnterior) ? .4 : 1,
+                            }}>
+                            <i className="ti ti-minus" />
+                          </button>
+                          <input type="number" className="fi" min={reg.pctAnterior} max={100} value={pct}
+                            disabled={!podeSalvar}
+                            style={{ width:44, textAlign:'center', fontSize:13, fontWeight:500 }}
+                            onChange={e => setPct(ri, Math.max(reg.pctAnterior, Math.min(100, Number(e.target.value))))} />
+                          <button type="button" title="Aumentar 1%"
+                            disabled={!podeSalvar || pct >= 100}
+                            onClick={() => setPct(ri, Math.min(100, pct + 1))}
+                            style={{
+                              width:22, height:22, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+                              borderRadius:6, border:'.5px solid var(--bs)', background:'var(--s1)', color:'var(--tp)',
+                              fontSize:12, lineHeight:1, fontFamily:'inherit',
+                              cursor: (!podeSalvar || pct >= 100) ? 'not-allowed' : 'pointer',
+                              opacity: (!podeSalvar || pct >= 100) ? .4 : 1,
+                            }}>
+                            <i className="ti ti-plus" />
+                          </button>
+                        </div>
                       </div>
                       <div style={{ textAlign:'right' }}>
                         <div style={{ fontSize:10, color:'var(--tm)', marginBottom:2 }}>Avanço hoje</div>
