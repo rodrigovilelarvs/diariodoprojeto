@@ -370,6 +370,9 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
 .admin-sb-toggle-input { display: none; }
 .admin-sb-hamburger    { display: none; }
 .admin-sb-overlay      { display: none; }
+/* Botão de tema na Topbar: só existe pro celular (no desktop o tema já
+   troca pelo rodapé do menu lateral, sempre visível lá). */
+.topbar-theme-mobile    { display: none; }
 
 @media (max-width: 860px) {
   .sb-hamburger {
@@ -379,6 +382,7 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
     cursor: pointer; font-size: 15px;
   }
   .sb-hamburger:hover { background: var(--s2); }
+  .topbar-theme-mobile { display: flex; }
 
   .sb {
     position: fixed; top: 0; left: 0; height: 100vh; height: 100dvh; z-index: 60;

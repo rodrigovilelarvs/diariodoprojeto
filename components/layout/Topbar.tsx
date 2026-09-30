@@ -1,6 +1,8 @@
 'use client'
 // src/components/layout/Topbar.tsx
 
+import { ThemeToggle } from '@/components/layout/ThemeToggle'
+
 interface Props {
   titulo:    string
   subtitulo?: string
@@ -21,14 +23,19 @@ export function Topbar({ titulo, subtitulo, acoes }: Props) {
           )}
         </div>
       </div>
-      {acoes && (
-        // flexWrap sempre ligado: no desktop nunca precisa (os botões cabem
-        // numa linha só), mas no celular evita que o grupo de ações de
-        // páginas com vários botões saia cortado fora da tela.
-        <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap', rowGap: 6 }}>
-          {acoes}
+      {/* flexWrap sempre ligado: no desktop nunca precisa (os botões cabem
+          numa linha só), mas no celular evita que o grupo de ações de
+          páginas com vários botões saia cortado fora da tela. Renderiza
+          sempre (não só quando a página passa `acoes`) porque é aqui que
+          mora o botão de tema claro/escuro no celular — no menu-gaveta ele
+          existe, mas fica escondido lá embaixo, fora do que a pessoa vê de
+          cara; aqui fica sempre à mão, sem precisar abrir o menu. */}
+      <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap', rowGap: 6 }}>
+        {acoes}
+        <div className="topbar-theme-mobile">
+          <ThemeToggle />
         </div>
-      )}
+      </div>
     </div>
   )
 }
