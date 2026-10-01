@@ -40,7 +40,7 @@ const PLANOS: Array<{
 }> = [
   {
     tipo: 'Starter', resumo: 'Pra experimentar a plataforma sem compromisso.',
-    itens: ['Até 3 usuários', 'Até 2 projetos', '30 RDOs por mês', 'Exportação em PDF'],
+    itens: ['Até 4 usuários', 'Até 2 projetos', '30 RDOs por mês', 'Exportação em PDF'],
   },
   {
     tipo: 'Pro', resumo: 'Pra equipes que precisam de mais recursos.', destaque: true,
@@ -283,6 +283,19 @@ export default function LandingPage() {
           <Link href="/login" style={{ fontSize: 11, color: 'var(--ts)', textDecoration: 'none' }}>Entrar →</Link>
         </div>
       </footer>
+
+      {/* Contato via WhatsApp — ícone já no ar, mas sem link/ação até
+          definirmos o número oficial de atendimento (pedido explícito:
+          deixar visível e sem funcionamento até segunda ordem). */}
+      <button
+        type="button"
+        className="ldg-whatsapp-fab"
+        aria-label="WhatsApp (em breve)"
+        title="Em breve"
+        onClick={e => e.preventDefault()}
+      >
+        <i className="ti ti-brand-whatsapp" />
+      </button>
     </div>
   )
 }
