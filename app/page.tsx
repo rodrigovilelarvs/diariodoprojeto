@@ -47,9 +47,11 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
 
 const RECURSOS: Array<{ icon: string; titulo: string; desc: string }> = [
   { icon: 'ti-file-text',           titulo: 'RDO digital completo',            desc: 'Mão de obra, equipamentos, clima, atividades e ocorrências — tudo em um só registro diário, sem planilha solta.' },
-  { icon: 'ti-writing',             titulo: 'Assinatura digital, Lei 14.063',  desc: 'Assinatura aberta a todo o time ou por responsáveis definidos, com validade jurídica — sem papel, sem carimbo.' },
+  { icon: 'ti-list-check',          titulo: 'Lista de tarefas com prazo',      desc: 'Defina data de início e término de cada etapa e acompanhe o progresso real × planejado — o sistema mostra se está adiantado ou atrasado, sem calcular na mão.' },
+  { icon: 'ti-writing',             titulo: 'Assinatura digital, Lei 14.063',  desc: 'Cadastre quem pode assinar cada projeto para aprovação — todo o time ou só responsáveis definidos por você — com validade jurídica, sem papel, sem carimbo.' },
   { icon: 'ti-checklist',           titulo: 'Fluxo de aprovação configurável', desc: 'Defina quem aprova cada projeto, acompanhe pendências e corte o vai-e-volta por e-mail.' },
   { icon: 'ti-chart-bar',           titulo: 'Relatórios e dashboards',        desc: 'Desvio planejado × realizado, H/H por categoria, status dos RDOs e ocorrências, sempre atualizados.' },
+  { icon: 'ti-download',            titulo: 'Exportação completa do projeto', desc: 'Ao final da obra, baixe tudo em lote: todos os RDOs em PDF e todas as fotos e vídeos do projeto, organizados por data.' },
   { icon: 'ti-users',               titulo: 'Equipe com permissão sob medida', desc: 'Administrador ou perfil personalizado, pessoa por pessoa — e acesso por projeto quando precisar restringir.' },
   { icon: 'ti-device-mobile',       titulo: 'Pensado pro celular da obra',    desc: 'Interface 100% responsiva — quem está no canteiro registra do próprio celular, sem travar.' },
   { icon: 'ti-building-skyscraper', titulo: 'Multi-empresa, uma conta só',    desc: 'O mesmo e-mail acessa várias empresas sem misturar dados — troca em dois cliques.' },
