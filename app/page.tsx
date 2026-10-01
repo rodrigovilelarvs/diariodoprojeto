@@ -143,12 +143,14 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
-            <div style={{ display: 'flex', gap: 14, marginTop: 16, paddingTop: 14, borderTop: '.5px solid var(--b)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 12, rowGap: 8, marginTop: 16, paddingTop: 14, borderTop: '.5px solid var(--b)' }}>
               {[
-                { i: 'ti-users', t: '12 pessoas' },
-                { i: 'ti-truck', t: '4 equip.' },
+                { i: 'ti-file-text', t: '1 RDO' },
+                { i: 'ti-list-check', t: '6 atividades' },
                 { i: 'ti-photo', t: '9 fotos' },
-                { i: 'ti-writing-sign', t: '3 assinaturas' },
+                { i: 'ti-alert-triangle', t: '2 ocorrências' },
+                { i: 'ti-message', t: '5 comentários' },
+                { i: 'ti-video', t: '2 vídeos' },
               ].map(it => (
                 <div key={it.t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9.5, color: 'var(--tm)' }}>
                   <i className={`ti ${it.i}`} style={{ color: 'var(--ta)', fontSize: 12 }} />{it.t}
