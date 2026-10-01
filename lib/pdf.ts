@@ -34,6 +34,7 @@ const COR = {
   tsu:  [39,  128, 86]  as [number,number,number],  // verde — aprovado/positivo
   tw:   [163, 110, 8]   as [number,number,number],  // âmbar — pendente/atenção
   td:   [178, 44,  44]  as [number,number,number],  // vermelho — rejeitado/crítico
+  tpu:  [142, 36,  170] as [number,number,number],  // roxo — só usado nos gráficos de relatórios (mão de obra indireta)
   tp:   [28,  38,  51]  as [number,number,number],  // texto principal (títulos, nomes) — grafite escuro
   ts:   [100, 112, 130] as [number,number,number],  // texto secundário — cinza-ardósia, legível sobre claro
   brd:  [214, 221, 231] as [number,number,number],  // linha/borda sutil
@@ -932,6 +933,15 @@ const OC_L_PDF: Record<string,string> = {
   CONDICAO_CLIMATICA: 'Condição climática', FALTA_MAO_DE_OBRA: 'Falta de mão de obra',
   ACIDENTE_INCIDENTE: 'Acidente/incidente', PARALISACAO: 'Paralisação', OUTRO: 'Outro',
 }
+// Mesmas cores usadas nos gráficos da tela (DonutStatusRdos/STATUS_COR e
+// CATEGORIA_COR em app/(app)/relatorios/page.tsx), mapeadas pra RGB da
+// paleta clara deste arquivo.
+const STATUS_COR_PDF: Record<string,[number,number,number]> = {
+  RASCUNHO: COR.ts, PENDENTE_APROVACAO: COR.tw, APROVADO: COR.tsu, REJEITADO: COR.td,
+}
+const CATEGORIA_COR_PDF: Record<string,[number,number,number]> = {
+  DIRETA: COR.ta, INDIRETA: COR.tpu, TERCEIRIZADO: COR.tsu,
+}
 
 function fmtBytesPdf(bytes: number): string {
   if (bytes <= 0) return '0 MB'
@@ -952,6 +962,17 @@ function fmtLabelBucketPdf(iso: string, agrupamento: 'dia' | 'semana' | 'mes'): 
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 
+// Arredonda o topo do eixo Y do gráfico "RDOs ao longo do tempo" pra um
+// número redondo (1/2/5 × potência de 10) — mesma lógica de niceMax() em
+// app/(app)/relatorios/page.tsx.
+function niceMaxPdf(valor: number): number {
+  if (valor <= 0) return 4
+  const magnitude = Math.pow(10, Math.floor(Math.log10(valor)))
+  const residual = valor / magnitude
+  const niceResidual = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10
+  return niceResidual * magnitude
+}
+
 export async function gerarPdfRelatorio(
   data: RelatorioResponse,
   filtros: { periodoLabel: string; filtrosTexto?: string },
@@ -959,7 +980,6 @@ export async function gerarPdfRelatorio(
   opcoes?: { retornarBlob?: boolean },
 ): Promise<{ blob: Blob; nomeArq: string } | void> {
   const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
 
   const W = 210, M = 12, CW = W - M * 2
   const PAGE_BREAK_Y = 282
@@ -1024,6 +1044,168 @@ export async function gerarPdfRelatorio(
     y += rows*(cardH+gap) + 2
   }
 
+  // ── Helpers de desenho de gráfico — réplicas vetoriais dos componentes
+  // SVG/div da tela (DonutStatusRdos, FunnelChart, barras) ─────────────
+  function fillPolygon(points: Array<[number,number]>, color:[number,number,number]) {
+    if (points.length < 3) return
+    doc.setFillColor(...color)
+    const deltas: Array<[number,number]> = []
+    for (let i = 1; i < points.length; i++) deltas.push([points[i][0]-points[i-1][0], points[i][1]-points[i-1][1]])
+    doc.lines(deltas, points[0][0], points[0][1], [1,1], 'F', true)
+  }
+  // Clareia uma cor em direção ao branco (mistura) — usado nos degradês do
+  // funil, já que o jsPDF não tem opacidade confiável em preenchimentos.
+  function blend(c:[number,number,number], factor:number): [number,number,number] {
+    return [
+      Math.round(c[0]*factor + 255*(1-factor)),
+      Math.round(c[1]*factor + 255*(1-factor)),
+      Math.round(c[2]*factor + 255*(1-factor)),
+    ]
+  }
+  // Um "gomo" do anel do donut — aproxima o arco por pequenos quadriláteros
+  // (o jsPDF não tem stroke de arco nativo confiável).
+  function drawRingSegment(cx:number, cy:number, rInner:number, rOuter:number, startDeg:number, endDeg:number, color:[number,number,number]) {
+    if (endDeg <= startDeg) return
+    const steps = Math.max(1, Math.ceil((endDeg-startDeg)/4))
+    for (let i = 0; i < steps; i++) {
+      const a0 = (startDeg + (endDeg-startDeg)*i/steps) * Math.PI/180
+      const a1 = (startDeg + (endDeg-startDeg)*(i+1)/steps) * Math.PI/180
+      fillPolygon([
+        [cx+rOuter*Math.cos(a0), cy+rOuter*Math.sin(a0)],
+        [cx+rOuter*Math.cos(a1), cy+rOuter*Math.sin(a1)],
+        [cx+rInner*Math.cos(a1), cy+rInner*Math.sin(a1)],
+        [cx+rInner*Math.cos(a0), cy+rInner*Math.sin(a0)],
+      ], color)
+    }
+  }
+  // Donut + legenda lateral — réplica de DonutStatusRdos
+  function donutSection(dados: Array<{status:string; total:number}>, totalRdos:number) {
+    const rOuter = 15, rInner = 9.5
+    const topo = y
+    const cx = M + rOuter + 1, cy = topo + rOuter
+    if (totalRdos > 0) {
+      let ang = -90
+      dados.filter(d => d.total > 0).forEach(d => {
+        const sweep = (d.total/totalRdos) * 360
+        const gap = Math.min(3, sweep*0.08)
+        drawRingSegment(cx, cy, rInner, rOuter, ang, ang + Math.max(0, sweep-gap), STATUS_COR_PDF[d.status] ?? COR.ts)
+        ang += sweep
+      })
+    } else {
+      drawRingSegment(cx, cy, rInner, rOuter, -90, 269.9, COR.s2)
+    }
+    txt(String(totalRdos), cx, cy+1.3, { size:12, bold:true, cor:COR.tp, align:'center' })
+    txt(`RDO${totalRdos===1?'':'s'}`, cx, cy+4.6, { size:5, cor:COR.ts, align:'center' })
+
+    const legX = M + rOuter*2 + 10
+    let legY = topo + 4
+    dados.forEach(d => {
+      const pct = totalRdos > 0 ? Math.round((d.total/totalRdos)*100) : 0
+      rect(legX, legY-2.3, 2.3, 2.3, STATUS_COR_PDF[d.status] ?? COR.ts, 0.5)
+      txt(STATUS_L[d.status] ?? d.status, legX+4, legY, { size:7, cor:COR.ts })
+      txt(String(d.total), M+CW-14, legY, { size:7, bold:true, cor:COR.tp, align:'right' })
+      txt(`${pct}%`, M+CW, legY, { size:6.5, cor:COR.ts, align:'right' })
+      legY += 4.8
+    })
+    y = topo + Math.max(rOuter*2+4, legY-topo+1)
+  }
+  // Funil + rótulos — réplica de FunnelChart
+  function funnelSection(dados: Array<{label:string; valor:number; sufixo?:string}>, corBase:[number,number,number]) {
+    const max = Math.max(1, ...dados.map(d => d.valor))
+    const n = dados.length
+    const chartW = 50, rowH = 6.2
+    const topo = y
+    dados.forEach((d, i) => {
+      const topPct = d.valor/max
+      const botPct = (i < n-1 ? dados[i+1].valor : d.valor)/max
+      const topHalf = (topPct*chartW)/2
+      const botHalf = (botPct*chartW)/2
+      const y1 = topo + i*rowH
+      const y2 = y1 + rowH - 0.6
+      const cx = M + chartW/2
+      const opac = n > 1 ? 1 - (i/(n-1))*0.55 : 1
+      fillPolygon([[cx-topHalf,y1],[cx+topHalf,y1],[cx+botHalf,y2],[cx-botHalf,y2]], blend(corBase, opac))
+    })
+    const labX = M + chartW + 6
+    dados.forEach((d, i) => {
+      const meio = topo + i*rowH + rowH/2
+      doc.setFontSize(6.5)
+      const labelLines = doc.splitTextToSize(d.label, M+CW-labX-20)
+      txt(labelLines[0] ?? d.label, labX, meio-0.3, { size:6.5, cor:COR.ts })
+      txt(`${d.valor}${d.sufixo ?? ''}`, M+CW, meio-0.3, { size:6.5, bold:true, cor:COR.tp, align:'right' })
+    })
+    y = topo + n*rowH + 3
+  }
+  // Barra empilhada + legenda — réplica do bloco "H/H por categoria"
+  function stackedBarSection(itens: Array<{label:string; valor:number; sub:string; cor:[number,number,number]}>) {
+    const total = itens.reduce((s,it) => s+it.valor, 0)
+    const barH = 6, topo = y
+    let xCur = M
+    itens.forEach(it => {
+      const w = total > 0 ? (it.valor/total)*CW : 0
+      if (w > 0.3) rect(xCur, topo, Math.max(0, w-0.5), barH, it.cor, 1)
+      xCur += w
+    })
+    let ly = topo + barH + 5
+    let lx = M
+    itens.forEach(it => {
+      rect(lx, ly-2.3, 2.3, 2.3, it.cor, 0.5)
+      const texto = `${it.label}  ${it.sub}`
+      doc.setFontSize(6.5)
+      const w = doc.getTextWidth(texto)
+      if (lx + 4 + w > M + CW) { lx = M; ly += 4.8 }
+      txt(texto, lx+4, ly, { size:6.5, cor:COR.ts })
+      lx += 4 + w + 9
+    })
+    y = ly + 4.5
+  }
+  // Fileira de barras horizontais com rótulo — usada pro ranking de desvio
+  // e pra distribuição do tempo de aprovação (mesmo padrão visual dos dois
+  // blocos na tela, só muda a cor de cada barra).
+  function barrasHorizontaisSection(dados: Array<{label:string; valor:string; pct:number; cor:[number,number,number]}>) {
+    dados.forEach(d => {
+      txt(d.label, M, y+2.4, { size:6.5, cor:COR.tp })
+      txt(d.valor, M+CW, y+2.4, { size:6.5, bold:true, cor:d.cor, align:'right' })
+      y += 3.4
+      rect(M, y, CW, 1.8, COR.s2, 0.6)
+      rect(M, y, Math.max(0, (d.pct/100)*CW), 1.8, d.cor, 0.6)
+      y += 4.4
+    })
+  }
+  // Barras verticais com grade — réplica de "RDOs ao longo do tempo"
+  function barsVerticaisSection(pontos: Array<{data:string; total:number}>, agrupamento:'dia'|'semana'|'mes') {
+    const max = niceMaxPdf(Math.max(1, ...pontos.map(p => p.total)))
+    const chartH = 34, chartX = M+8, chartW = CW-8
+    const baseY = y + chartH
+    // Evita rótulos repetidos no eixo Y quando o total é muito baixo (ex.:
+    // 1 RDO no período) — mesma lógica de ticksPeriodo em
+    // app/(app)/relatorios/page.tsx. A linha de grade sempre desenha, só o
+    // texto do rótulo some quando repetiria o valor anterior.
+    let labelAnterior: number | null = null
+    for (let i = 4; i >= 0; i--) {
+      const gy = baseY - chartH*i/4
+      doc.setDrawColor(...COR.brd)
+      doc.setLineWidth(0.15)
+      doc.line(chartX, gy, chartX+chartW, gy)
+      const v = Math.round(max*i/4)
+      if (v !== labelAnterior) txt(String(v), chartX-2, gy+1, { size:5, cor:COR.ts, align:'right' })
+      labelAnterior = v
+    }
+    const n = pontos.length
+    const slot = chartW/n
+    const barW = Math.max(0.5, slot*0.6)
+    const passo = n > 20 ? Math.ceil(n/20) : 1
+    pontos.forEach((p, i) => {
+      const bh = (p.total/max)*chartH
+      const bx = chartX + i*slot + (slot-barW)/2
+      rect(bx, baseY-bh, barW, Math.max(0.3, bh), COR.ta, 0.3)
+      if (i % passo === 0) {
+        txt(fmtLabelBucketPdf(p.data, agrupamento), chartX+i*slot+slot/2, baseY+3.4, { size:4.3, cor:COR.ts, align:'center' })
+      }
+    })
+    y = baseY + 7
+  }
+
   // ════════════════════════════════════════════════════
   // CAPA / HEADER
   // ════════════════════════════════════════════════════
@@ -1067,118 +1249,89 @@ export async function gerarPdfRelatorio(
     { valor:fmtBytesPdf(data.kpis.armazenamentoBytes), label:'Armazenamento' },
   ])
 
-  // Estilo compartilhado das tabelas desta página — igual ao do PDF do RDO
-  const tableStyle = {
-    styles: { fontSize:7, cellPadding:1.3, fillColor:COR.s2, textColor:COR.tp, lineColor:COR.brd, lineWidth:0.2 },
-    headStyles: { fillColor:COR.s1, textColor:COR.ta, fontStyle:'bold' as const },
-    alternateRowStyles: { fillColor:COR.s1 },
-    margin: { left:M, right:M },
-  }
-
   // ════════════════════════════════════════════════════
-  // H/H POR CATEGORIA DE MÃO DE OBRA
+  // H/H POR CATEGORIA DE MÃO DE OBRA — barra empilhada
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(24)
+  novaPaginaSeNecessario(26)
   secHeader('H/H por categoria de mão de obra')
   if (data.hhPorCategoria.length === 0) {
     vazio('Sem registros de mão de obra no período.')
   } else {
-    const totalHHCat = data.hhPorCategoria.reduce((s,h) => s+h.totalHH, 0)
-    autoTable(doc, {
-      startY: y,
-      head: [['Categoria','Pessoas','H/H','% do total']],
-      body: data.hhPorCategoria.map(h => [
-        CATEGORIA_L[h.categoria] ?? h.categoria, String(h.totalPessoas), String(h.totalHH),
-        `${totalHHCat > 0 ? Math.round((h.totalHH/totalHHCat)*100) : 0}%`,
-      ]),
-      ...tableStyle,
-    })
-    y = (doc as any).lastAutoTable.finalY + 4
+    stackedBarSection(data.hhPorCategoria.map(h => ({
+      label: CATEGORIA_L[h.categoria] ?? h.categoria,
+      valor: h.totalHH,
+      sub: `${h.totalPessoas}p · ${h.totalHH} H/H`,
+      cor: CATEGORIA_COR_PDF[h.categoria] ?? COR.ts,
+    })))
   }
 
   // ════════════════════════════════════════════════════
-  // TOP 5 — PIORES DESVIOS
+  // TOP 5 — PIORES DESVIOS — barras de desvio (igual ao ranking da tela)
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(24)
+  novaPaginaSeNecessario(8 + data.rankingPiorDesvio.length*7.8)
   secHeader('Top 5 — piores desvios')
   if (data.rankingPiorDesvio.length === 0) {
     vazio('Nenhum projeto ativo no filtro selecionado.')
   } else {
-    autoTable(doc, {
-      startY: y,
-      head: [['Projeto','% Real','% Planejado','Desvio']],
-      body: data.rankingPiorDesvio.map(p => [
-        p.nome, `${p.pctReal}%`, `${p.pctPlanejado}%`, `${p.desvio >= 0 ? '+' : ''}${p.desvio}%`,
-      ]),
-      ...tableStyle,
-      columnStyles: { 1:{halign:'center'}, 2:{halign:'center'}, 3:{halign:'center', fontStyle:'bold' as const} },
-    })
-    y = (doc as any).lastAutoTable.finalY + 4
+    const maxAbsDesvio = Math.max(1, ...data.rankingPiorDesvio.map(p => Math.abs(p.desvio)))
+    barrasHorizontaisSection(data.rankingPiorDesvio.map(p => ({
+      label: p.nome,
+      valor: `${p.pctReal}% / plan ${p.pctPlanejado}%   ${p.desvio >= 0 ? '+' : ''}${p.desvio}%`,
+      pct: (Math.abs(p.desvio)/maxAbsDesvio)*100,
+      cor: p.desvio < 0 ? COR.td : COR.tsu,
+    })))
+    y += 1
   }
 
   // ════════════════════════════════════════════════════
-  // STATUS DOS RDOS
+  // STATUS DOS RDOS — donut
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(24)
+  novaPaginaSeNecessario(8 + Math.max(34, data.statusRdos.length*4.8+8))
   secHeader('Status dos RDOs')
   if (data.statusRdos.every(s => s.total === 0)) {
     vazio('Nenhum RDO no período.')
   } else {
-    autoTable(doc, {
-      startY: y,
-      head: [['Status','Total','%']],
-      body: data.statusRdos.map(s => [
-        STATUS_L[s.status] ?? s.status, String(s.total),
-        `${data.kpis.totalRdos > 0 ? Math.round((s.total/data.kpis.totalRdos)*100) : 0}%`,
-      ]),
-      ...tableStyle,
-      columnStyles: { 1:{halign:'center'}, 2:{halign:'center'} },
-    })
-    y = (doc as any).lastAutoTable.finalY + 4
+    donutSection(data.statusRdos, data.kpis.totalRdos)
   }
 
   // ════════════════════════════════════════════════════
-  // OCORRÊNCIAS POR TIPO + HORAS IMPACTADAS
+  // OCORRÊNCIAS POR TIPO — funil
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(24)
+  novaPaginaSeNecessario(10 + data.ocorrenciasPorTipo.length*6.2)
   secHeader('Ocorrências por tipo')
   if (data.ocorrenciasPorTipo.length === 0) {
     vazio('Nenhuma ocorrência no período.')
   } else {
-    autoTable(doc, {
-      startY: y,
-      head: [['Tipo','Total','Horas impactadas']],
-      body: data.ocorrenciasPorTipo.map(o => [
-        OC_L_PDF[o.tipo] ?? o.tipo, String(o.total), o.horas > 0 ? fmtHorasPdf(o.horas) : '—',
-      ]),
-      ...tableStyle,
-      columnStyles: { 1:{halign:'center'}, 2:{halign:'center'} },
-    })
-    y = (doc as any).lastAutoTable.finalY + 4
+    funnelSection(data.ocorrenciasPorTipo.map(o => ({ label: OC_L_PDF[o.tipo] ?? o.tipo, valor: o.total })), COR.td)
   }
 
   // ════════════════════════════════════════════════════
-  // H/H POR FUNÇÃO
+  // HORAS IMPACTADAS POR OCORRÊNCIAS — funil
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(24)
+  const horasOrdenadas = [...data.ocorrenciasPorTipo].sort((a,b) => b.horas - a.horas).filter(o => o.horas > 0)
+  novaPaginaSeNecessario(10 + horasOrdenadas.length*6.2)
+  secHeader('Horas impactadas por ocorrências')
+  if (horasOrdenadas.length === 0) {
+    vazio('Nenhuma ocorrência com duração registrada no período.')
+  } else {
+    funnelSection(horasOrdenadas.map(o => ({ label: OC_L_PDF[o.tipo] ?? o.tipo, valor: o.horas, sufixo: 'h' })), COR.tw)
+  }
+
+  // ════════════════════════════════════════════════════
+  // H/H POR FUNÇÃO — funil
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(10 + data.hhPorFuncao.length*6.2)
   secHeader('H/H por função')
   if (data.hhPorFuncao.length === 0) {
     vazio('Sem registros de mão de obra no período.')
   } else {
-    autoTable(doc, {
-      startY: y,
-      head: [['Função','H/H']],
-      body: data.hhPorFuncao.map(h => [h.funcao, String(h.totalHH)]),
-      ...tableStyle,
-      columnStyles: { 1:{halign:'center'} },
-    })
-    y = (doc as any).lastAutoTable.finalY + 4
+    funnelSection(data.hhPorFuncao.map(h => ({ label: h.funcao, valor: h.totalHH, sufixo: ' H/H' })), COR.tsu)
   }
 
   // ════════════════════════════════════════════════════
-  // TEMPO MÉDIO DE APROVAÇÃO
+  // TEMPO MÉDIO DE APROVAÇÃO — barras horizontais
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(24)
+  novaPaginaSeNecessario(10 + data.tempoAprovacao.distribuicao.length*7.8)
   secHeader(
     'Tempo médio de aprovação de RDO',
     data.tempoAprovacao.mediaHoras != null
@@ -1188,34 +1341,21 @@ export async function gerarPdfRelatorio(
   if (data.tempoAprovacao.amostra === 0) {
     vazio('Nenhum RDO enviado e decidido no período.')
   } else {
-    autoTable(doc, {
-      startY: y,
-      head: [['Faixa','Total']],
-      body: data.tempoAprovacao.distribuicao.map(d => [d.faixa, String(d.total)]),
-      ...tableStyle,
-      columnStyles: { 1:{halign:'center'} },
-    })
-    y = (doc as any).lastAutoTable.finalY + 4
+    const maxFaixa = Math.max(1, ...data.tempoAprovacao.distribuicao.map(d => d.total))
+    barrasHorizontaisSection(data.tempoAprovacao.distribuicao.map(d => ({
+      label: d.faixa, valor: String(d.total), pct: (d.total/maxFaixa)*100, cor: COR.ta,
+    })))
   }
 
   // ════════════════════════════════════════════════════
-  // RDOS AO LONGO DO TEMPO
+  // RDOS AO LONGO DO TEMPO — barras verticais com grade
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(24)
+  novaPaginaSeNecessario(48)
   secHeader('RDOs ao longo do tempo')
   if (data.rdosPorPeriodo.pontos.length === 0) {
     vazio('Nenhum RDO no período.')
   } else {
-    autoTable(doc, {
-      startY: y,
-      head: [['Período','RDOs']],
-      body: data.rdosPorPeriodo.pontos.map(p => [
-        fmtLabelBucketPdf(p.data, data.rdosPorPeriodo.agrupamento), String(p.total),
-      ]),
-      ...tableStyle,
-      columnStyles: { 1:{halign:'center'} },
-    })
-    y = (doc as any).lastAutoTable.finalY + 4
+    barsVerticaisSection(data.rdosPorPeriodo.pontos, data.rdosPorPeriodo.agrupamento)
   }
 
   // ════════════════════════════════════════════════════
