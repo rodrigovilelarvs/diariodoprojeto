@@ -565,3 +565,115 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
      funil de 200px de SVG etc.), então em 1 coluna cheia eles cabem certo. */
   .rel-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   LANDING PAGE (app/page.tsx) — tela pública, fora do app logado.
+   Usa os mesmos tokens de cor (var(--s0) etc.) pra já nascer com
+   suporte a tema claro/escuro, igual ao resto da plataforma.
+   ══════════════════════════════════════════════════════════════ */
+.ldg-wrap { max-width: 1120px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+
+.ldg-header {
+  position: sticky; top: 0; z-index: 50;
+  background: color-mix(in srgb, var(--s0) 85%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: .5px solid var(--b);
+}
+.ldg-nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 56px; }
+.ldg-nav-links { display: flex; gap: 22px; }
+.ldg-nav-links a { font-size: 12.5px; color: var(--ts); text-decoration: none; transition: color .15s; }
+.ldg-nav-links a:hover { color: var(--tp); }
+
+.ldg-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: var(--r); border: .5px solid var(--bs);
+  background: transparent; color: var(--tp);
+  font-size: 13px; font-weight: 500; text-decoration: none;
+  cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.ldg-btn:hover { background: var(--s2); }
+.ldg-btn-p { background: var(--ta); border-color: var(--ta); color: var(--oa); }
+.ldg-btn-p:hover { opacity: .9; background: var(--ta); }
+
+.ldg-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 500; color: var(--ta);
+  background: var(--bga); border: .5px solid var(--ba);
+  border-radius: 20px; padding: 5px 12px;
+}
+.ldg-eyebrow { font-size: 11px; font-weight: 700; color: var(--ta); text-transform: uppercase; letter-spacing: .08em; }
+
+.ldg-card {
+  background: var(--s2); border: .5px solid var(--b); border-radius: 14px;
+  padding: 20px; transition: border-color .15s, transform .15s;
+}
+.ldg-icon-box {
+  width: 36px; height: 36px; border-radius: 10px; margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bga); color: var(--ta); font-size: 17px;
+}
+.ldg-features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+
+.ldg-steps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
+.ldg-step-n {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ta); color: var(--oa); font-size: 13px; font-weight: 700;
+}
+.ldg-step-line {
+  position: absolute; top: 16px; left: calc(100% + 4px); width: calc(28px - 8px);
+  height: 1px; background: var(--b);
+}
+
+.ldg-pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.ldg-plan { position: relative; display: flex; flex-direction: column; }
+.ldg-plan-badge {
+  position: absolute; top: -11px; right: 18px;
+  background: var(--ta); color: var(--oa); font-size: 10px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px;
+}
+
+.ldg-mock { background: var(--s2); border: .5px solid var(--b); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.ldg-mock-top { display: flex; align-items: center; gap: 5px; padding: 10px 14px; background: var(--s1); border-bottom: .5px solid var(--b); }
+.ldg-mock-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--b); }
+.ldg-mock-body { padding: 18px; }
+
+.ldg-nav-toggle-input { display: none; }
+.ldg-hamburger { display: none; }
+.ldg-nav-mobile { display: none; }
+
+@media (max-width: 860px) {
+  .ldg-nav-links { display: none; }
+  .ldg-hamburger {
+    display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: var(--r); flex-shrink: 0;
+    border: .5px solid var(--bs); background: transparent; color: var(--tp);
+    cursor: pointer; font-size: 15px;
+  }
+  .ldg-nav-mobile {
+    display: flex; flex-direction: column; overflow: hidden;
+    max-height: 0; transition: max-height .22s ease;
+    border-top: .5px solid transparent;
+  }
+  .ldg-nav-toggle-input:checked ~ .ldg-header .ldg-nav-mobile {
+    max-height: 220px; border-top-color: var(--b);
+  }
+  .ldg-nav-mobile a {
+    padding: 12px 24px; font-size: 13px; color: var(--ts); text-decoration: none;
+    border-bottom: .5px solid var(--b);
+  }
+}
+
+@media (max-width: 760px) {
+  .ldg-hero-grid { grid-template-columns: 1fr !important; }
+  .ldg-hero-grid > *:last-child { order: -1; }
+  .ldg-seg-grid { grid-template-columns: 1fr !important; }
+  .ldg-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .ldg-steps-grid { grid-template-columns: 1fr !important; }
+  .ldg-step-line { display: none; }
+  .ldg-pricing-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 480px) {
+  .ldg-features-grid { grid-template-columns: 1fr !important; }
+}

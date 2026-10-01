@@ -24,6 +24,13 @@ const ADMIN_PREFIX = '/admin'
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // A raiz ('/') é a landing page pública (app/page.tsx) — comparação exata,
+  // nunca por prefixo: todo caminho começa com '/', então colocar '/' na
+  // lista PUBLICAS (que usa startsWith) liberaria o app inteiro sem querer.
+  if (pathname === '/') {
+    return NextResponse.next()
+  }
+
   // Libera rotas públicas e assets
   if (
     PUBLICAS.some((p) => pathname.startsWith(p)) ||
