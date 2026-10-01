@@ -106,7 +106,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
           {/* Só aqui dentro do modal "RDOs do projeto" (sem Topbar, ver abaixo)
               — na página normal esse botão duplicava o do Topbar. */}
           {projetoIdFixo && (
-            <button className="btn btn-p btn-sm" onClick={() => router.push('/rdos/novo')}>
+            <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${projetoIdFixo}`)}>
               <i className="ti ti-plus" /> Novo RDO
             </button>
           )}

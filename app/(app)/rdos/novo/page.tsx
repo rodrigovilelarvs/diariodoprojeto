@@ -1,18 +1,29 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useProjetos, useCriarRdo, useRdos } from '@/hooks/useEmpresa'
 import { Topbar } from '@/components/layout/Topbar'
-import { RdoStatusBadge } from '@/components/ui'
+import { RdoStatusBadge, Skeleton } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { toast } from 'sonner'
 import { mensagemErro } from '@/lib/api'
 
 export default function NovoRdoPage() {
+  return (
+    <Suspense fallback={<div className="main"><div className="content"><Skeleton h={300} /></div></div>}>
+      <NovoRdoConteudo />
+    </Suspense>
+  )
+}
+
+function NovoRdoConteudo() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { data: projetos = [] } = useProjetos()
   const criarRdo = useCriarRdo()
-  const [projetoId, setProjetoId] = useState('')
+  // Vindo de dentro de um projeto (?projetoId=...), já chega pré-selecionado
+  // — mas o <select> continua livre pra trocar, não é travado.
+  const [projetoId, setProjetoId] = useState(() => searchParams.get('projetoId') ?? '')
   const [data, setData] = useState(new Date().toISOString().slice(0,10))
   const [copiar, setCopiar] = useState(true)
 
