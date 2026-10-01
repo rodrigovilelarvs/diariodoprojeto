@@ -29,8 +29,8 @@ const RECURSOS: Array<{ icon: string; titulo: string; desc: string }> = [
 
 const PASSOS: Array<{ n: string; titulo: string; desc: string }> = [
   { n: '1', titulo: 'Registre o dia',        desc: 'Mão de obra, equipamentos, clima e atividades em minutos, direto do celular ou do escritório.' },
-  { n: '2', titulo: 'Colha as assinaturas',  desc: 'Responsáveis assinam digitalmente, com validade legal — sem imprimir nada.' },
-  { n: '3', titulo: 'Envie para aprovação',  desc: 'Fluxo configurável por projeto, com notificação de quem precisa agir.' },
+  { n: '2', titulo: 'Envie para aprovação',  desc: 'Fluxo configurável por projeto, com notificação de quem precisa agir.' },
+  { n: '3', titulo: 'Colha as assinaturas',  desc: 'Responsáveis assinam digitalmente, com validade legal — sem imprimir nada.' },
   { n: '4', titulo: 'Acompanhe em relatórios', desc: 'Desvio, progresso e indicadores sempre atualizados, prontos pra exportar.' },
 ]
 
