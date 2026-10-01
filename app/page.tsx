@@ -27,13 +27,11 @@ function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: nu
   useEffect(() => {
     const el = ref.current
     if (!el) return
+    // Alterna a cada entrada/saída da viewport (sem disconnect) — assim a
+    // transição toca de novo toda vez, inclusive ao descer e subir a barra
+    // de rolagem, não só na primeira vez que a seção aparece.
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisivel(true)
-          obs.disconnect()
-        }
-      },
+      ([entry]) => setVisivel(entry.isIntersecting),
       { threshold: 0.15 },
     )
     obs.observe(el)
