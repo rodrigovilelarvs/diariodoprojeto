@@ -351,7 +351,7 @@ export interface Rdo {
   precipitacaoMm?: number
   climaImpacto:   ClimaImpacto
   observacoes?:   string
-  projeto:        Pick<Projeto, 'id' | 'nome' | 'dataInicioContrato' | 'dataFimContrato' | 'pedidoCompraContrato' | 'empresaContratada' | 'assinaturaModo' | 'assinante1' | 'assinante2' | 'assinante3'>
+  projeto:        Pick<Projeto, 'id' | 'nome' | 'dataInicioContrato' | 'dataFimContrato' | 'pedidoCompraContrato' | 'empresaContratada' | 'assinaturaModo' | 'assinante1' | 'assinante2' | 'assinante3' | 'gestor'>
   emissor:        UsuarioResumo
   atividadeRegistros: RegistroAtividade[]
   maoDeObra:      MaoDeObraItem[]

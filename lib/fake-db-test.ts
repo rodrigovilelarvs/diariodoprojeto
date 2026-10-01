@@ -480,6 +480,7 @@ function montarRdo({ id, numero, projeto, dataRdo, status, midias = [] }: {
       dataInicioContrato: projeto.dataInicioContrato, dataFimContrato: projeto.dataFimContrato,
       pedidoCompraContrato: projeto.pedidoCompraContrato, empresaContratada: projeto.empresaContratada,
       assinaturaModo: projeto.assinaturaModo, assinante1: null, assinante2: null, assinante3: null,
+      gestor: projeto.gestor ?? null,
     },
     atividadeRegistros: [], maoDeObra: [], equipamentos: [],
     ocorrencias: [], midias, comentarios: [], assinaturas: [], aprovacoes: [],

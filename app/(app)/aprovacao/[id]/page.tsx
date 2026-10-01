@@ -300,7 +300,7 @@ export default function AprovacaoPage() {
                   <div className="fr" style={{ flex:'1 1 200px' }}>
                     <label className="fl">Gestor do Projeto</label>
                     <div className="fi" style={{ background:'var(--s2)', color:'var(--ts)', cursor:'default' }}>
-                      {rdo.emissor.nome}
+                      {rdo.projeto.gestor?.nome ?? 'Sem gestor'}
                     </div>
                   </div>
                   {prazo && (

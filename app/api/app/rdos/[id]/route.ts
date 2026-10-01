@@ -31,6 +31,7 @@ export async function GET(req: NextRequest, { params }: Params) {
           pedidoCompraContrato: true,
           empresaContratada: true,
           assinaturaModo: true,
+          gestor: { select: { id: true, nome: true } },
           assinante1: { select: { id: true, nome: true, email: true, perfil: true } },
           assinante2: { select: { id: true, nome: true, email: true, perfil: true } },
           assinante3: { select: { id: true, nome: true, email: true, perfil: true } },

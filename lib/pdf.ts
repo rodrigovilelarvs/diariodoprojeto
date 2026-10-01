@@ -385,7 +385,7 @@ export async function gerarPdfRdo(
       { label:'Projeto',                valor:truncarCelula(rdo.projeto.nome, larguraLargaId, 7*escala) },
       ...(rdo.projeto.pedidoCompraContrato ? [{ label:'Pedido de compra ou contrato', valor:rdo.projeto.pedidoCompraContrato }] : []),
       ...(rdo.projeto.empresaContratada ? [{ label:'Empresa contratada', valor:truncarCelula(rdo.projeto.empresaContratada, larguraEstreitaId, 7*escala) }] : []),
-      { label:'Gestor do Projeto',      valor:rdo.emissor.nome },
+      { label:'Gestor do Projeto',      valor:rdo.projeto.gestor?.nome ?? 'Sem gestor' },
       ...(prazo ? [
         { label:'Prazo contratual', valor:`${prazo.inicio} a ${prazo.fim}` },
         { label:'Decorridos',       valor:`${prazo.decorridos}d (${prazo.pctDecorrido}%)` },
