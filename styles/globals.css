@@ -656,7 +656,7 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
     border-top: .5px solid transparent;
   }
   .ldg-nav-toggle-input:checked ~ .ldg-header .ldg-nav-mobile {
-    max-height: 220px; border-top-color: var(--b);
+    max-height: 270px; border-top-color: var(--b);
   }
   .ldg-nav-mobile a {
     padding: 12px 24px; font-size: 13px; color: var(--ts); text-decoration: none;
@@ -672,6 +672,7 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
   .ldg-steps-grid { grid-template-columns: 1fr !important; }
   .ldg-step-line { display: none; }
   .ldg-pricing-grid { grid-template-columns: 1fr !important; }
+  .ldg-showcase-grid { grid-template-columns: 1fr !important; }
 }
 
 @media (max-width: 480px) {
@@ -685,3 +686,58 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: default;
 }
+
+/* ── Scroll-reveal + transições (landing) ──────────────────────────── */
+@keyframes ldgFadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ldg-reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+.ldg-reveal-in { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .ldg-reveal { opacity: 1; transform: none; transition: none; }
+}
+
+.ldg-card:hover { border-color: var(--ba); transform: translateY(-3px); }
+.ldg-btn:hover { transform: translateY(-1px); }
+.ldg-btn:active { transform: translateY(0); }
+.ldg-btn-p:hover { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+
+@keyframes ldgDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-3%, 3%) scale(1.08); }
+}
+.ldg-hero-glow {
+  position: absolute; top: -20%; right: -10%; width: 480px; height: 480px;
+  background: radial-gradient(circle, var(--ta) 0%, transparent 70%);
+  opacity: .14; filter: blur(40px); pointer-events: none; z-index: 0;
+  animation: ldgDrift 10s ease-in-out infinite;
+}
+
+/* ── Mock de celular (preenchimento do RDO) ────────────────────────── */
+.ldg-phone {
+  width: 220px; border-radius: 32px; background: var(--s2);
+  border: 9px solid var(--s1); outline: .5px solid var(--b);
+  box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden;
+}
+.ldg-phone-notch { width: 70px; height: 16px; background: var(--s1); border-radius: 0 0 10px 10px; margin: 0 auto; }
+.ldg-phone-screen { padding: 14px; min-height: 280px; position: relative; }
+.ldg-phone-chip {
+  width: 34px; height: 34px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 15px;
+  background: var(--s1); border: .5px solid var(--b);
+}
+.ldg-phone-chip.on { background: var(--bga); border-color: var(--ta); }
+.ldg-phone-fab {
+  position: absolute; bottom: 12px; right: 12px; width: 30px; height: 30px;
+  border-radius: 50%; background: var(--ta); color: var(--oa);
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+
+/* ── Donut (mock de Relatórios) ─────────────────────────────────────── */
+.ldg-donut { width: 64px; height: 64px; border-radius: 50%; position: relative; flex-shrink: 0; }
+.ldg-donut-hole { position: absolute; inset: 11px; border-radius: 50%; background: var(--s2); }

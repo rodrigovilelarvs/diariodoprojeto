@@ -6,6 +6,7 @@
 // apresentação de verdade antes do login.
 
 import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 
 // Fecha a gaveta do menu mobile ao tocar num link — igual ao menu do app
@@ -14,6 +15,36 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle'
 function fecharMenuMobile() {
   const cb = document.getElementById('ldg-nav-toggle') as HTMLInputElement | null
   if (cb) cb.checked = false
+}
+
+// Anima a entrada de uma seção quando ela cruza a viewport (scroll-reveal) —
+// via IntersectionObserver em vez de biblioteca externa, já que é só
+// fade + leve translateY. Dispara uma vez só (desliga o observer depois).
+function Reveal({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visivel, setVisivel] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisivel(true)
+          obs.disconnect()
+        }
+      },
+      { threshold: 0.15 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  return (
+    <div ref={ref} className={`ldg-reveal${visivel ? ' ldg-reveal-in' : ''}`} style={{ transitionDelay: `${delay}ms` }}>
+      {children}
+    </div>
+  )
 }
 
 const RECURSOS: Array<{ icon: string; titulo: string; desc: string }> = [
@@ -57,7 +88,7 @@ export default function LandingPage() {
   // (que rola por dentro, via .content) — como esta página não usa esse
   // shell, ela precisa da própria rolagem, senão trava sem dar scroll.
   return (
-    <div style={{ background: 'var(--s0)', color: 'var(--tp)', height: '100dvh', overflowY: 'auto' }}>
+    <div style={{ background: 'var(--s0)', color: 'var(--tp)', height: '100dvh', overflowY: 'auto', scrollBehavior: 'smooth' }}>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.31.0/tabler-icons.min.css" />
 
       {/* ── Nav ───────────────────────────────────────────── */}
@@ -71,6 +102,7 @@ export default function LandingPage() {
           <nav className="ldg-nav-links">
             <a href="#recursos">Recursos</a>
             <a href="#como-funciona">Como funciona</a>
+            <a href="#na-pratica">Na prática</a>
             <a href="#planos">Planos</a>
             <a href="#seguranca">Segurança</a>
           </nav>
@@ -87,14 +119,16 @@ export default function LandingPage() {
         <nav className="ldg-nav-mobile">
           <a href="#recursos" onClick={fecharMenuMobile}>Recursos</a>
           <a href="#como-funciona" onClick={fecharMenuMobile}>Como funciona</a>
+          <a href="#na-pratica" onClick={fecharMenuMobile}>Na prática</a>
           <a href="#planos" onClick={fecharMenuMobile}>Planos</a>
           <a href="#seguranca" onClick={fecharMenuMobile}>Segurança</a>
         </nav>
       </header>
 
       {/* ── Hero ──────────────────────────────────────────── */}
-      <section className="ldg-wrap ldg-hero-grid" style={{ paddingTop: 64, paddingBottom: 56, display: 'grid', gridTemplateColumns: '1.1fr .9fr', gap: 48, alignItems: 'center' }}>
-        <div>
+      <section className="ldg-wrap ldg-hero-grid" style={{ position: 'relative', overflow: 'hidden', paddingTop: 64, paddingBottom: 56, display: 'grid', gridTemplateColumns: '1.1fr .9fr', gap: 48, alignItems: 'center' }}>
+        <div className="ldg-hero-glow" aria-hidden="true" />
+        <div style={{ animation: 'ldgFadeUp .7s ease both' }}>
           <div className="ldg-badge">
             <i className="ti ti-certificate" />
             Conforme a Lei 14.063 — assinatura digital com validade jurídica
@@ -118,7 +152,7 @@ export default function LandingPage() {
 
         {/* Mini-replica do cartão de projeto da plataforma — não é print, é um
             resumo visual fiel ao que a tela real mostra (ver app/(app)/painel). */}
-        <div className="ldg-mock">
+        <div className="ldg-mock" style={{ animation: 'ldgFadeUp .7s ease .15s both' }}>
           <div className="ldg-mock-top">
             <span className="ldg-mock-dot" /><span className="ldg-mock-dot" /><span className="ldg-mock-dot" />
             <span style={{ marginLeft: 8, fontSize: 10.5, color: 'var(--tm)' }}>RDO #0042 · Obra Jardim das Flores</span>
@@ -163,18 +197,22 @@ export default function LandingPage() {
 
       {/* ── Recursos ──────────────────────────────────────── */}
       <section id="recursos" className="ldg-wrap" style={{ padding: '48px 24px 56px' }}>
-        <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 36px' }}>
-          <div className="ldg-eyebrow">Recursos</div>
-          <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, margin: '8px 0 10px' }}>Tudo que a gestão de obra precisa, num só lugar</h2>
-          <p style={{ fontSize: 13.5, color: 'var(--ts)', lineHeight: 1.6 }}>Sem planilha, sem papel perdido, sem WhatsApp como sistema de registro.</p>
-        </div>
+        <Reveal>
+          <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 36px' }}>
+            <div className="ldg-eyebrow">Recursos</div>
+            <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, margin: '8px 0 10px' }}>Tudo que a gestão de obra precisa, num só lugar</h2>
+            <p style={{ fontSize: 13.5, color: 'var(--ts)', lineHeight: 1.6 }}>Sem planilha, sem papel perdido, sem WhatsApp como sistema de registro.</p>
+          </div>
+        </Reveal>
         <div className="ldg-features-grid">
-          {RECURSOS.map(r => (
-            <div key={r.titulo} className="ldg-card">
-              <div className="ldg-icon-box"><i className={`ti ${r.icon}`} /></div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 5 }}>{r.titulo}</div>
-              <div style={{ fontSize: 12, color: 'var(--ts)', lineHeight: 1.55 }}>{r.desc}</div>
-            </div>
+          {RECURSOS.map((r, i) => (
+            <Reveal key={r.titulo} delay={(i % 4) * 70}>
+              <div className="ldg-card">
+                <div className="ldg-icon-box"><i className={`ti ${r.icon}`} /></div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, marginBottom: 5 }}>{r.titulo}</div>
+                <div style={{ fontSize: 12, color: 'var(--ts)', lineHeight: 1.55 }}>{r.desc}</div>
+              </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -182,80 +220,195 @@ export default function LandingPage() {
       {/* ── Como funciona ─────────────────────────────────── */}
       <section id="como-funciona" style={{ background: 'var(--s1)', borderTop: '.5px solid var(--b)', borderBottom: '.5px solid var(--b)' }}>
         <div className="ldg-wrap" style={{ padding: '56px 24px' }}>
-          <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 36px' }}>
-            <div className="ldg-eyebrow">Como funciona</div>
-            <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, margin: '8px 0 0' }}>Do canteiro ao relatório, em quatro passos</h2>
-          </div>
+          <Reveal>
+            <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 36px' }}>
+              <div className="ldg-eyebrow">Como funciona</div>
+              <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, margin: '8px 0 0' }}>Do canteiro ao relatório, em quatro passos</h2>
+            </div>
+          </Reveal>
           <div className="ldg-steps-grid">
             {PASSOS.map((p, i) => (
-              <div key={p.n} style={{ position: 'relative' }}>
-                <div className="ldg-step-n">{p.n}</div>
-                <div style={{ fontSize: 13.5, fontWeight: 600, margin: '14px 0 5px' }}>{p.titulo}</div>
-                <div style={{ fontSize: 12, color: 'var(--ts)', lineHeight: 1.55 }}>{p.desc}</div>
-                {i < PASSOS.length - 1 && <div className="ldg-step-line" />}
-              </div>
+              <Reveal key={p.n} delay={i * 90}>
+                <div style={{ position: 'relative' }}>
+                  <div className="ldg-step-n">{p.n}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, margin: '14px 0 5px' }}>{p.titulo}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ts)', lineHeight: 1.55 }}>{p.desc}</div>
+                  {i < PASSOS.length - 1 && <div className="ldg-step-line" />}
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
+      {/* ── Na prática (mocks fictícios) ─────────────────────
+          Celular simulando o preenchimento do RDO + mini-dashboard de
+          Relatórios — nenhum é print real, são réplicas visuais fiéis às
+          telas reais (ver app/(app)/rdos/[id]/FormularioRdo.tsx e
+          app/(app)/relatorios/page.tsx), só com dados fictícios. */}
+      <section id="na-pratica" className="ldg-wrap ldg-showcase-grid" style={{ padding: '56px 24px', display: 'grid', gridTemplateColumns: '.8fr 1.2fr', gap: 48, alignItems: 'center' }}>
+        <Reveal>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div className="ldg-phone">
+              <div className="ldg-phone-notch" />
+              <div className="ldg-phone-screen">
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--tp)', marginBottom: 2 }}>Novo RDO · Dia 24</div>
+                <div style={{ fontSize: 8.5, color: 'var(--tm)', marginBottom: 12 }}>Obra Jardim das Flores</div>
+
+                <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--ts)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 7 }}>Condições climáticas</div>
+                <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
+                  {[
+                    { e: '☀️', on: true },
+                    { e: '⛅', on: false },
+                    { e: '🌧️', on: false },
+                    { e: '⛈️', on: false },
+                  ].map((c, i) => (
+                    <div key={i} className={`ldg-phone-chip${c.on ? ' on' : ''}`}>{c.e}</div>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--ts)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 7 }}>Mão de obra</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--s1)', border: '.5px solid var(--b)', borderRadius: 8, padding: '7px 9px', marginBottom: 7 }}>
+                  <span style={{ fontSize: 9, color: 'var(--tp)' }}><i className="ti ti-users" style={{ color: 'var(--ta)', marginRight: 4 }} />Pedreiro</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--ta)' }}>8h</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--s1)', border: '.5px solid var(--b)', borderRadius: 8, padding: '7px 9px', marginBottom: 14 }}>
+                  <span style={{ fontSize: 9, color: 'var(--tp)' }}><i className="ti ti-users" style={{ color: 'var(--ta)', marginRight: 4 }} />Servente</span>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--ta)' }}>8h</span>
+                </div>
+
+                <div className="ldg-phone-fab"><i className="ti ti-plus" /></div>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+
+        <Reveal delay={120}>
+          <div>
+            <div className="ldg-eyebrow">Na prática</div>
+            <h2 style={{ fontSize: 'clamp(22px,3vw,28px)', fontWeight: 700, margin: '8px 0 14px' }}>Do celular no canteiro ao dashboard no escritório</h2>
+            <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.65, marginBottom: 22 }}>
+              Quem está na obra registra tudo em minutos, pelo próprio celular. Quem está gerindo
+              acompanha avanço, desvio e ocorrências em relatórios sempre atualizados — sem esperar
+              planilha chegar por e-mail.
+            </p>
+
+            <div className="ldg-mock">
+              <div className="ldg-mock-top">
+                <span className="ldg-mock-dot" /><span className="ldg-mock-dot" /><span className="ldg-mock-dot" />
+                <span style={{ marginLeft: 8, fontSize: 10.5, color: 'var(--tm)' }}>Relatórios · Obra Jardim das Flores</span>
+              </div>
+              <div className="ldg-mock-body">
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 20, alignItems: 'center', marginBottom: 18 }}>
+                  <div className="ldg-donut" style={{ background: 'conic-gradient(var(--tsu) 0 65%, var(--tw) 65% 85%, var(--ts) 85% 95%, var(--td) 95% 100%)' }}>
+                    <div className="ldg-donut-hole" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tp)', marginBottom: 8 }}>Status dos RDOs</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {[
+                        { c: 'var(--tsu)', t: 'Aprovado', v: '65%' },
+                        { c: 'var(--tw)', t: 'Pendente', v: '20%' },
+                        { c: 'var(--ts)', t: 'Rascunho', v: '10%' },
+                        { c: 'var(--td)', t: 'Rejeitado', v: '5%' },
+                      ].map(l => (
+                        <div key={l.t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9.5, color: 'var(--ts)' }}>
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: l.c, flexShrink: 0 }} />
+                          {l.t} <span style={{ marginLeft: 'auto', fontWeight: 600, color: 'var(--tp)' }}>{l.v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tp)', marginBottom: 8 }}>H/H por categoria de mão de obra</div>
+                <div style={{ display: 'flex', height: 10, borderRadius: 6, overflow: 'hidden', marginBottom: 8 }}>
+                  <div style={{ width: '55%', background: 'var(--ta)' }} />
+                  <div style={{ width: '30%', background: 'var(--tpu)' }} />
+                  <div style={{ width: '15%', background: 'var(--tsu)' }} />
+                </div>
+                <div style={{ display: 'flex', gap: 14 }}>
+                  {[
+                    { c: 'var(--ta)', t: 'Direta 55%' },
+                    { c: 'var(--tpu)', t: 'Indireta 30%' },
+                    { c: 'var(--tsu)', t: 'Terceirizado 15%' },
+                  ].map(l => (
+                    <div key={l.t} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9.5, color: 'var(--tm)' }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: l.c }} />{l.t}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ── Segurança ─────────────────────────────────────── */}
       <section id="seguranca" className="ldg-wrap ldg-seg-grid" style={{ padding: '56px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center' }}>
-        <div>
-          <div className="ldg-eyebrow">Segurança</div>
-          <h2 style={{ fontSize: 'clamp(22px,3vw,28px)', fontWeight: 700, margin: '8px 0 14px' }}>Seus dados de obra, isolados e protegidos</h2>
-          <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.65, marginBottom: 18 }}>
-            Cada empresa enxerga só os próprios dados — o isolamento é garantido a nível de banco,
-            não só na tela. E-mails transacionais escapam HTML pra evitar phishing, e todo acesso
-            fica registrado em auditoria.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
-              'Row Level Security em todas as tabelas, por empresa',
-              'Assinatura digital conforme a Lei 14.063/2020',
-              'Senhas com hash, nunca em texto puro',
-              'Log de auditoria por empresa',
-            ].map(t => (
-              <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12.5, color: 'var(--tp)' }}>
-                <i className="ti ti-circle-check" style={{ color: 'var(--tsu)', fontSize: 15, flexShrink: 0 }} />{t}
-              </div>
-            ))}
+        <Reveal>
+          <div>
+            <div className="ldg-eyebrow">Segurança</div>
+            <h2 style={{ fontSize: 'clamp(22px,3vw,28px)', fontWeight: 700, margin: '8px 0 14px' }}>Seus dados de obra, isolados e protegidos</h2>
+            <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.65, marginBottom: 18 }}>
+              Cada empresa enxerga só os próprios dados — o isolamento é garantido a nível de banco,
+              não só na tela. E-mails transacionais escapam HTML pra evitar phishing, e todo acesso
+              fica registrado em auditoria.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                'Row Level Security em todas as tabelas, por empresa',
+                'Assinatura digital conforme a Lei 14.063/2020',
+                'Senhas com hash, nunca em texto puro',
+                'Log de auditoria por empresa',
+              ].map(t => (
+                <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 12.5, color: 'var(--tp)' }}>
+                  <i className="ti ti-circle-check" style={{ color: 'var(--tsu)', fontSize: 15, flexShrink: 0 }} />{t}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="ldg-card" style={{ textAlign: 'center', padding: '36px 24px' }}>
-          <i className="ti ti-shield-lock" style={{ fontSize: 44, color: 'var(--ta)' }} />
-          <div style={{ fontSize: 15, fontWeight: 600, marginTop: 14 }}>Lei 14.063</div>
-          <div style={{ fontSize: 12, color: 'var(--ts)', marginTop: 4 }}>Assinatura eletrônica com validade jurídica</div>
-        </div>
+        </Reveal>
+        <Reveal delay={120}>
+          <div className="ldg-card" style={{ textAlign: 'center', padding: '36px 24px' }}>
+            <i className="ti ti-shield-lock" style={{ fontSize: 44, color: 'var(--ta)' }} />
+            <div style={{ fontSize: 15, fontWeight: 600, marginTop: 14 }}>Lei 14.063</div>
+            <div style={{ fontSize: 12, color: 'var(--ts)', marginTop: 4 }}>Assinatura eletrônica com validade jurídica</div>
+          </div>
+        </Reveal>
       </section>
 
       {/* ── Planos ────────────────────────────────────────── */}
       <section id="planos" style={{ background: 'var(--s1)', borderTop: '.5px solid var(--b)', borderBottom: '.5px solid var(--b)' }}>
         <div className="ldg-wrap" style={{ padding: '56px 24px' }}>
-          <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 36px' }}>
-            <div className="ldg-eyebrow">Planos</div>
-            <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, margin: '8px 0 10px' }}>Um plano pro tamanho da sua obra</h2>
-            <p style={{ fontSize: 13.5, color: 'var(--ts)' }}>Sem fidelidade. Fale com a gente pra achar o plano certo.</p>
-          </div>
+          <Reveal>
+            <div style={{ textAlign: 'center', maxWidth: 560, margin: '0 auto 36px' }}>
+              <div className="ldg-eyebrow">Planos</div>
+              <h2 style={{ fontSize: 'clamp(22px,3vw,30px)', fontWeight: 700, margin: '8px 0 10px' }}>Um plano pro tamanho da sua obra</h2>
+              <p style={{ fontSize: 13.5, color: 'var(--ts)' }}>Sem fidelidade. Fale com a gente pra achar o plano certo.</p>
+            </div>
+          </Reveal>
           <div className="ldg-pricing-grid">
-            {PLANOS.map(p => (
-              <div key={p.tipo} className="ldg-card ldg-plan" style={p.destaque ? { borderColor: 'var(--ta)', background: 'var(--bga)' } : undefined}>
-                {p.destaque && <div className="ldg-plan-badge">Mais popular</div>}
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{p.tipo}</div>
-                <div style={{ fontSize: 12.5, color: 'var(--ts)', margin: '8px 0 18px', lineHeight: 1.5 }}>{p.resumo}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 22 }}>
-                  {p.itens.map(it => (
-                    <div key={it} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: 'var(--tp)' }}>
-                      <i className="ti ti-check" style={{ color: 'var(--tsu)', fontSize: 14, marginTop: 1, flexShrink: 0 }} />{it}
-                    </div>
-                  ))}
+            {PLANOS.map((p, i) => (
+              <Reveal key={p.tipo} delay={i * 90}>
+                <div className="ldg-card ldg-plan" style={p.destaque ? { borderColor: 'var(--ta)', background: 'var(--bga)' } : undefined}>
+                  {p.destaque && <div className="ldg-plan-badge">Mais popular</div>}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts)', textTransform: 'uppercase', letterSpacing: '.04em' }}>{p.tipo}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--ts)', margin: '8px 0 18px', lineHeight: 1.5 }}>{p.resumo}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 22 }}>
+                    {p.itens.map(it => (
+                      <div key={it} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 12, color: 'var(--tp)' }}>
+                        <i className="ti ti-check" style={{ color: 'var(--tsu)', fontSize: 14, marginTop: 1, flexShrink: 0 }} />{it}
+                      </div>
+                    ))}
+                  </div>
+                  <a href="mailto:suportediariodoprojeto@gmail.com"
+                    className={`ldg-btn ${p.destaque ? 'ldg-btn-p' : ''}`}
+                    style={{ width: '100%', justifyContent: 'center', padding: '9px 0', fontSize: 12.5 }}>
+                    Falar com a gente
+                  </a>
                 </div>
-                <a href="mailto:suportediariodoprojeto@gmail.com"
-                  className={`ldg-btn ${p.destaque ? 'ldg-btn-p' : ''}`}
-                  style={{ width: '100%', justifyContent: 'center', padding: '9px 0', fontSize: 12.5 }}>
-                  Falar com a gente
-                </a>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -263,16 +416,18 @@ export default function LandingPage() {
 
       {/* ── CTA final ─────────────────────────────────────── */}
       <section className="ldg-wrap" style={{ padding: '64px 24px', textAlign: 'center' }}>
-        <h2 style={{ fontSize: 'clamp(22px,3vw,28px)', fontWeight: 700, marginBottom: 10 }}>Pronto para digitalizar o diário da sua obra?</h2>
-        <p style={{ fontSize: 13.5, color: 'var(--ts)', marginBottom: 22 }}>Fale com a gente ou entre direto se já tem uma conta.</p>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/login" className="ldg-btn ldg-btn-p" style={{ padding: '11px 22px', fontSize: 13.5 }}>
-            <i className="ti ti-login" /> Entrar na plataforma
-          </Link>
-          <a href="mailto:suportediariodoprojeto@gmail.com" className="ldg-btn" style={{ padding: '11px 22px', fontSize: 13.5 }}>
-            <i className="ti ti-mail" /> suportediariodoprojeto@gmail.com
-          </a>
-        </div>
+        <Reveal>
+          <h2 style={{ fontSize: 'clamp(22px,3vw,28px)', fontWeight: 700, marginBottom: 10 }}>Pronto para digitalizar o diário da sua obra?</h2>
+          <p style={{ fontSize: 13.5, color: 'var(--ts)', marginBottom: 22 }}>Fale com a gente ou entre direto se já tem uma conta.</p>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/login" className="ldg-btn ldg-btn-p" style={{ padding: '11px 22px', fontSize: 13.5 }}>
+              <i className="ti ti-login" /> Entrar na plataforma
+            </Link>
+            <a href="mailto:suportediariodoprojeto@gmail.com" className="ldg-btn" style={{ padding: '11px 22px', fontSize: 13.5 }}>
+              <i className="ti ti-mail" /> suportediariodoprojeto@gmail.com
+            </a>
+          </div>
+        </Reveal>
       </section>
 
       {/* ── Footer ────────────────────────────────────────── */}
