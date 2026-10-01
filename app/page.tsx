@@ -48,7 +48,7 @@ const PLANOS: Array<{
   },
   {
     tipo: 'Enterprise', resumo: 'Pra grandes empresas com necessidades específicas.',
-    itens: ['Usuários ilimitados', 'Projetos ilimitados', 'RDOs ilimitados', 'Relatórios e dashboards completos', 'Acesso à API', 'Suporte dedicado'],
+    itens: ['Usuários ilimitados', 'Projetos ilimitados', 'RDOs ilimitados', 'Relatórios e dashboards completos', 'Suporte dedicado'],
   },
 ]
 
@@ -146,9 +146,9 @@ export default function LandingPage() {
             <div style={{ display: 'flex', gap: 14, marginTop: 16, paddingTop: 14, borderTop: '.5px solid var(--b)' }}>
               {[
                 { i: 'ti-users', t: '12 pessoas' },
-                { i: 'ti-tool', t: '4 equip.' },
+                { i: 'ti-truck', t: '4 equip.' },
                 { i: 'ti-photo', t: '9 fotos' },
-                { i: 'ti-writing', t: '3 assinaturas' },
+                { i: 'ti-writing-sign', t: '3 assinaturas' },
               ].map(it => (
                 <div key={it.t} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 9.5, color: 'var(--tm)' }}>
                   <i className={`ti ${it.i}`} style={{ color: 'var(--ta)', fontSize: 12 }} />{it.t}
