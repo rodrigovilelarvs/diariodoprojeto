@@ -248,7 +248,7 @@ export default function LandingPage() {
                     </div>
                   ))}
                 </div>
-                <a href="mailto:suporte@diariodoprojeto.com.br"
+                <a href="mailto:suportediariodoprojeto@gmail.com"
                   className={`ldg-btn ${p.destaque ? 'ldg-btn-p' : ''}`}
                   style={{ width: '100%', justifyContent: 'center', padding: '9px 0', fontSize: 12.5 }}>
                   Falar com a gente
@@ -267,8 +267,8 @@ export default function LandingPage() {
           <Link href="/login" className="ldg-btn ldg-btn-p" style={{ padding: '11px 22px', fontSize: 13.5 }}>
             <i className="ti ti-login" /> Entrar na plataforma
           </Link>
-          <a href="mailto:suporte@diariodoprojeto.com.br" className="ldg-btn" style={{ padding: '11px 22px', fontSize: 13.5 }}>
-            <i className="ti ti-mail" /> suporte@diariodoprojeto.com.br
+          <a href="mailto:suportediariodoprojeto@gmail.com" className="ldg-btn" style={{ padding: '11px 22px', fontSize: 13.5 }}>
+            <i className="ti ti-mail" /> suportediariodoprojeto@gmail.com
           </a>
         </div>
       </section>
