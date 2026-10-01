@@ -530,7 +530,7 @@ function CardsProjetos({ projetos, onNovoRdo, onEditar, onDuplicar, onExcluir }:
 }) {
   const router = useRouter()
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(420px,100%),1fr))', gap: 8, marginBottom: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(340px,100%),1fr))', gap: 8, marginBottom: 12 }}>
       {projetos.map(p => (
         <div
           key={p.id}
