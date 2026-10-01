@@ -1180,7 +1180,7 @@ export function FormularioRdo({ rdoId }: Props) {
                               aplicado ao sair do campo — aplicar a cada tecla digitada trava o
                               meio da digitação (ex.: querendo 55 a partir de 40, o primeiro "5"
                               já seria descartado por ser menor que 40). */}
-                          <input type="number" className="fi" min={reg.pctAnterior} max={100} value={pct}
+                          <input type="number" className="fi fi-no-spin" min={reg.pctAnterior} max={100} value={pct}
                             disabled={!podeSalvar}
                             style={{ width:44, textAlign:'center', fontSize:13, fontWeight:500 }}
                             onFocus={e => e.target.select()}

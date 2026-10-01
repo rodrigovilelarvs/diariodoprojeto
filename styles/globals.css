@@ -150,6 +150,18 @@ input.mf[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
   background: var(--bga);
 }
+/* Campos com botões +/- próprios (ex.: ajuste fino de % no RDO) — o
+   spinner nativo do input number some, senão as setinhas do navegador
+   ficam por cima do número num campo estreito (duas setas fazendo a
+   mesma coisa, uma tampando o valor). */
+input.fi-no-spin::-webkit-inner-spin-button,
+input.fi-no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input.fi-no-spin {
+  -moz-appearance: textfield;
+}
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
