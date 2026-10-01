@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { useRdo, useSalvarRdo, useEnviarRdo, useMinhaAssinatura, useEnviarComentario, useExcluirComentario, useEap, useFuncoes, useCriarFuncao, useEditarFuncao, useExcluirFuncao, useEquipamentosCadastro, useCriarEquipamentoCadastro, useEditarEquipamentoCadastro, useExcluirEquipamentoCadastro, useOcorrenciaTipos, useCriarOcorrenciaTipo, useExcluirRdo } from '@/hooks/useEmpresa'
+import { useRdo, useRdos, useSalvarRdo, useEnviarRdo, useMinhaAssinatura, useEnviarComentario, useExcluirComentario, useEap, useFuncoes, useCriarFuncao, useEditarFuncao, useExcluirFuncao, useEquipamentosCadastro, useCriarEquipamentoCadastro, useEditarEquipamentoCadastro, useExcluirEquipamentoCadastro, useOcorrenciaTipos, useCriarOcorrenciaTipo, useExcluirRdo } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { api, LimitePlanoError, mensagemErro } from '@/lib/api'
 import { gerarPdfRdo }   from '@/lib/pdf'
@@ -427,6 +427,18 @@ export function FormularioRdo({ rdoId }: Props) {
   const router     = useRouter()
   const { pode, session } = useAppAuth()
   const { data: rdo, isLoading, isError } = useRdo(rdoId)
+  // Pra transitar entre os RDOs do mesmo projeto (setas no rodapé) — lista
+  // completa ordenada por número, só pra achar o anterior/próximo; não é
+  // paginada de propósito (`por` alto) pra não quebrar a navegação em
+  // projetos com muitos RDOs.
+  const { data: rdosDoProjeto } = useRdos(
+    { projetoId: rdo?.projeto.id, sortBy: 'numero', sortDir: 'asc', por: 500 },
+    { enabled: !!rdo?.projeto.id },
+  )
+  const listaRdosProjeto = rdosDoProjeto?.rdos ?? []
+  const indiceAtual = listaRdosProjeto.findIndex(r => r.id === rdoId)
+  const rdoAnterior = indiceAtual > 0 ? listaRdosProjeto[indiceAtual - 1] : null
+  const proximoRdo  = indiceAtual >= 0 && indiceAtual < listaRdosProjeto.length - 1 ? listaRdosProjeto[indiceAtual + 1] : null
   const salvar     = useSalvarRdo()
   const enviar     = useEnviarRdo()
   const excluirRdo = useExcluirRdo()
@@ -1653,6 +1665,25 @@ export function FormularioRdo({ rdoId }: Props) {
               </button>
             )}
           </div>
+          {/* Transitar entre os RDOs do mesmo projeto, em ordem de número —
+              some se o RDO for o único do projeto (sem vizinho em nenhum lado). */}
+          {(rdoAnterior || proximoRdo) && (
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <button className="btn btn-sm" title={rdoAnterior ? `RDO #${numeroRdo(rdoAnterior.numero)}` : 'Não há RDO anterior'}
+                disabled={!rdoAnterior}
+                onClick={() => rdoAnterior && router.push(`/rdos/${rdoAnterior.id}`)}>
+                <i className="ti ti-chevron-left" />
+              </button>
+              <span style={{ fontSize:11, color:'var(--ts)', whiteSpace:'nowrap' }}>
+                RDO #{numeroRdo(rdo.numero)}
+              </span>
+              <button className="btn btn-sm" title={proximoRdo ? `RDO #${numeroRdo(proximoRdo.numero)}` : 'Não há próximo RDO'}
+                disabled={!proximoRdo}
+                onClick={() => proximoRdo && router.push(`/rdos/${proximoRdo.id}`)}>
+                <i className="ti ti-chevron-right" />
+              </button>
+            </div>
+          )}
           <div style={{ display:'flex', gap:6 }}>
             <button className="btn btn-sm" disabled={salvar.isPending || !dirty}
               onClick={() => form && handleSalvar(form)}>
