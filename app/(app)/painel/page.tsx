@@ -530,24 +530,24 @@ function CardsProjetos({ projetos, onNovoRdo, onEditar, onDuplicar, onExcluir }:
 }) {
   const router = useRouter()
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(420px,100%),1fr))', gap: 10, marginBottom: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(420px,100%),1fr))', gap: 8, marginBottom: 12 }}>
       {projetos.map(p => (
         <div
           key={p.id}
-          style={{ background: 'var(--s2)', border: '.5px solid var(--b)', borderRadius: 14, padding: 15, cursor: 'pointer', transition: 'border-color .15s' }}
+          style={{ background: 'var(--s2)', border: '.5px solid var(--b)', borderRadius: 14, padding: 12, cursor: 'pointer', transition: 'border-color .15s' }}
           onClick={() => router.push(`/projetos/${p.id}`)}
         >
-          <div style={{ display: 'flex', gap: 14 }}>
-            <div style={{ flex: '0 0 42%', aspectRatio: '1 / 1', borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'var(--s1)' }}>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ flex: '0 0 36%', aspectRatio: '1 / 1', borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: 'var(--s1)' }}>
               {p.fotoUrl ? (
                 <img src={p.fotoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${p.cor}1a` }}>
-                  <i className="ti ti-building-skyscraper" style={{ fontSize: 32, color: p.cor }} />
+                  <i className="ti ti-building-skyscraper" style={{ fontSize: 28, color: p.cor }} />
                 </div>
               )}
             </div>
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 7 }}>
                 <Badge variant={STATUS_V[p.status] ?? 'gray'}>{STATUS_L[p.status] ?? p.status}</Badge>
                 <CardMenu
@@ -565,7 +565,7 @@ function CardsProjetos({ projetos, onNovoRdo, onEditar, onDuplicar, onExcluir }:
                   <i className={`ti ti-trending-${p.desvio >= 0 ? 'up' : 'down'}`} /> {p.desvio >= 0 ? '+' : ''}{p.desvio}%
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px 10px', fontSize: 13, color: 'var(--tm)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px 8px', fontSize: 12.5, color: 'var(--tm)' }}>
                 <span title="RDOs emitidos" style={{ display: 'flex', alignItems: 'center', gap: 3 }}><i className="ti ti-file-text" /> {p._count.rdos}</span>
                 <span title="Atividades" style={{ display: 'flex', alignItems: 'center', gap: 3 }}><i className="ti ti-list-check" /> {p.totalAtividades ?? 0}</span>
                 <span title="Ocorrências" style={{ display: 'flex', alignItems: 'center', gap: 3 }}><i className="ti ti-alert-triangle" /> {p.totalOcorrencias ?? 0}</span>
@@ -575,7 +575,7 @@ function CardsProjetos({ projetos, onNovoRdo, onEditar, onDuplicar, onExcluir }:
               </div>
             </div>
           </div>
-          <div style={{ borderTop: '.5px solid var(--b)', marginTop: 12, paddingTop: 10 }}>
+          <div style={{ borderTop: '.5px solid var(--b)', marginTop: 10, paddingTop: 8 }}>
             <div style={{ fontSize: 13.5, fontWeight: 500, lineHeight: 1.3 }}>{p.nome}</div>
             <div style={{ fontSize: 10.5, color: 'var(--ts)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.grupo ? `${p.grupo} · ` : ''}{p.gestor?.nome ?? 'Sem gestor'}</div>
           </div>
