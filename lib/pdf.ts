@@ -10,7 +10,7 @@
 // piso não couber (RDO com quantidade extrema de conteúdo), aí sim permite
 // 2ª página em vez de cortar/sobrepor conteúdo.
 
-import type { Rdo } from '@/lib/types'
+import type { Rdo, RelatorioResponse } from '@/lib/types'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { CLIMA_L, calcHH, calcOcDur, calcPrazo, CATEGORIA_L } from '@/lib/rdo-display'
 
@@ -914,6 +914,329 @@ export async function gerarPdfRdo(
 
   // ── Download ──
   const nomeArq = `RDO_${numeroRdo(rdo.numero)}_${rdo.projeto.nome.replace(/\s+/g,'-')}.pdf`
+  if (opcoes?.retornarBlob) {
+    return { blob: doc.output('blob'), nomeArq }
+  }
+  doc.save(nomeArq)
+}
+
+// ════════════════════════════════════════════════════════════
+// PDF da tela de Relatórios — botão "Exportar PDF"
+// ════════════════════════════════════════════════════════════
+// Mesma paleta/estilo do PDF do RDO (COR, cartões de seção, autoTable), mas
+// sem a lógica de "caber numa página só": um relatório naturalmente passa de
+// 1 página (vira normal ter 2-3), então aqui é escala fixa (1) com quebra de
+// página simples via novaPaginaSeNecessario, sem a medição prévia iterativa.
+const OC_L_PDF: Record<string,string> = {
+  ATRASO_MATERIAL: 'Atraso de material', PROBLEMA_TECNICO: 'Problema técnico',
+  CONDICAO_CLIMATICA: 'Condição climática', FALTA_MAO_DE_OBRA: 'Falta de mão de obra',
+  ACIDENTE_INCIDENTE: 'Acidente/incidente', PARALISACAO: 'Paralisação', OUTRO: 'Outro',
+}
+
+function fmtBytesPdf(bytes: number): string {
+  if (bytes <= 0) return '0 MB'
+  const gb = bytes / (1024 ** 3)
+  if (gb >= 1) return `${gb.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} GB`
+  const mb = bytes / (1024 ** 2)
+  return `${mb.toLocaleString('pt-BR', { maximumFractionDigits: mb < 10 ? 1 : 0 })} MB`
+}
+
+function fmtHorasPdf(horas: number): string {
+  if (horas < 24) return `${horas.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`
+  return `${(horas / 24).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} dias`
+}
+
+function fmtLabelBucketPdf(iso: string, agrupamento: 'dia' | 'semana' | 'mes'): string {
+  const d = new Date(`${iso}T00:00:00`)
+  if (agrupamento === 'mes') return d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+export async function gerarPdfRelatorio(
+  data: RelatorioResponse,
+  filtros: { periodoLabel: string; filtrosTexto?: string },
+  empresaNome?: string,
+  opcoes?: { retornarBlob?: boolean },
+): Promise<{ blob: Blob; nomeArq: string } | void> {
+  const { default: jsPDF } = await import('jspdf')
+  const { default: autoTable } = await import('jspdf-autotable')
+
+  const W = 210, M = 12, CW = W - M * 2
+  const PAGE_BREAK_Y = 282
+  const HEADER_H = 22
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  let y = 0
+
+  function rect(x:number, yy:number, w:number, h:number, fill:[number,number,number], r=0) {
+    doc.setFillColor(...fill)
+    if (r > 0) doc.roundedRect(x, yy, w, h, r, r, 'F')
+    else       doc.rect(x, yy, w, h, 'F')
+  }
+  function txt(
+    texto:string, x:number, yy:number,
+    { size=9, bold=false, cor=COR.txt, align='left' as 'left'|'center'|'right' } = {}
+  ) {
+    doc.setFontSize(size)
+    doc.setFont('helvetica', bold ? 'bold' : 'normal')
+    doc.setTextColor(...cor)
+    doc.text(texto, x, yy, { align })
+  }
+  function secHeader(titulo:string, badge?: string) {
+    y += 1
+    const h = 5.5
+    rect(M, y, CW, h, COR.s1, 1.2)
+    rect(M, y, 1.4, h, COR.ta)
+    txt(titulo, M+3.5, y+h/2+1, { size:8.5, bold:true, cor:COR.tp })
+    if (badge) txt(badge, M+CW-3, y+h/2+1, { size:7, bold:true, cor:COR.ts, align:'right' })
+    y += h + 2
+  }
+  function vazio(msg: string) {
+    txt(msg, M, y+3, { size:7.5, cor:COR.ts })
+    y += 7
+  }
+  function novaPaginaSeNecessario(precisaH: number) {
+    if (y + precisaH <= PAGE_BREAK_Y) return
+    doc.addPage()
+    rect(0, 0, W, 7, COR.s0)
+    doc.setDrawColor(...COR.brd)
+    doc.setLineWidth(0.3)
+    doc.line(0, 7, W, 7)
+    txt('Diário do Projeto · Relatórios', W/2, 4.8, { size:6.5, cor:COR.ts, align:'center' })
+    y = 11
+  }
+  // Grid de cartões de indicador — usado pros 12 KPIs do topo da tela
+  function kpiGrid(items: Array<{label:string; valor:string; cor?:[number,number,number]}>, cols=3) {
+    const gap = 2.5
+    const cardW = (CW - gap*(cols-1)) / cols
+    const cardH = 13
+    const rows = Math.ceil(items.length / cols)
+    items.forEach((it, i) => {
+      const col = i % cols, row = Math.floor(i / cols)
+      const x = M + col*(cardW+gap)
+      const yy = y + row*(cardH+gap)
+      rect(x, yy, cardW, cardH, COR.s1, 1.5)
+      txt(it.valor, x+3, yy+7, { size:11, bold:true, cor: it.cor ?? COR.tp })
+      doc.setFontSize(6)
+      const labelLines = doc.splitTextToSize(it.label, cardW-6)
+      txt(labelLines[0] ?? it.label, x+3, yy+10.8, { size:6, cor:COR.ts })
+    })
+    y += rows*(cardH+gap) + 2
+  }
+
+  // ════════════════════════════════════════════════════
+  // CAPA / HEADER
+  // ════════════════════════════════════════════════════
+  rect(0, 0, W, HEADER_H, COR.s0)
+  rect(0, 0, 3, HEADER_H, COR.ta)
+  doc.setDrawColor(...COR.brd)
+  doc.setLineWidth(0.3)
+  doc.line(0, HEADER_H, W, HEADER_H)
+
+  txt('DIÁRIO DO PROJETO', M+2, 7, { size:6.5, bold:true, cor:COR.ta })
+  txt('Relatórios', W/2, 7, { size:8.5, bold:true, cor:COR.ts, align:'center' })
+  txt(empresaNome?.trim() || 'Relatório de desempenho', M+2, 14.5, { size:12, bold:true, cor:COR.tp })
+  txt(filtros.periodoLabel, W-M, 9.5, { size:11, bold:true, cor:COR.ta, align:'right' })
+  if (filtros.filtrosTexto) {
+    txt(filtros.filtrosTexto, W-M, 14.5, { size:7, cor:COR.ts, align:'right' })
+  }
+  txt(`${fmtData(data.dataInicio)} a ${fmtData(data.dataFim)}`, M+2, 19.5, { size:7, cor:COR.ts })
+
+  y = HEADER_H + 4
+
+  // ════════════════════════════════════════════════════
+  // INDICADORES
+  // ════════════════════════════════════════════════════
+  const avancoMedio = data.progressoPorProjeto.length
+    ? Math.round(data.progressoPorProjeto.reduce((s, p) => s + p.pctReal, 0) / data.progressoPorProjeto.length)
+    : 0
+
+  secHeader('Indicadores')
+  kpiGrid([
+    { valor:`${avancoMedio}%`, label:'Avanço médio', cor:COR.ta },
+    { valor:`${data.kpis.desvioMedio >= 0 ? '+' : ''}${data.kpis.desvioMedio}%`, label:'Desvio médio', cor: data.kpis.desvioMedio >= 0 ? COR.tsu : COR.td },
+    { valor:String(data.kpis.totalRdos), label:'RDOs no período' },
+    { valor:String(data.kpis.totalHH), label:'H/H registradas' },
+    { valor:`${data.kpis.taxaAprovacao}%`, label:'Taxa de aprovação', cor:COR.tsu },
+    { valor:String(data.kpis.ocorrenciasAbertas), label:'Ocorrências abertas', cor:COR.tw },
+    { valor:String(data.kpis.totalProjetos), label:'Projetos' },
+    { valor:String(data.kpis.totalUsuarios), label:'Usuários' },
+    { valor:String(data.kpis.totalFotos), label:'Fotos' },
+    { valor:String(data.kpis.totalVideos), label:'Vídeos' },
+    { valor:String(data.kpis.totalAnexos), label:'Anexos' },
+    { valor:fmtBytesPdf(data.kpis.armazenamentoBytes), label:'Armazenamento' },
+  ])
+
+  // Estilo compartilhado das tabelas desta página — igual ao do PDF do RDO
+  const tableStyle = {
+    styles: { fontSize:7, cellPadding:1.3, fillColor:COR.s2, textColor:COR.tp, lineColor:COR.brd, lineWidth:0.2 },
+    headStyles: { fillColor:COR.s1, textColor:COR.ta, fontStyle:'bold' as const },
+    alternateRowStyles: { fillColor:COR.s1 },
+    margin: { left:M, right:M },
+  }
+
+  // ════════════════════════════════════════════════════
+  // H/H POR CATEGORIA DE MÃO DE OBRA
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(24)
+  secHeader('H/H por categoria de mão de obra')
+  if (data.hhPorCategoria.length === 0) {
+    vazio('Sem registros de mão de obra no período.')
+  } else {
+    const totalHHCat = data.hhPorCategoria.reduce((s,h) => s+h.totalHH, 0)
+    autoTable(doc, {
+      startY: y,
+      head: [['Categoria','Pessoas','H/H','% do total']],
+      body: data.hhPorCategoria.map(h => [
+        CATEGORIA_L[h.categoria] ?? h.categoria, String(h.totalPessoas), String(h.totalHH),
+        `${totalHHCat > 0 ? Math.round((h.totalHH/totalHHCat)*100) : 0}%`,
+      ]),
+      ...tableStyle,
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+  }
+
+  // ════════════════════════════════════════════════════
+  // TOP 5 — PIORES DESVIOS
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(24)
+  secHeader('Top 5 — piores desvios')
+  if (data.rankingPiorDesvio.length === 0) {
+    vazio('Nenhum projeto ativo no filtro selecionado.')
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['Projeto','% Real','% Planejado','Desvio']],
+      body: data.rankingPiorDesvio.map(p => [
+        p.nome, `${p.pctReal}%`, `${p.pctPlanejado}%`, `${p.desvio >= 0 ? '+' : ''}${p.desvio}%`,
+      ]),
+      ...tableStyle,
+      columnStyles: { 1:{halign:'center'}, 2:{halign:'center'}, 3:{halign:'center', fontStyle:'bold' as const} },
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+  }
+
+  // ════════════════════════════════════════════════════
+  // STATUS DOS RDOS
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(24)
+  secHeader('Status dos RDOs')
+  if (data.statusRdos.every(s => s.total === 0)) {
+    vazio('Nenhum RDO no período.')
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['Status','Total','%']],
+      body: data.statusRdos.map(s => [
+        STATUS_L[s.status] ?? s.status, String(s.total),
+        `${data.kpis.totalRdos > 0 ? Math.round((s.total/data.kpis.totalRdos)*100) : 0}%`,
+      ]),
+      ...tableStyle,
+      columnStyles: { 1:{halign:'center'}, 2:{halign:'center'} },
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+  }
+
+  // ════════════════════════════════════════════════════
+  // OCORRÊNCIAS POR TIPO + HORAS IMPACTADAS
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(24)
+  secHeader('Ocorrências por tipo')
+  if (data.ocorrenciasPorTipo.length === 0) {
+    vazio('Nenhuma ocorrência no período.')
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['Tipo','Total','Horas impactadas']],
+      body: data.ocorrenciasPorTipo.map(o => [
+        OC_L_PDF[o.tipo] ?? o.tipo, String(o.total), o.horas > 0 ? fmtHorasPdf(o.horas) : '—',
+      ]),
+      ...tableStyle,
+      columnStyles: { 1:{halign:'center'}, 2:{halign:'center'} },
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+  }
+
+  // ════════════════════════════════════════════════════
+  // H/H POR FUNÇÃO
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(24)
+  secHeader('H/H por função')
+  if (data.hhPorFuncao.length === 0) {
+    vazio('Sem registros de mão de obra no período.')
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['Função','H/H']],
+      body: data.hhPorFuncao.map(h => [h.funcao, String(h.totalHH)]),
+      ...tableStyle,
+      columnStyles: { 1:{halign:'center'} },
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+  }
+
+  // ════════════════════════════════════════════════════
+  // TEMPO MÉDIO DE APROVAÇÃO
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(24)
+  secHeader(
+    'Tempo médio de aprovação de RDO',
+    data.tempoAprovacao.mediaHoras != null
+      ? `Média: ${fmtHorasPdf(data.tempoAprovacao.mediaHoras)} · ${data.tempoAprovacao.amostra} RDO${data.tempoAprovacao.amostra===1?'':'s'}`
+      : undefined,
+  )
+  if (data.tempoAprovacao.amostra === 0) {
+    vazio('Nenhum RDO enviado e decidido no período.')
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['Faixa','Total']],
+      body: data.tempoAprovacao.distribuicao.map(d => [d.faixa, String(d.total)]),
+      ...tableStyle,
+      columnStyles: { 1:{halign:'center'} },
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+  }
+
+  // ════════════════════════════════════════════════════
+  // RDOS AO LONGO DO TEMPO
+  // ════════════════════════════════════════════════════
+  novaPaginaSeNecessario(24)
+  secHeader('RDOs ao longo do tempo')
+  if (data.rdosPorPeriodo.pontos.length === 0) {
+    vazio('Nenhum RDO no período.')
+  } else {
+    autoTable(doc, {
+      startY: y,
+      head: [['Período','RDOs']],
+      body: data.rdosPorPeriodo.pontos.map(p => [
+        fmtLabelBucketPdf(p.data, data.rdosPorPeriodo.agrupamento), String(p.total),
+      ]),
+      ...tableStyle,
+      columnStyles: { 1:{halign:'center'} },
+    })
+    y = (doc as any).lastAutoTable.finalY + 4
+  }
+
+  // ════════════════════════════════════════════════════
+  // RODAPÉ em todas as páginas
+  // ════════════════════════════════════════════════════
+  const totalPag = doc.getNumberOfPages()
+  const geradoTexto = `Gerado em ${new Date().toLocaleString('pt-BR')}`
+  for (let p = 1; p <= totalPag; p++) {
+    doc.setPage(p)
+    rect(0, 290, W, 10, COR.s0)
+    doc.setDrawColor(...COR.brd)
+    doc.setLineWidth(0.3)
+    doc.line(0, 290, W, 290)
+    const pagTexto = `Página ${p} / ${totalPag}`
+    txt('Diário do Projeto · Relatórios', M, 296, { size:6, cor:COR.ts })
+    txt(geradoTexto, W/2, 296, { size:6, cor:COR.ts, align:'center' })
+    txt(pagTexto, W-M, 296, { size:6, cor:COR.ts, align:'right' })
+  }
+
+  // ── Download ──
+  const nomeArq = `Relatorios_${new Date().toISOString().slice(0,10)}.pdf`
   if (opcoes?.retornarBlob) {
     return { blob: doc.output('blob'), nomeArq }
   }

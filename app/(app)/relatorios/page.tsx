@@ -3,8 +3,10 @@
 
 import { useMemo, useState } from 'react'
 import { useRelatorio, useProjetos } from '@/hooks/useEmpresa'
+import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar } from '@/components/layout/Topbar'
 import { Skeleton, Desvio } from '@/components/ui'
+import { gerarPdfRelatorio } from '@/lib/pdf'
 import { toast } from 'sonner'
 
 const OC_L: Record<string, string> = {
@@ -184,11 +186,13 @@ function MiniKpi({ icon, valor, label, cor, titulo }: { icon: string; valor: Rea
 }
 
 export default function RelatoriosPage() {
+  const { session } = useAppAuth()
   const [grupo, setGrupo]       = useState('')
   const [projetoId, setProjetoId] = useState('')
   const [preset, setPreset]     = useState<'7' | '30' | '90' | 'custom'>('30')
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim]       = useState('')
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   const { data: projetos } = useProjetos()
   const grupos = useMemo(
@@ -241,14 +245,41 @@ export default function RelatoriosPage() {
   const pontosPeriodo = data?.rdosPorPeriodo.pontos ?? []
   const passoLabel = pontosPeriodo.length > 15 ? Math.ceil(pontosPeriodo.length / 15) : 1
 
+  const periodoLabel =
+    preset === '7'  ? 'Últimos 7 dias' :
+    preset === '30' ? 'Últimos 30 dias' :
+    preset === '90' ? 'Último trimestre' : 'Período personalizado'
+  const filtrosPartes: string[] = []
+  if (grupo) filtrosPartes.push(`Grupo: ${grupo}`)
+  if (projetoId) {
+    const p = (projetos ?? []).find(pr => pr.id === projetoId)
+    if (p) filtrosPartes.push(`Projeto: ${p.nome}`)
+  }
+  const filtrosTexto = filtrosPartes.length > 0 ? filtrosPartes.join(' · ') : undefined
+
+  async function handleExportarPdf() {
+    if (!data) return
+    setPdfLoading(true)
+    try {
+      await gerarPdfRelatorio(data, { periodoLabel, filtrosTexto }, session?.tenantNome)
+      toast.success('PDF gerado!')
+    } catch {
+      toast.error('Erro ao gerar PDF.')
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   return (
     <div className="main">
       <Topbar
         titulo="Relatórios"
         subtitulo="Análise de desempenho"
         acoes={
-          <button className="btn" onClick={() => toast.info('PDF em breve!')}>
-            <i className="ti ti-file-export" /> Exportar PDF
+          <button className="btn" disabled={pdfLoading || isLoading || !data} onClick={handleExportarPdf}>
+            <i className={`ti ${pdfLoading ? 'ti-loader' : 'ti-file-export'}`}
+              style={pdfLoading ? { animation: 'spin 1s linear infinite' } : {}} />
+            {pdfLoading ? 'Gerando...' : 'Exportar PDF'}
           </button>
         }
       />
