@@ -1260,7 +1260,7 @@ export async function gerarPdfRelatorio(
     stackedBarSection(data.hhPorCategoria.map(h => ({
       label: CATEGORIA_L[h.categoria] ?? h.categoria,
       valor: h.totalHH,
-      sub: `${h.totalPessoas}p · ${h.totalHH} H/H`,
+      sub: `${h.totalHH} H/H`,
       cor: CATEGORIA_COR_PDF[h.categoria] ?? COR.ts,
     })))
   }

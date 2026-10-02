@@ -351,7 +351,7 @@ export default function RelatoriosPage() {
                         <div key={h.categoria} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11.5 }}>
                           <span style={{ width: 9, height: 9, borderRadius: 2, background: CATEGORIA_COR[h.categoria], flexShrink: 0 }} />
                           <span style={{ color: 'var(--ts)' }}>{CATEGORIA_L[h.categoria] ?? h.categoria}</span>
-                          <span style={{ fontWeight: 600, color: 'var(--tp)' }}>{h.totalPessoas}p · {h.totalHH} H/H</span>
+                          <span style={{ fontWeight: 600, color: 'var(--tp)' }}>{h.totalHH} H/H</span>
                         </div>
                       ))}
                     </div>
