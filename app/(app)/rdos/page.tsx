@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useRdos, useProjetos } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar }  from '@/components/layout/Topbar'
-import { KpiCard, RdoStatusBadge, ClimaEmoji, Skeleton, AutocompleteSearchInput } from '@/components/ui'
+import { KpiCard, RdoStatusBadge, Skeleton, AutocompleteSearchInput } from '@/components/ui'
 import { toast }   from 'sonner'
 import { gerarPdfRdo } from '@/lib/pdf'
 import { api } from '@/lib/api'
@@ -128,19 +128,18 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
               <tr>
                 <ThOrdenavel campo="numero"  label="#"                sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
                 <ThOrdenavel campo="projeto" label="Projeto"          sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
-                {!projetoIdFixo && <ThOrdenavel campo="grupo" label="Grupo" sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />}
+                {!projetoIdFixo && <ThOrdenavel campo="grupo" label="Grupo" className="col-sec" sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />}
                 <ThOrdenavel campo="data"    label="Data"             sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
-                <ThOrdenavel campo="gestor"  label="Gestor do Projeto" sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
+                <ThOrdenavel campo="gestor"  label="Gestor do Projeto" className="col-sec" sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
                 <ThOrdenavel campo="status"  label="Status"           sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
-                <th>Clima</th>
                 <th style={{ textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={projetoIdFixo ? 7 : 8}><Skeleton h={200} /></td></tr>
+                <tr><td colSpan={projetoIdFixo ? 6 : 7}><Skeleton h={200} /></td></tr>
               ) : filtrados.length === 0 ? (
-                <tr><td colSpan={projetoIdFixo ? 7 : 8} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>Nenhum RDO encontrado.</td></tr>
+                <tr><td colSpan={projetoIdFixo ? 6 : 7} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>Nenhum RDO encontrado.</td></tr>
               ) : filtrados.map(r => (
                 <tr key={r.id} onClick={() => router.push(
                   r.status === 'APROVADO' || r.status === 'PENDENTE_APROVACAO'
@@ -149,13 +148,12 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
                 )}>
                   <td style={{ fontSize: 11, fontWeight: 600, color: 'var(--ta)' }}>#{numeroRdo(r.numero)}</td>
                   <td style={{ fontSize: 12, fontWeight: 500 }}>{r.projeto.nome}</td>
-                  {!projetoIdFixo && <td style={{ fontSize: 11, color: 'var(--ts)' }}>{r.projeto.grupo ?? '—'}</td>}
+                  {!projetoIdFixo && <td className="col-sec" style={{ fontSize: 11, color: 'var(--ts)' }}>{r.projeto.grupo ?? '—'}</td>}
                   <td style={{ fontSize: 11, color: 'var(--ts)' }}>
                     {fmtData(r.data)}
                   </td>
-                  <td style={{ fontSize: 11, color: 'var(--ts)' }}>{r.emissor.nome}</td>
+                  <td className="col-sec" style={{ fontSize: 11, color: 'var(--ts)' }}>{r.emissor.nome}</td>
                   <td><RdoStatusBadge status={r.status} assinaturas={r.assinaturas} /></td>
-                  <td><ClimaEmoji condicao={r.climaManha} /></td>
                   <td>
                     <div className="proj-ac" style={{ justifyContent: 'flex-end' }}>
                       <button className="proj-ab" onClick={e => { e.stopPropagation(); router.push(`/rdos/${r.id}`) }} title="Abrir">
@@ -218,9 +216,10 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
 
 type CampoOrdenacao = 'numero' | 'projeto' | 'grupo' | 'data' | 'gestor' | 'status'
 
-function ThOrdenavel({ campo, label, sortBy, sortDir, onClick }: {
+function ThOrdenavel({ campo, label, className, sortBy, sortDir, onClick }: {
   campo: CampoOrdenacao
   label: string
+  className?: string
   sortBy: CampoOrdenacao
   sortDir: 'asc' | 'desc'
   onClick: (campo: CampoOrdenacao) => void
@@ -228,6 +227,7 @@ function ThOrdenavel({ campo, label, sortBy, sortDir, onClick }: {
   const ativo = sortBy === campo
   return (
     <th
+      className={className}
       onClick={() => onClick(campo)}
       style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
       title="Clique para ordenar"

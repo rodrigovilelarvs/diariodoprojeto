@@ -475,10 +475,11 @@ input.fi-no-spin {
      de dedo, não só de espaço de leitura */
   .tbl td { padding-top: 11px; padding-bottom: 11px; }
 
-  /* Lista de RDOs: Gestor e Clima são as colunas de menor prioridade — sem
-     elas, Status (a mais importante) fica visível sem precisar rolar de lado. */
-  .tw-rdos .tbl th:nth-child(4), .tw-rdos .tbl td:nth-child(4),
-  .tw-rdos .tbl th:nth-child(6), .tw-rdos .tbl td:nth-child(6) { display: none; }
+  /* Lista de RDOs: Grupo e Gestor são as colunas de menor prioridade (marcadas
+     com .col-sec) — sem elas, Status (a mais importante) fica visível sem
+     precisar rolar de lado. Por classe, não por posição, pra não quebrar
+     quando uma coluna entra ou sai. */
+  .tw-rdos .tbl .col-sec { display: none; }
 
   /* Formulário do RDO — cabeçalho de Identificação: essas duas fileiras são
      flex numa linha só (largura de sobra no desktop); no celular precisam
