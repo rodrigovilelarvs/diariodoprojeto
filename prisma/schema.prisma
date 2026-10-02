@@ -182,7 +182,7 @@ model Tenant {
 
   // Limites do plano (copiados do Plano no momento da contratação)
   limiteUsuarios Int @default(3)
-  limiteRdosMes  Int @default(30) // 0 = ilimitado
+  limiteRdosMes  Int @default(50) // 0 = ilimitado
   limiteProjetos Int @default(2) // 0 = ilimitado
 
   ativadoEm    DateTime?
@@ -209,7 +209,7 @@ model PlanoConfig {
   precoMensal        Decimal   @default(0) @db.Decimal(10, 2)
   precoAnual         Decimal   @default(0) @db.Decimal(10, 2)
   limiteUsuarios     Int       @default(3)
-  limiteRdosMes      Int       @default(30)
+  limiteRdosMes      Int       @default(50)
   limiteProjetos     Int       @default(2)
   temRelatorios      Boolean   @default(false)
   temExportPdf       Boolean   @default(true)

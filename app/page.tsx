@@ -71,7 +71,7 @@ const PLANOS: Array<{
 }> = [
   {
     tipo: 'Starter', resumo: 'Pra experimentar a plataforma sem compromisso.',
-    itens: ['Até 4 usuários', 'Até 2 projetos', '30 RDOs por mês', 'Exportação em PDF'],
+    itens: ['Até 4 usuários', 'Até 2 projetos', '50 RDOs por mês', 'Exportação em PDF'],
   },
   {
     tipo: 'Pro', resumo: 'Pra equipes que precisam de mais recursos.', destaque: true,

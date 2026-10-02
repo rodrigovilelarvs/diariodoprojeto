@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
 
   const limites = {
     limiteUsuarios: planoConfig?.limiteUsuarios ?? 3,
-    limiteRdosMes:  planoConfig?.limiteRdosMes  ?? 30,
+    limiteRdosMes:  planoConfig?.limiteRdosMes  ?? 50,
     limiteProjetos: planoConfig?.limiteProjetos ?? 2,
   }
 

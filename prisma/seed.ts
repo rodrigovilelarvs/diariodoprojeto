@@ -34,7 +34,7 @@ async function main() {
       precoMensal:     50,
       precoAnual:      450,
       limiteUsuarios:  3,
-      limiteRdosMes:   30,
+      limiteRdosMes:   50,
       limiteProjetos:  2,
       temRelatorios:   false,
       temExportPdf:    true,

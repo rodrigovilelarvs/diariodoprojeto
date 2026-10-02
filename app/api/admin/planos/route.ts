@@ -122,7 +122,7 @@ export async function PATCH(req: NextRequest) {
       precoMensal:        dados.precoMensal        ?? 0,
       precoAnual:         dados.precoAnual         ?? 0,
       limiteUsuarios:     dados.limiteUsuarios     ?? 3,
-      limiteRdosMes:      dados.limiteRdosMes      ?? 30,
+      limiteRdosMes:      dados.limiteRdosMes      ?? 50,
       limiteProjetos:     dados.limiteProjetos     ?? 2,
       temRelatorios:      dados.temRelatorios      ?? false,
       temExportPdf:       dados.temExportPdf       ?? true,
