@@ -28,6 +28,7 @@ function PlanosContent() {
     setEditando(plano.tipo)
     setForm({
       precoMensal:        plano.precoMensal,
+      precoAnual:         plano.precoAnual ?? 0,
       limiteUsuarios:     plano.limiteUsuarios,
       limiteRdosMes:      plano.limiteRdosMes,
       limiteProjetos:     plano.limiteProjetos,
@@ -120,8 +121,13 @@ function PlanosContent() {
                       <div style={{ fontSize:16, marginBottom:2 }}>{PLANO_EMOJI[plano.tipo]}</div>
                       <div style={{ fontSize:14, fontWeight:700, color: cor }}>{plano.tipo}</div>
                       <div style={{ fontSize:18, fontWeight:700, color:'#E8EAF0', marginTop:2 }}>
-                        {plano.precoMensal > 0 ? `R$ ${Number(plano.precoMensal).toLocaleString('pt-BR')}/mês` : 'Grátis'}
+                        {plano.precoMensal > 0 ? `R$ ${Number(plano.precoMensal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : 'Grátis'}
                       </div>
+                      {Number(plano.precoAnual) > 0 && (
+                        <div style={{ fontSize:11, color:'#8B95A8', marginTop:2 }}>
+                          ou R$ {Number(plano.precoAnual).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/ano
+                        </div>
+                      )}
                     </div>
                     <button onClick={() => isEd ? setEditando(null) : iniciarEdicao(plano)}
                       style={{ padding:'5px 12px', borderRadius:8, fontSize:11, cursor:'pointer', fontFamily:'inherit', border:`.5px solid ${cor}50`, background: isEd ? `${cor}20` : 'transparent', color: cor }}>
@@ -133,6 +139,7 @@ function PlanosContent() {
                     {isEd ? (
                       <>
                         {inp('Preço mensal (R$)', 'precoMensal')}
+                        {inp('Preço anual (R$)', 'precoAnual')}
                         {inp('Limite usuários (0 = ilimitado)', 'limiteUsuarios')}
                         {inp('Limite RDOs/mês (0 = ilimitado)', 'limiteRdosMes')}
                         {inp('Limite projetos (0 = ilimitado)', 'limiteProjetos')}

@@ -59,6 +59,7 @@ export async function PATCH(req: NextRequest) {
   let body: {
     tipo:               PlanoTipo
     precoMensal?:       number
+    precoAnual?:        number
     limiteUsuarios?:    number
     limiteRdosMes?:     number
     limiteProjetos?:    number
@@ -89,8 +90,10 @@ export async function PATCH(req: NextRequest) {
       )
     }
   }
-  if (dados.precoMensal != null && (!Number.isFinite(dados.precoMensal) || dados.precoMensal < 0)) {
-    return NextResponse.json({ erro: 'Preço inválido.' }, { status: 400 })
+  for (const preco of [dados.precoMensal, dados.precoAnual]) {
+    if (preco != null && (!Number.isFinite(preco) || preco < 0)) {
+      return NextResponse.json({ erro: 'Preço inválido.' }, { status: 400 })
+    }
   }
 
   // Limites que de fato mudam nesta edição → aplicados às empresas do plano.
@@ -105,6 +108,7 @@ export async function PATCH(req: NextRequest) {
     where:  { tipo },
     update: {
       ...(dados.precoMensal        != null && { precoMensal:        dados.precoMensal }),
+      ...(dados.precoAnual         != null && { precoAnual:         dados.precoAnual }),
       ...(dados.limiteUsuarios     != null && { limiteUsuarios:     dados.limiteUsuarios }),
       ...(dados.limiteRdosMes      != null && { limiteRdosMes:      dados.limiteRdosMes }),
       ...(dados.limiteProjetos     != null && { limiteProjetos:     dados.limiteProjetos }),
@@ -116,6 +120,7 @@ export async function PATCH(req: NextRequest) {
     create: {
       tipo,
       precoMensal:        dados.precoMensal        ?? 0,
+      precoAnual:         dados.precoAnual         ?? 0,
       limiteUsuarios:     dados.limiteUsuarios     ?? 3,
       limiteRdosMes:      dados.limiteRdosMes      ?? 30,
       limiteProjetos:     dados.limiteProjetos     ?? 2,

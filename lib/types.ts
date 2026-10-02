@@ -111,6 +111,7 @@ export interface EmpresaInfo {
   uso:     { usuarios: number; rdosMes: number; projetos: number }
   planoConfig?: {
     precoMensal:        number
+    precoAnual:         number
     temRelatorios:      boolean
     temExportPdf:       boolean
     temApi:             boolean
@@ -442,6 +443,7 @@ export interface PlanoConfig {
   id:                 string
   tipo:               PlanoTipo
   precoMensal:        number
+  precoAnual:         number
   limiteUsuarios:     number
   limiteRdosMes:      number
   limiteProjetos:     number

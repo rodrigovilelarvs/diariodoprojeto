@@ -224,11 +224,13 @@ export async function enviarBoasVindasEmpresa({
   token:       string
 }) {
   const link = `${APP_URL}/convite/${token}`
-  const precoPro = precoMensal != null && precoMensal > 0
+  const precoFmt = precoMensal != null && precoMensal > 0
     ? `R$ ${precoMensal.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}/mês`
     : null
   const planoL: Record<string,string> = {
-    STARTER:'Starter (Grátis)', PRO: precoPro ? `Pro (${precoPro})` : 'Pro', ENTERPRISE:'Enterprise',
+    STARTER: precoFmt ? `Starter (${precoFmt})` : 'Starter (Grátis)',
+    PRO: precoFmt ? `Pro (${precoFmt})` : 'Pro',
+    ENTERPRISE: precoFmt ? `Enterprise (${precoFmt})` : 'Enterprise',
   }
 
   const html = layout(`

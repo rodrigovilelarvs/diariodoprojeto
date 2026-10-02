@@ -207,6 +207,7 @@ model PlanoConfig {
   id                 String    @id @default(cuid())
   tipo               PlanoTipo @unique
   precoMensal        Decimal   @default(0) @db.Decimal(10, 2)
+  precoAnual         Decimal   @default(0) @db.Decimal(10, 2)
   limiteUsuarios     Int       @default(3)
   limiteRdosMes      Int       @default(30)
   limiteProjetos     Int       @default(2)

@@ -61,6 +61,15 @@ test.describe('alterar um plano no super-admin', () => {
     expect(e.mrr).toBeCloseTo(49.9 * 2 + 350, 2)
   })
 
+  test('preço anual é salvo e devolvido na listagem; negativo é recusado', async () => {
+    const r = await api.patch('/api/admin/planos', { data: { tipo: 'PRO', precoAnual: 960 } })
+    expect(r.status()).toBe(200)
+    const lista = await (await api.get('/api/admin/planos')).json()
+    expect(Number(lista.planos.find((p: { tipo: string }) => p.tipo === 'PRO').precoAnual)).toBe(960)
+    const ruim = await api.patch('/api/admin/planos', { data: { tipo: 'PRO', precoAnual: -5 } })
+    expect(ruim.status()).toBe(400)
+  })
+
   test('valor inválido é recusado e não altera nada', async () => {
     for (const data of [
       { tipo: 'STARTER', limiteUsuarios: -1 },

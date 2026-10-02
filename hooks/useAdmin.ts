@@ -250,6 +250,7 @@ export function useAtualizarPlano() {
     mutationFn: (body: {
       tipo:               PlanoTipo
       precoMensal?:       number
+      precoAnual?:        number
       limiteUsuarios?:    number
       limiteRdosMes?:     number
       limiteProjetos?:    number

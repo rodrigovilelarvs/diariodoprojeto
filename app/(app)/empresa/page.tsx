@@ -147,7 +147,10 @@ export default function EmpresaPage() {
                 </div>
                 <Badge variant={STATUS_VARIANT[empresa.status] ?? 'gray'}>{STATUS_LABEL[empresa.status] ?? empresa.status}</Badge>
                 {empresa.planoConfig && (
-                  <span style={{ fontSize: 12, color: 'var(--ts)' }}>{fmtMoeda(empresa.planoConfig.precoMensal)}/mês</span>
+                  <span style={{ fontSize: 12, color: 'var(--ts)' }}>
+                    {empresa.planoConfig.precoMensal === 0 ? 'Grátis' : `${fmtMoeda(empresa.planoConfig.precoMensal)}/mês`}
+                    {empresa.planoConfig.precoAnual > 0 && ` · ${fmtMoeda(empresa.planoConfig.precoAnual)}/ano`}
+                  </span>
                 )}
               </div>
 

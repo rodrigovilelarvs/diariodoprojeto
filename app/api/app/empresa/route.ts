@@ -15,6 +15,7 @@ import { LogCategoria, UsuarioPerfil } from '@/lib/prisma-enums'
 // `precoMensal` é `Decimal` (decimal.js) em runtime — só passa por `Number()`.
 type PlanoConfigRaw = {
   precoMensal: unknown
+  precoAnual: unknown
   temRelatorios: boolean; temExportPdf: boolean; temApi: boolean; temSuporteDedicado: boolean
   descricao: string | null
 } | null
@@ -66,6 +67,7 @@ export async function GET(req: NextRequest) {
     },
     planoConfig: planoConfig ? {
       precoMensal:        Number(planoConfig.precoMensal),
+      precoAnual:         Number(planoConfig.precoAnual ?? 0),
       temRelatorios:      planoConfig.temRelatorios,
       temExportPdf:       planoConfig.temExportPdf,
       temApi:             planoConfig.temApi,

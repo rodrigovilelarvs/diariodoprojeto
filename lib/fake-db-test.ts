@@ -122,7 +122,7 @@ const comContagem = (t: (typeof TENANTS_ADMIN)[number], include?: any) => {
   return { ...t, _count: { usuarios, projetos: 0, logs: 0 } }
 }
 const planoBase = (tipo: string, preco: number, lim: [number, number, number]) => ({
-  id: `plano-${tipo}`, tipo, precoMensal: preco, limiteUsuarios: lim[0], limiteRdosMes: lim[1], limiteProjetos: lim[2],
+  id: `plano-${tipo}`, tipo, precoMensal: preco, precoAnual: preco * 10, limiteUsuarios: lim[0], limiteRdosMes: lim[1], limiteProjetos: lim[2],
   temRelatorios: false, temExportPdf: true, temApi: false, temSuporteDedicado: false, descricao: null, tenantId: null,
 })
 const PLANOS: Record<string, any> = {

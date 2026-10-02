@@ -31,7 +31,8 @@ async function main() {
   const planos = [
     {
       tipo: 'STARTER' as const,
-      precoMensal:     0,
+      precoMensal:     50,
+      precoAnual:      450,
       limiteUsuarios:  3,
       limiteRdosMes:   30,
       limiteProjetos:  2,
@@ -39,11 +40,12 @@ async function main() {
       temExportPdf:    true,
       temApi:          false,
       temSuporteDedicado: false,
-      descricao: 'Plano gratuito para experimentar a plataforma',
+      descricao: 'Plano de entrada para começar a usar a plataforma',
     },
     {
       tipo: 'PRO' as const,
-      precoMensal:     297,
+      precoMensal:     100,
+      precoAnual:      960,
       limiteUsuarios:  10,
       limiteRdosMes:   0,   // 0 = ilimitado
       limiteProjetos:  10,
@@ -55,7 +57,8 @@ async function main() {
     },
     {
       tipo: 'ENTERPRISE' as const,
-      precoMensal:     1485,
+      precoMensal:     140,
+      precoAnual:      1260,
       limiteUsuarios:  0,   // 0 = ilimitado
       limiteRdosMes:   0,
       limiteProjetos:  0,
@@ -73,7 +76,7 @@ async function main() {
       update: plano,
       create: plano,
     })
-    console.log(`✅ Plano ${plano.tipo}: R$ ${plano.precoMensal}/mês`)
+    console.log(`✅ Plano ${plano.tipo}: R$ ${plano.precoMensal}/mês · R$ ${plano.precoAnual}/ano`)
   }
 
   console.log('\n✨ Seed concluído!')
