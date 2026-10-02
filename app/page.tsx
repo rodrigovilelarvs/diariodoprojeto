@@ -134,7 +134,7 @@ export default function LandingPage() {
             Conforme a Lei 14.063 — assinatura digital com validade jurídica
           </div>
           <h1 style={{ fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 700, lineHeight: 1.15, margin: '16px 0 14px', letterSpacing: '-.02em' }}>
-            O diário de obra que sua construtora <span style={{ color: 'var(--ta)' }}>leva a sério</span>
+            O diário de obra que as empresas <span style={{ color: 'var(--ta)' }}>levam a sério</span>
           </h1>
           <p style={{ fontSize: 15, color: 'var(--ts)', lineHeight: 1.65, maxWidth: 480, marginBottom: 26 }}>
             Registre o dia a dia da obra, colha assinaturas digitais, aprove em poucos cliques
