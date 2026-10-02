@@ -228,7 +228,7 @@ export async function enviarBoasVindasEmpresa({
     ? `R$ ${precoMensal.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}/mês`
     : null
   const planoL: Record<string,string> = {
-    STARTER: precoFmt ? `Starter (${precoFmt})` : 'Starter (Grátis)',
+    STARTER: precoFmt ? `Starter (${precoFmt})` : 'Starter',
     PRO: precoFmt ? `Pro (${precoFmt})` : 'Pro',
     ENTERPRISE: precoFmt ? `Enterprise (${precoFmt})` : 'Enterprise',
   }

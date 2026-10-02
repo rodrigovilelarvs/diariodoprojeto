@@ -70,7 +70,7 @@ const PLANOS: Array<{
   itens: string[]
 }> = [
   {
-    tipo: 'Starter', resumo: 'Pra experimentar a plataforma sem compromisso.',
+    tipo: 'Starter', resumo: 'Para começar a organizar seus RDOs.',
     itens: ['Até 4 usuários', 'Até 2 projetos', '50 RDOs por mês', 'Exportação em PDF'],
   },
   {
