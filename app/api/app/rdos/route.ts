@@ -44,9 +44,11 @@ export async function GET(req: NextRequest) {
   const sortBy    = searchParams.get('sortBy')  ?? 'numero'
   const sortDir   = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc'
   const dataParam = searchParams.get('data') ?? undefined
+  const grupo     = searchParams.get('grupo')  ?? undefined
 
   const orderBy: Record<string, unknown>[] =
     sortBy === 'projeto' ? [{ projeto: { nome: sortDir } }] :
+    sortBy === 'grupo'   ? [{ projeto: { grupo: sortDir } }, { numero: 'desc' }] :
     sortBy === 'gestor'  ? [{ emissor: { nome: sortDir } }] :
     sortBy === 'status'  ? [{ status: sortDir }, { data: 'desc' }] :
     sortBy === 'data'    ? [{ data: sortDir }, { numero: sortDir }] :
@@ -71,7 +73,7 @@ export async function GET(req: NextRequest) {
   }
 
   const whereBase = {
-    projeto: { tenantId },
+    projeto: { tenantId, ...(grupo ? { grupo } : {}) },
     ...(projetoId ? { projetoId } : projetosExcluidos.length > 0 ? { projetoId: { notIn: projetosExcluidos } } : {}),
     ...(status    ? { status }    : {}),
     ...(dataParam ? { data: new Date(dataParam) } : {}),
@@ -80,7 +82,7 @@ export async function GET(req: NextRequest) {
   const rdos = await prisma.rdo.findMany({
     where: whereBase,
     include: {
-      projeto:  { select: { id: true, nome: true } },
+      projeto:  { select: { id: true, nome: true, grupo: true } },
       emissor:  { select: { id: true, nome: true } },
       assinaturas: { select: { status: true } },
       _count:   { select: { midias: true, comentarios: true, ocorrencias: true } },

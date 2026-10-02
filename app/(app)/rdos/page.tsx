@@ -3,7 +3,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useRdos } from '@/hooks/useEmpresa'
+import { useRdos, useProjetos } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar }  from '@/components/layout/Topbar'
 import { KpiCard, RdoStatusBadge, ClimaEmoji, Skeleton, AutocompleteSearchInput } from '@/components/ui'
@@ -29,9 +29,10 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   const { session } = useAppAuth()
   const [busca, setBusca] = useState('')
   const [status, setStatus] = useState(() => searchParams.get('status') ?? '')
+  const [grupo, setGrupo] = useState('')
   const [projetoId] = useState(() => projetoIdFixo ?? searchParams.get('projetoId') ?? '')
   const [pagina, setPagina] = useState(1)
-  const [sortBy, setSortBy]   = useState<'numero' | 'projeto' | 'data' | 'gestor' | 'status'>('numero')
+  const [sortBy, setSortBy]   = useState<'numero' | 'projeto' | 'grupo' | 'data' | 'gestor' | 'status'>('numero')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   function ordenarPor(campo: typeof sortBy) {
@@ -51,7 +52,10 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
     setStatus(searchParams.get('status') ?? '')
   }, [searchParams])
 
-  const { data, isLoading } = useRdos({ status: status || undefined, projetoId: projetoId || undefined, pagina, sortBy, sortDir })
+  const { data: projetos } = useProjetos()
+  const grupos = Array.from(new Set((projetos ?? []).map(p => p.grupo).filter(Boolean) as string[])).sort()
+
+  const { data, isLoading } = useRdos({ status: status || undefined, projetoId: projetoId || undefined, grupo: grupo || undefined, pagina, sortBy, sortDir })
   const nomeProjetoFiltrado = data?.rdos.find(r => r.projeto.id === projetoId)?.projeto.nome
 
   const rdos    = data?.rdos ?? []
@@ -97,6 +101,12 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
         <div className="fr-row">
           <AutocompleteSearchInput placeholder="Buscar por projeto, data, responsável..." value={busca} onChange={setBusca}
             opcoes={Array.from(new Map(rdos.map(r => [r.projeto.id, r.projeto.nome])).entries()).map(([id, nome]) => ({ id, label: nome }))} />
+          {!projetoIdFixo && (
+            <select className="fsel" value={grupo} onChange={e => { setGrupo(e.target.value); setPagina(1) }}>
+              <option value="">Todos os grupos</option>
+              {grupos.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          )}
           <select className="fsel" value={status} onChange={e => setStatus(e.target.value)}>
             <option value="">Todos os status</option>
             <option value="APROVADO">Aprovado</option>
@@ -118,6 +128,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
               <tr>
                 <ThOrdenavel campo="numero"  label="#"                sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
                 <ThOrdenavel campo="projeto" label="Projeto"          sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
+                {!projetoIdFixo && <ThOrdenavel campo="grupo" label="Grupo" sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />}
                 <ThOrdenavel campo="data"    label="Data"             sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
                 <ThOrdenavel campo="gestor"  label="Gestor do Projeto" sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
                 <ThOrdenavel campo="status"  label="Status"           sortBy={sortBy} sortDir={sortDir} onClick={ordenarPor} />
@@ -127,9 +138,9 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={7}><Skeleton h={200} /></td></tr>
+                <tr><td colSpan={projetoIdFixo ? 7 : 8}><Skeleton h={200} /></td></tr>
               ) : filtrados.length === 0 ? (
-                <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>Nenhum RDO encontrado.</td></tr>
+                <tr><td colSpan={projetoIdFixo ? 7 : 8} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>Nenhum RDO encontrado.</td></tr>
               ) : filtrados.map(r => (
                 <tr key={r.id} onClick={() => router.push(
                   r.status === 'APROVADO' || r.status === 'PENDENTE_APROVACAO'
@@ -138,6 +149,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
                 )}>
                   <td style={{ fontSize: 11, fontWeight: 600, color: 'var(--ta)' }}>#{numeroRdo(r.numero)}</td>
                   <td style={{ fontSize: 12, fontWeight: 500 }}>{r.projeto.nome}</td>
+                  {!projetoIdFixo && <td style={{ fontSize: 11, color: 'var(--ts)' }}>{r.projeto.grupo ?? '—'}</td>}
                   <td style={{ fontSize: 11, color: 'var(--ts)' }}>
                     {fmtData(r.data)}
                   </td>
@@ -204,7 +216,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   )
 }
 
-type CampoOrdenacao = 'numero' | 'projeto' | 'data' | 'gestor' | 'status'
+type CampoOrdenacao = 'numero' | 'projeto' | 'grupo' | 'data' | 'gestor' | 'status'
 
 function ThOrdenavel({ campo, label, sortBy, sortDir, onClick }: {
   campo: CampoOrdenacao
