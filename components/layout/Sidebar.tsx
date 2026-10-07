@@ -95,6 +95,10 @@ export function Sidebar() {
           <i className="ti ti-user-circle" />
           Meu perfil
         </Link>
+        <Link href="/ajuda" onClick={fecharMenuMobile} className={`ni ${isActive('/ajuda') ? 'on' : ''}`}>
+          <i className="ti ti-help-circle" />
+          Ajuda
+        </Link>
         <button className="ni" onClick={logout}>
           <i className="ti ti-logout" />
           Sair

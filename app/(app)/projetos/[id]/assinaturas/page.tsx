@@ -114,7 +114,7 @@ export default function ProjetoAssinaturasPage() {
                   <i className="ti ti-users-group" /> Aberta
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--ts)' }}>
-                  Qualquer aprovador do time (Admin, Gestor ou Aprovador) pode assinar. Comportamento padrão.
+                  Qualquer pessoa do time com permissão de aprovar RDOs pode assinar. Comportamento padrão.
                 </div>
               </button>
               <button onClick={() => setModo('DEFINIDA')}
@@ -150,7 +150,7 @@ export default function ProjetoAssinaturasPage() {
                 ))}
                 {usuariosElegiveis.length === 0 && (
                   <div style={{ fontSize: 11, color: 'var(--tm)' }}>
-                    Nenhum usuário com perfil de Admin, Gestor ou Aprovador cadastrado no time ainda.
+                    Nenhum usuário com permissão de aprovar RDOs cadastrado no time ainda.
                   </div>
                 )}
               </div>
