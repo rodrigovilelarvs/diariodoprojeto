@@ -51,8 +51,11 @@ test('a Ajuda abre pelo menu, lista as seções e a busca filtra', async ({ page
 test('clicar numa captura de tela abre a imagem ampliada e Esc fecha', async ({ page }) => {
   await login(page)
   await page.goto('/ajuda')
-  await page.locator('.aj-fig-btn').first().click()
-  await expect(page.getByRole('dialog')).toBeVisible()
+  // a página hidrata depois de carregar: repete o clique até o handler existir
+  await expect(async () => {
+    await page.locator('.aj-fig-btn').first().click()
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 1500 })
+  }).toPass({ timeout: 15000 })
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
