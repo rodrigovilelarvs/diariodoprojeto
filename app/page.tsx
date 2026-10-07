@@ -249,36 +249,113 @@ export default function LandingPage() {
       <section id="na-pratica" className="ldg-wrap ldg-showcase-grid" style={{ padding: '56px 24px', display: 'grid', gridTemplateColumns: '.8fr 1.2fr', gap: 48, alignItems: 'center' }}>
         <Reveal>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div className="ldg-phone-tilt">
             <div className="ldg-phone">
-              <div className="ldg-phone-notch" />
+              <div className="ldg-phone-btn ldg-phone-btn-a" />
+              <div className="ldg-phone-btn ldg-phone-btn-b" />
+              <div className="ldg-phone-btn ldg-phone-btn-c" />
               <div className="ldg-phone-screen">
-                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--tp)', marginBottom: 2 }}>Novo RDO · Dia 24</div>
-                <div style={{ fontSize: 8.5, color: 'var(--tm)', marginBottom: 12 }}>Obra Jardim das Flores</div>
+                <div className="ldg-ph-status">
+                  <span>07:42</span>
+                  <span className="ldg-ph-island" />
+                  <span className="ldg-ph-sys">
+                    <svg width="14" height="10" viewBox="0 0 14 10" fill="currentColor"><rect x="0" y="6" width="2.4" height="4" rx=".6"/><rect x="3.8" y="4" width="2.4" height="6" rx=".6"/><rect x="7.6" y="2" width="2.4" height="8" rx=".6"/><rect x="11.4" y="0" width="2.4" height="10" rx=".6"/></svg>
+                    <svg width="13" height="10" viewBox="0 0 13 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M1 3.4a8 8 0 0 1 11 0M3 5.7a5 5 0 0 1 7 0"/><circle cx="6.5" cy="8.2" r=".9" fill="currentColor" stroke="none"/></svg>
+                    <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="18" height="9" rx="2.4" stroke="currentColor" opacity=".6"/><rect x="2" y="2" width="12" height="6" rx="1.4" fill="currentColor"/><rect x="19.6" y="3.2" width="1.8" height="3.6" rx=".8" fill="currentColor" opacity=".6"/></svg>
+                  </span>
+                </div>
 
-                <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--ts)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 7 }}>Condições climáticas</div>
-                <div style={{ display: 'flex', gap: 5, marginBottom: 14 }}>
+                <div className="ldg-ph-appbar">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="ldg-ph-title">RDO #0024</div>
+                    <div className="ldg-ph-sub">Obra Jardim das Flores</div>
+                  </div>
+                  <span className="ldg-ph-badge">Rascunho</span>
+                </div>
+
+                <div className="ldg-ph-body">
+                  <div className="ldg-ph-sec first">Dados gerais</div>
+                  <div className="ldg-ph-grid">
+                    <div className="ldg-ph-field"><label>Data</label><div>24/09/2026</div></div>
+                    <div className="ldg-ph-field"><label>Horário</label><div>07:00 – 17:00</div></div>
+                    <div className="ldg-ph-field"><label>Intervalo</label><div>1h</div></div>
+                    <div className="ldg-ph-field"><label>Total</label><div>9h</div></div>
+                  </div>
+
+                  <div className="ldg-ph-sec">Clima</div>
+                  <div className="ldg-ph-clima">
+                    <div className="ldg-ph-pill on"><span>☀️</span>Manhã · Sol</div>
+                    <div className="ldg-ph-pill"><span>⛅</span>Tarde · Nublado</div>
+                  </div>
+
+                  <div className="ldg-ph-sec">Mão de obra <b>49 H/H</b></div>
                   {[
-                    { e: '☀️', on: true },
-                    { e: '⛅', on: false },
-                    { e: '🌧️', on: false },
-                    { e: '⛈️', on: false },
-                  ].map((c, i) => (
-                    <div key={i} className={`ldg-phone-chip${c.on ? ' on' : ''}`}>{c.e}</div>
+                    { n: 'Mestre de obras', d: '1 pessoa · 9h',  hh: '9 H/H',  ind: true },
+                    { n: 'Pedreiro',        d: '3 pessoas · 8h', hh: '24 H/H', ind: false },
+                    { n: 'Servente',        d: '2 pessoas · 8h', hh: '16 H/H', ind: false },
+                  ].map(m => (
+                    <div key={m.n} className="ldg-ph-row">
+                      <span className={`ldg-ph-dot${m.ind ? ' ind' : ''}`} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="ldg-ph-rn">{m.n}</div>
+                        <div className="ldg-ph-rd">{m.d}</div>
+                      </div>
+                      <span className="ldg-ph-hh">{m.hh}</span>
+                    </div>
                   ))}
+
+                  <div className="ldg-ph-sec">Equipamentos <b>2</b></div>
+                  {[
+                    { n: 'Betoneira 400L', d: '1 un · 6h' },
+                    { n: 'Vibrador de concreto', d: '2 un · 4h' },
+                  ].map(e => (
+                    <div key={e.n} className="ldg-ph-row">
+                      <span className="ldg-ph-dot eq" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="ldg-ph-rn">{e.n}</div>
+                        <div className="ldg-ph-rd">{e.d}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="ldg-ph-sec">Atividades</div>
+                  <div className="ldg-ph-act">
+                    <div className="ldg-ph-rn">Concretagem da laje · Bloco B</div>
+                    <div className="ldg-ph-bar"><i style={{ width: '60%' }} /></div>
+                    <div className="ldg-ph-rd">60% concluído hoje</div>
+                  </div>
+                  <div className="ldg-ph-act" style={{ marginTop: 5 }}>
+                    <div className="ldg-ph-rn">Alvenaria · Pavimento 2</div>
+                    <div className="ldg-ph-bar"><i style={{ width: '35%' }} /></div>
+                    <div className="ldg-ph-rd">35% concluído hoje</div>
+                  </div>
+
+                  <div className="ldg-ph-sec">Ocorrências <b>1</b></div>
+                  <div className="ldg-ph-act">
+                    <div className="ldg-ph-rn">Atraso na entrega de concreto</div>
+                    <div className="ldg-ph-rd">Caminhão chegou 1h30 após o combinado.</div>
+                  </div>
+
+                  <div className="ldg-ph-sec">Fotos <b>3</b></div>
+                  <div className="ldg-ph-fotos">
+                    <span style={{ background: 'linear-gradient(135deg,#7fb3d5,#c9dcea)' }} />
+                    <span style={{ background: 'linear-gradient(135deg,#b9a78a,#e1d4bd)' }} />
+                    <span style={{ background: 'linear-gradient(135deg,#8fa59a,#cfdcd5)' }} />
+                  </div>
+
+                  <div className="ldg-ph-sec">Observações</div>
+                  <div className="ldg-ph-field"><div style={{ fontWeight: 500, lineHeight: 1.4 }}>Laje do bloco B concretada sem intercorrências. Cura iniciada às 16h.</div></div>
+                  <div style={{ height: 14 }} />
                 </div>
 
-                <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--ts)', textTransform: 'uppercase', letterSpacing: '.04em', marginBottom: 7 }}>Mão de obra</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--s1)', border: '.5px solid var(--b)', borderRadius: 8, padding: '7px 9px', marginBottom: 7 }}>
-                  <span style={{ fontSize: 9, color: 'var(--tp)' }}><i className="ti ti-users" style={{ color: 'var(--ta)', marginRight: 4 }} />Pedreiro</span>
-                  <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--ta)' }}>8h</span>
+                <div className="ldg-ph-actions">
+                  <span className="ldg-ph-btn-g">Salvar rascunho</span>
+                  <span className="ldg-ph-btn-p">Enviar p/ aprovação</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--s1)', border: '.5px solid var(--b)', borderRadius: 8, padding: '7px 9px', marginBottom: 14 }}>
-                  <span style={{ fontSize: 9, color: 'var(--tp)' }}><i className="ti ti-users" style={{ color: 'var(--ta)', marginRight: 4 }} />Servente</span>
-                  <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--ta)' }}>8h</span>
-                </div>
-
-                <div className="ldg-phone-fab"><i className="ti ti-plus" /></div>
+                <div className="ldg-ph-home" />
               </div>
+            </div>
             </div>
           </div>
         </Reveal>

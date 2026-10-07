@@ -731,25 +731,93 @@ input.fi-no-spin {
 }
 
 /* ── Mock de celular (preenchimento do RDO) ────────────────────────── */
+/* O conteúdo da tela rola de verdade (como no app), com barra fina que
+   aparece ao passar o mouse; o celular tem leve inclinação que se desfaz no hover. */
+.ldg-phone-tilt { transform: rotate(-3deg); transition: transform .35s ease; }
+.ldg-phone-tilt:hover { transform: rotate(0deg); }
 .ldg-phone {
-  width: 220px; border-radius: 32px; background: var(--s2);
-  border: 9px solid var(--s1); outline: .5px solid var(--b);
-  box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden;
+  position: relative; width: 272px; height: 560px; border-radius: 44px; padding: 8px;
+  background: linear-gradient(145deg, #2b3445, #0d121c);
+  box-shadow: 0 0 0 1.5px #3a4559, 0 28px 70px rgba(0,0,0,.32), inset 0 0 0 1px rgba(255,255,255,.06);
 }
-.ldg-phone-notch { width: 70px; height: 16px; background: var(--s1); border-radius: 0 0 10px 10px; margin: 0 auto; }
-.ldg-phone-screen { padding: 14px; min-height: 280px; position: relative; }
-.ldg-phone-chip {
-  width: 34px; height: 34px; border-radius: 10px; display: flex;
-  align-items: center; justify-content: center; font-size: 15px;
-  background: var(--s1); border: .5px solid var(--b);
+.ldg-phone-btn { position: absolute; width: 3px; border-radius: 2px; background: #2b3445; }
+.ldg-phone-btn-a { left: -3px; top: 96px;  height: 26px; }
+.ldg-phone-btn-b { left: -3px; top: 138px; height: 44px; }
+.ldg-phone-btn-c { right: -3px; top: 124px; height: 62px; }
+.ldg-phone-screen {
+  position: relative; height: 100%; border-radius: 36px; overflow: hidden;
+  background: var(--s2); color: var(--tp);
+  display: flex; flex-direction: column;
 }
-.ldg-phone-chip.on { background: var(--bga); border-color: var(--ta); }
-.ldg-phone-fab {
-  position: absolute; bottom: 12px; right: 12px; width: 30px; height: 30px;
-  border-radius: 50%; background: var(--ta); color: var(--oa);
-  display: flex; align-items: center; justify-content: center; font-size: 15px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+.ldg-ph-status {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px 4px; font-size: 10.5px; font-weight: 700; color: var(--tp); flex-shrink: 0;
 }
+.ldg-ph-island { width: 74px; height: 20px; border-radius: 12px; background: #05070b; position: absolute; left: 50%; top: 8px; transform: translateX(-50%); }
+.ldg-ph-sys { display: flex; align-items: center; gap: 4px; }
+.ldg-ph-appbar {
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px 9px; flex-shrink: 0;
+  border-bottom: .5px solid var(--b); color: var(--tp);
+}
+.ldg-ph-title { font-size: 13px; font-weight: 700; line-height: 1.15; }
+.ldg-ph-sub { font-size: 9px; color: var(--tm); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ldg-ph-badge {
+  font-size: 8.5px; font-weight: 700; padding: 3px 8px; border-radius: 99px; flex-shrink: 0;
+  background: var(--s1); border: .5px solid var(--b); color: var(--ts);
+}
+.ldg-ph-body {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 14px;
+  scrollbar-width: thin; scrollbar-color: transparent transparent;
+}
+.ldg-ph-body:hover { scrollbar-color: var(--tm) transparent; }
+.ldg-ph-body::-webkit-scrollbar { width: 5px; }
+.ldg-ph-body::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+.ldg-ph-body:hover::-webkit-scrollbar-thumb { background: var(--tm); }
+.ldg-ph-sec {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 8.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ts); margin: 12px 0 5px;
+}
+.ldg-ph-sec.first { margin-top: 10px; }
+.ldg-ph-sec b { font-size: 9px; color: var(--ta); letter-spacing: 0; text-transform: none; }
+.ldg-ph-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ldg-ph-field label { display: block; font-size: 8px; color: var(--tm); margin-bottom: 2px; }
+.ldg-ph-field div {
+  font-size: 10px; font-weight: 600; color: var(--tp); background: var(--s1);
+  border: .5px solid var(--b); border-radius: 7px; padding: 5px 8px;
+}
+.ldg-ph-clima { display: flex; gap: 6px; }
+.ldg-ph-pill {
+  flex: 1; display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 600; color: var(--ts);
+  background: var(--s1); border: .5px solid var(--b); border-radius: 8px; padding: 6px 7px; white-space: nowrap;
+}
+.ldg-ph-pill span { font-size: 12px; }
+.ldg-ph-pill.on { background: var(--bga); border-color: var(--ta); color: var(--tp); }
+.ldg-ph-row {
+  display: flex; align-items: center; gap: 8px; background: var(--s1);
+  border: .5px solid var(--b); border-radius: 8px; padding: 6px 9px; margin-bottom: 5px;
+}
+.ldg-ph-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ta); flex-shrink: 0; }
+.ldg-ph-dot.ind { background: #8e24aa; }
+.ldg-ph-dot.eq { background: #f59e0b; }
+.ldg-ph-rn { font-size: 10px; font-weight: 600; color: var(--tp); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ldg-ph-rd { font-size: 8.5px; color: var(--tm); margin-top: 1px; line-height: 1.35; }
+.ldg-ph-hh { font-size: 9.5px; font-weight: 700; color: var(--ta); flex-shrink: 0; }
+.ldg-ph-act { background: var(--s1); border: .5px solid var(--b); border-radius: 8px; padding: 7px 9px; }
+.ldg-ph-bar { height: 5px; border-radius: 3px; background: var(--b); margin: 6px 0 4px; overflow: hidden; }
+.ldg-ph-bar i { display: block; height: 100%; background: var(--ta); border-radius: 3px; }
+.ldg-ph-fotos { display: flex; gap: 6px; }
+.ldg-ph-fotos span { flex: 1; height: 44px; border-radius: 8px; border: .5px solid var(--b); }
+.ldg-ph-actions {
+  display: flex; gap: 7px; padding: 9px 12px 6px; flex-shrink: 0;
+  background: var(--s2); border-top: .5px solid var(--b);
+}
+.ldg-ph-btn-g, .ldg-ph-btn-p {
+  flex: 1; text-align: center; font-size: 9px; font-weight: 700; padding: 8px 4px; border-radius: 9px; white-space: nowrap;
+}
+.ldg-ph-btn-g { background: var(--s1); border: .5px solid var(--b); color: var(--tp); }
+.ldg-ph-btn-p { background: var(--ta); color: var(--oa); }
+.ldg-ph-home { width: 84px; height: 4px; border-radius: 3px; background: var(--tp); opacity: .75; margin: 2px auto 7px; flex-shrink: 0; }
 
 /* ── Donut (mock de Relatórios) ─────────────────────────────────────── */
 .ldg-donut { width: 64px; height: 64px; border-radius: 50%; position: relative; flex-shrink: 0; }
