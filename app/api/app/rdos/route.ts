@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
   const orderBy: Record<string, unknown>[] =
     sortBy === 'projeto' ? [{ projeto: { nome: sortDir } }] :
     sortBy === 'grupo'   ? [{ projeto: { grupo: sortDir } }, { numero: 'desc' }] :
-    sortBy === 'gestor'  ? [{ emissor: { nome: sortDir } }] :
+    sortBy === 'gestor'  ? [{ projeto: { gestor: { nome: sortDir } } }, { numero: 'desc' }] :
     sortBy === 'status'  ? [{ status: sortDir }, { data: 'desc' }] :
     sortBy === 'data'    ? [{ data: sortDir }, { numero: sortDir }] :
     // padrão (e clique em "#"): número do RDO, com a data como desempate
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
   const rdos = await prisma.rdo.findMany({
     where: whereBase,
     include: {
-      projeto:  { select: { id: true, nome: true, grupo: true } },
+      projeto:  { select: { id: true, nome: true, grupo: true, gestor: { select: { id: true, nome: true } } } },
       emissor:  { select: { id: true, nome: true } },
       assinaturas: { select: { status: true } },
       _count:   { select: { midias: true, comentarios: true, ocorrencias: true } },

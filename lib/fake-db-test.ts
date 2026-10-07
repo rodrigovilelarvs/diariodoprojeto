@@ -136,7 +136,7 @@ const PROJETO = {
   pedidoCompraContrato: 'Contrato 001', empresaContratada: 'Construtora Teste Ltda',
   status: 'ATIVO', grupo: null, fotoUrl: null,
   dataInicioContrato: new Date('2026-08-01'), dataFimContrato: new Date('2026-12-01'),
-  cor: '#29B6D8', gestorId: null, gestor: null,
+  cor: '#29B6D8', gestorId: 'gestor-proj', gestor: { id: 'gestor-proj', nome: 'Gestor Do Projeto' },
   assinaturaModo: 'ABERTA', assinante1Id: null, assinante2Id: null, assinante3Id: null,
   assinante1: null, assinante2: null, assinante3: null,
   criadoEm: AGORA, atualizadoEm: AGORA,

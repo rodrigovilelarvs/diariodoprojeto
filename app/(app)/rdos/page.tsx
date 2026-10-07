@@ -66,6 +66,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
 
   const filtrados = rdos.filter(r =>
     !busca || r.projeto.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    (r.projeto.gestor?.nome ?? '').toLowerCase().includes(busca.toLowerCase()) ||
     r.emissor.nome.toLowerCase().includes(busca.toLowerCase()),
   )
 
@@ -152,7 +153,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
                   <td style={{ fontSize: 11, color: 'var(--ts)' }}>
                     {fmtData(r.data)}
                   </td>
-                  <td className="col-sec" style={{ fontSize: 11, color: 'var(--ts)' }}>{r.emissor.nome}</td>
+                  <td className="col-sec" style={{ fontSize: 11, color: 'var(--ts)' }}>{r.projeto.gestor?.nome ?? '—'}</td>
                   <td><RdoStatusBadge status={r.status} assinaturas={r.assinaturas} /></td>
                   <td>
                     <div className="proj-ac" style={{ justifyContent: 'flex-end' }}>

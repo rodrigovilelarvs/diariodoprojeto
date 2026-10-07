@@ -371,7 +371,7 @@ export interface RdoResumo {
   data:    string
   status:  RdoStatus
   climaManha?: ClimaCondicao
-  projeto: Pick<Projeto, 'id' | 'nome' | 'grupo'>
+  projeto: Pick<Projeto, 'id' | 'nome' | 'grupo'> & { gestor?: Pick<UsuarioResumo, 'id' | 'nome'> | null }
   emissor: Pick<UsuarioResumo, 'id' | 'nome'>
   assinaturas: { status: string }[]
   _count:  { midias: number; comentarios: number; ocorrencias: number }
