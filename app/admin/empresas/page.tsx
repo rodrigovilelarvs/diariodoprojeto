@@ -190,7 +190,7 @@ function EmpresasContent() {
                 <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#4A5568' }}>
                   <div style={{ fontSize:32, marginBottom:8 }}>🏢</div>
                   <div style={{ fontSize:13, color:'#8B95A8', marginBottom:4 }}>Nenhuma empresa cadastrada</div>
-                  <div style={{ fontSize:11 }}>Clique em "+ Nova empresa" para começar</div>
+                  <div style={{ fontSize:11 }}>Clique em &quot;+ Nova empresa&quot; para começar</div>
                 </td></tr>
               ) : empresas.map((e) => (
                 <tr key={e.id} style={{ borderBottom:'.5px solid rgba(255,255,255,.05)' }}>
@@ -281,7 +281,7 @@ function EmpresasContent() {
                     </button>
                   </div>
                   <div style={{ fontSize:10, color:'#4A5568', marginTop:4 }}>
-                    Se preenchida, o responsável já pode logar com essa senha (sem depender do e-mail de convite). Mínimo 8 caracteres — lembre de marcar "Ativar acesso imediatamente" abaixo, senão a empresa fica aguardando ativação mesmo com a senha definida.
+                    Se preenchida, o responsável já pode logar com essa senha (sem depender do e-mail de convite). Mínimo 8 caracteres — lembre de marcar &quot;Ativar acesso imediatamente&quot; abaixo, senão a empresa fica aguardando ativação mesmo com a senha definida.
                   </div>
                 </div>
 
@@ -449,7 +449,7 @@ function EmpresasContent() {
                   <input type="date" value={editForm.dataVencimentoPlano}
                     onChange={e => setEditForm(f => ({ ...f, dataVencimentoPlano: e.target.value }))}
                     style={{ width:'100%', padding:'7px 10px', borderRadius:8, border:'.5px solid rgba(255,255,255,.12)', background:'#161B25', color:'#E8EAF0', fontSize:12, fontFamily:'inherit', boxSizing:'border-box', colorScheme:'dark' }} />
-                  <div style={{ fontSize:10, color:'#4A5568', marginTop:4 }}>Exibido para a empresa em "Dados da empresa". Deixe em branco para remover.</div>
+                  <div style={{ fontSize:10, color:'#4A5568', marginTop:4 }}>Exibido para a empresa em &quot;Dados da empresa&quot;. Deixe em branco para remover.</div>
                 </div>
 
                 {editErro && <div style={{ background:'rgba(224,92,92,.1)', border:'.5px solid rgba(224,92,92,.3)', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#E05C5C', marginBottom:12 }}>{editErro}</div>}

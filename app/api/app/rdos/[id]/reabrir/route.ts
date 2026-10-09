@@ -3,6 +3,7 @@
 // para permitir correções (ex: legenda de foto esquecida). Reseta as assinaturas — precisa ser
 // reaprovado do zero após as correções.
 
+import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeAprovarRdo } from '@/lib/auth'
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const statusAnterior = rdo.status
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.rdo.update({
       where: { id: rdoId },
       data:  { status: RdoStatus.RASCUNHO, enviadoEm: null },

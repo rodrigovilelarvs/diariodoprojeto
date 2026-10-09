@@ -1,6 +1,7 @@
 // app/api/app/rdos/[id]/aprovar/route.ts
 // POST /api/app/rdos/:id/aprovar — aprovar ou rejeitar RDO
 
+import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse }               from 'next/server'
 import { prisma, registrarLog, getRequestMeta }    from '@/lib/prisma'
 import { requireAuth, podeAprovarRdo }             from '@/lib/auth'
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   // ── REJEIÇÃO ────────────────────────────────────────────
   if (!body.aprovado) {
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Muda status do RDO para REJEITADO
       await tx.rdo.update({
         where: { id: rdoId },
@@ -201,7 +202,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   let assinadas  = 0
   let todosAssinaram = false
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Marca a assinatura deste aprovador como ASSINADO
     await tx.assinatura.update({
       where: { id: minhaAssinatura.id },

@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
 
-  const { tenantId, usuarioId } = auth.ctx
+  const { tenantId } = auth.ctx
   const projetoId = (await params).id
 
   const projeto = await prisma.projeto.findFirst({

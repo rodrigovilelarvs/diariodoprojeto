@@ -345,7 +345,7 @@ export default function PainelPage() {
       >
         <form onSubmit={handleDuplicar}>
           <div style={{ fontSize: 12, color: 'var(--ts)', marginBottom: 12 }}>
-            Cria uma cópia de <strong style={{ color: 'var(--tp)' }}>"{modalDuplicar?.nome}"</strong>. RDOs, ocorrências, comentários e mídias nunca são copiados.
+            Cria uma cópia de <strong style={{ color: 'var(--tp)' }}>&quot;{modalDuplicar?.nome}&quot;</strong>. RDOs, ocorrências, comentários e mídias nunca são copiados.
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <label style={{

@@ -366,7 +366,7 @@ export default function UsuariosPage() {
   const [reenviandoId, setReenviandoId] = useState<string | null>(null)
   const { session } = useAppAuth()
   const [aba, setAba]           = useState<'usuarios' | 'convites'>('usuarios')
-  const [modalConv, setModalConv] = useState(false)
+  const [, setModalConv] = useState(false)
   const [convModo, setConvModo]   = useState<'convite' | 'cadastro'>('convite')
   const [convNome, setConvNome]   = useState('')
   const [convEmail, setConvEmail] = useState('')

@@ -9,7 +9,7 @@ import {
   useResumoProjeto, useProjetoAcesso, useDefinirAcessoProjeto, useRemoverAcessoProjeto,
 } from '@/hooks/useEmpresa'
 import { Topbar } from '@/components/layout/Topbar'
-import { Skeleton, Select, Btn, Badge } from '@/components/ui'
+import { Skeleton, Select, Btn } from '@/components/ui'
 import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import type { ProjetoAcessoNivel } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'

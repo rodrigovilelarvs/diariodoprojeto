@@ -16,7 +16,7 @@ import { numeroRdo, fmtData } from '@/lib/format'
 import { UploadZona } from '@/components/rdos/UploadZona'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
-  CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L, EQUIPAMENTO_TIPOS,
+  CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L,
   calcHH, calcOcDur, calcPrazo,
 } from '@/lib/rdo-display'
 import type { AssinaturaItem } from '@/lib/types'
@@ -714,7 +714,7 @@ export default function AprovacaoPage() {
               <div className="sec-body">
                 {/* Tracker visual */}
                 <div className="sig-track">
-                  {assinaturas.map((a, i) => (
+                  {assinaturas.map((a) => (
                     <div key={a.id} className="sig-step">
                       <div className={`sig-c ${a.status === 'ASSINADO' ? 'done' : 'pend'}`}>
                         {a.status === 'ASSINADO'

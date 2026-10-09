@@ -52,9 +52,6 @@ export async function GET(req: NextRequest) {
 
     // Logs recentes para o feed
     logsRecentes,
-
-    // Uso por tenant (para gráfico)
-    rdosPorTenant,
   ]: [
     number, number, number, number, number,
     number, number, number,
@@ -63,7 +60,6 @@ export async function GET(req: NextRequest) {
     Array<{ tipo: string; precoMensal: number }>,
     number, number,
     LogRow[],
-    Array<{ projetoId: string; _count: number }>,
   ] = await Promise.all([
 
     prisma.tenant.count(),
@@ -107,15 +103,6 @@ export async function GET(req: NextRequest) {
         tenant:  { select: { nome: true } },
         usuario: { select: { nome: true, email: true } },
       },
-    }),
-
-    // RDOs por empresa no mês (top 5)
-    prisma.rdo.groupBy({
-      by:    ['projetoId'],
-      where: { criadoEm: { gte: inicioMes } },
-      _count: true,
-      orderBy: { _count: { projetoId: 'desc' } },
-      take:  5,
     }),
   ])
 

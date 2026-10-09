@@ -370,6 +370,8 @@ export function useCriarAtividade() {
 export function useAtualizarEtapa() {
   const qc = useQueryClient()
   return useMutation({
+    // projetoId só serve ao onSuccess (invalidar o cache); sai do corpo da requisição
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: ({ id, projetoId, ...body }: { id: string; projetoId: string; nome?: string; numero?: string }) =>
       api.patch(`/api/app/tarefas/etapa/${id}`, body),
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: QK.eap(vars.projetoId) }),
@@ -379,6 +381,8 @@ export function useAtualizarEtapa() {
 export function useAtualizarAtividade() {
   const qc = useQueryClient()
   return useMutation({
+    // projetoId só serve ao onSuccess (invalidar o cache); sai do corpo da requisição
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     mutationFn: ({ id, projetoId, ...body }: {
       id: string; projetoId: string
       nome?: string; dataInicio?: string; dataFim?: string; status?: string; pctAcumulado?: number
@@ -846,7 +850,7 @@ export function useAtualizarMidia() {
 export function useRemoverMidia() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ midiaId, rdoId }: { midiaId: string; rdoId: string }) =>
+    mutationFn: ({ midiaId }: { midiaId: string; rdoId: string }) =>
       api.delete(`/api/app/midias?id=${midiaId}`),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: QK.rdo(vars.rdoId) })

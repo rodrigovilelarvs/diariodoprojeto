@@ -2,6 +2,7 @@
 // PATCH  /api/app/rdos/:id/comentarios/:comentarioId — edita o texto (autor ou ADMIN)
 // DELETE /api/app/rdos/:id/comentarios/:comentarioId — remove um comentário (apenas ADMIN)
 
+import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
@@ -77,7 +78,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Comentário não encontrado.' }, { status: 404 })
   }
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.comentario.deleteMany({ where: { parentId: comentarioId } })
     await tx.comentario.delete({ where: { id: comentarioId } })
   })

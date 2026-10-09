@@ -1,6 +1,7 @@
 // src/api/app/rdos/[id]/enviar/route.ts
 // POST /api/app/rdos/:id/enviar — enviar RDO para aprovação
 
+import type { Prisma } from '@prisma/client'
 import { AssinaturaStatus, LogCategoria, RdoStatus, UsuarioPerfil } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     })
   }
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Muda status do RDO
     await tx.rdo.update({
       where: { id: rdoId },

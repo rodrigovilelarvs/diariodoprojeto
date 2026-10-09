@@ -2,9 +2,7 @@
 // src/components/superadmin/DashboardAdmin.tsx
 // Dashboard do super-admin conectado ao backend
 
-import { toast } from 'sonner'
 import { useAdminDashboard } from '@/hooks/useAdmin'
-import { useAtivarTenant, useSuspenderTenant } from '@/hooks/useAdmin'
 import type { LogEntry, PlanoTipo } from '@/lib/types'
 
 const PLANO_LABEL: Record<PlanoTipo, string> = {
@@ -22,8 +20,6 @@ const NIVEL_COR: Record<string, string> = {
 
 export function DashboardAdmin() {
   const { data, isLoading, isError, dataUpdatedAt } = useAdminDashboard()
-  const ativar    = useAtivarTenant()
-  const suspender = useSuspenderTenant()
 
   if (isLoading) return <div>Carregando dashboard...</div>
   if (isError)   return <div>Erro ao carregar dados.</div>
@@ -31,23 +27,6 @@ export function DashboardAdmin() {
 
   const { kpis, logsRecentes, distribuicaoPlanos } = data
 
-  async function handleAtivar(tenantId: string) {
-    try {
-      await ativar.mutateAsync(tenantId)
-      toast.success('Empresa ativada!')
-    } catch {
-      toast.error('Erro ao ativar empresa.')
-    }
-  }
-
-  async function handleSuspender(tenantId: string) {
-    try {
-      await suspender.mutateAsync(tenantId)
-      toast.warning('Empresa suspensa.')
-    } catch {
-      toast.error('Erro ao suspender empresa.')
-    }
-  }
 
   return (
     <div className="admin-dashboard">

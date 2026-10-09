@@ -22,7 +22,6 @@ export async function uploadMidia({
   tenantId,
   rdoId,
   file,
-  onProgress,
 }: {
   tenantId:    string
   rdoId:       string

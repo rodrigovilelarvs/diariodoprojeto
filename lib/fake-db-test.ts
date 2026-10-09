@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any --
+   Banco falso só de teste: imita o Prisma de forma deliberadamente solta (qualquer
+   modelo/método), então tipar cada chamada não agrega nada. */
 // lib/fake-db-test.ts
 // Banco falso usado pelos testes de ponta a ponta (Playwright, ver
 // tests/e2e/) e também útil pra depuração manual local — ative com

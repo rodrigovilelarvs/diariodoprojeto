@@ -10,9 +10,14 @@
 // piso não couber (RDO com quantidade extrema de conteúdo), aí sim permite
 // 2ª página em vez de cortar/sobrepor conteúdo.
 
+import type { jsPDF } from 'jspdf'
+import type { CellHookData } from 'jspdf-autotable'
 import type { Rdo, RelatorioResponse } from '@/lib/types'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { CLIMA_L, calcHH, calcOcDur, calcPrazo, CATEGORIA_L } from '@/lib/rdo-display'
+
+// O plugin jspdf-autotable pendura a última tabela desenhada no próprio doc
+type DocComTabela = jsPDF & { lastAutoTable: { finalY: number } }
 
 // Cores do design system — paleta clara, pensada pra um documento impresso/
 // exportado (não uma tela escura): fundo branco/quase-branco, cartões em
@@ -208,7 +213,7 @@ export async function gerarPdfRdo(
   // a mesma lógica de layout pra saber quanto `y` cresceria numa página
   // infinita, na escala 1 (tamanho normal). O resultado dessa medição decide
   // a escala usada na passada real.
-  async function desenharConteudo(doc: any, escala: number, medindo: boolean): Promise<number> {
+  async function desenharConteudo(doc: jsPDF, escala: number, medindo: boolean): Promise<number> {
     let y = 0
     const E = (n: number) => n * escala
 
@@ -263,7 +268,7 @@ export async function gerarPdfRdo(
       // fica "vazando" pra frente e desalinha a medição de largura (via
       // splitTextToSize) das próximas seções desenhadas depois desta.
       const fonteAnterior = doc.getFont()
-      const tamanhoAnterior = doc.internal.getFontSize()
+      const tamanhoAnterior = doc.getFontSize()
       doc.setFontSize(tamanhoFonte)
       doc.setFont('helvetica', 'bold')
       let resultado = texto
@@ -537,7 +542,7 @@ export async function gerarPdfRdo(
           },
           // Separador mais grosso e em branco só entre os dois blocos de função
           // (não em todas as colunas)
-          didDrawCell: (data: any) => {
+          didDrawCell: (data: CellHookData) => {
             if (data.column.index === 4) {
               doc.setDrawColor(...COR.white)
               doc.setLineWidth(0.8)
@@ -547,7 +552,7 @@ export async function gerarPdfRdo(
           },
         })
       }
-      y = (doc as any).lastAutoTable.finalY + E(2.5)
+      y = (doc as DocComTabela).lastAutoTable.finalY + E(2.5)
     }
 
     // ════════════════════════════════════════════════════
@@ -600,7 +605,7 @@ export async function gerarPdfRdo(
           alternateRowStyles: { fillColor:COR.s1 },
           // Separador mais grosso e em branco só entre os três blocos de equipamento
           // (não em todas as colunas)
-          didDrawCell: (data: any) => {
+          didDrawCell: (data: CellHookData) => {
             if (data.column.index === 1 || data.column.index === 3) {
               doc.setDrawColor(...COR.white)
               doc.setLineWidth(0.8)
@@ -615,7 +620,7 @@ export async function gerarPdfRdo(
           },
         })
       }
-      y = (doc as any).lastAutoTable.finalY + E(2.5)
+      y = (doc as DocComTabela).lastAutoTable.finalY + E(2.5)
     }
 
     // ════════════════════════════════════════════════════

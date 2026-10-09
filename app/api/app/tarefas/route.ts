@@ -5,7 +5,7 @@
 // PATCH /api/app/tarefas/atividade/:id — atualizar % / status
 
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma, getRequestMeta } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { requireAuth, podeGerenciarTarefas } from '@/lib/auth'
 import { calcPctPlanejado, calcProgressoPonderado, calcStatusEfetivo } from '@/lib/rdo-display'
 import type { AtividadeStatus } from '@/lib/types'

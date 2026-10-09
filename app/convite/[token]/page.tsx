@@ -124,7 +124,7 @@ export default function ConvitePage() {
 
               {info?.contaExistente && (
                 <div style={{ fontSize:11, color:'#8B95A8', marginBottom:14, lineHeight:1.5 }}>
-                  Este e-mail já tem acesso ao Diário do Projeto. A senha é a mesma em todas as suas empresas — digite a atual (se esqueceu, use "Esqueci minha senha" na tela de login).
+                  Este e-mail já tem acesso ao Diário do Projeto. A senha é a mesma em todas as suas empresas — digite a atual (se esqueceu, use &quot;Esqueci minha senha&quot; na tela de login).
                 </div>
               )}
               {!info?.contaExistente && (

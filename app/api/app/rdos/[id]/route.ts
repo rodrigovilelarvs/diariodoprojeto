@@ -3,6 +3,7 @@
 // PATCH  /api/app/rdos/:id  — salvar rascunho / atualizar campos
 // DELETE /api/app/rdos/:id  — excluir (rascunho por quem emite; qualquer status por quem aprova)
 
+import type { Prisma } from '@prisma/client'
 import { LogCategoria, LogNivel, RdoStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -173,7 +174,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     }
   }
 
-  await prisma.$transaction(async (tx: any) => {
+  await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Atualiza cabeçalho
     await tx.rdo.update({
       where: { id: (await params).id },

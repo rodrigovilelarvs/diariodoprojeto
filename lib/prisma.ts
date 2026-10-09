@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports --
+   O cliente é um mock/Proxy dinâmico e o banco falso é carregado com require() só
+   quando FAKE_DB=1 (nunca entra no bundle de produção). */
 // lib/prisma.ts
 // Mock para build sem banco real — em produção, substituir pelo cliente Prisma gerado
 

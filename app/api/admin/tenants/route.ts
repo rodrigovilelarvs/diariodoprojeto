@@ -2,6 +2,7 @@
 // GET  /api/admin/tenants  — listar todas as empresas
 // POST /api/admin/tenants  — criar nova empresa
 
+import type { Prisma } from '@prisma/client'
 import { LogCategoria, PlanoTipo, TenantStatus, UsuarioPerfil, UsuarioStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -200,7 +201,7 @@ export async function POST(req: NextRequest) {
   const senhaHash = senha ? await hashSenha(senha) : undefined
 
   // Cria tenant + usuário admin + convite (só quando não há senha) numa transação
-  const resultado = await prisma.$transaction(async (tx: any) => {
+  const resultado = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // 1. Tenant
     const tenant = await tx.tenant.create({
       data: {

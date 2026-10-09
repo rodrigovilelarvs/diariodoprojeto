@@ -5,7 +5,7 @@
 import { LogCategoria, LogNivel } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma, getRequestMeta } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth-admin'
 // ── GET — log geral ───────────────────────────────────────────
 export async function GET(req: NextRequest) {

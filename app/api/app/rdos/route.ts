@@ -2,6 +2,7 @@
 // GET  /api/app/rdos  — listar RDOs do tenant
 // POST /api/app/rdos  — criar novo RDO
 
+import type { Prisma } from '@prisma/client'
 import { AtividadeStatus, LogCategoria, LogNivel, MaoDeObraCategoria, RdoStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -220,7 +221,7 @@ export async function POST(req: NextRequest) {
     : null
 
   // Cria o RDO numa transação
-  const rdo = await prisma.$transaction(async (tx: any) => {
+  const rdo = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const novoRdo = await tx.rdo.create({
       data: {
         projetoId,
