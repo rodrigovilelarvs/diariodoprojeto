@@ -15,6 +15,8 @@ const MIDIAS = NOMES.map((n, i) => ({ id: 'm' + i, tipo: 'FOTO', nomeArq: n + '.
 function rdoRico(base, o) {
   return {
     ...base, id: o.id, numero: o.numero, data: o.data, status: o.status,
+    // o exemplo mostra um projeto do lado da contratada: a empresa informada é a contratante (cliente)
+    projeto: { ...base.projeto, empresaTipo: 'CONTRATANTE', empresaContratada: 'Incorporadora Beta S.A.' },
     climaManha: 'SOL', climaTarde: 'NUBLADO', climaNoite: null, precipitacaoMm: 0, climaImpacto: 'NENHUM',
     horaInicio: '07:00', horaTermino: '17:00', intervaloHoras: 1, totalHoras: 9,
     observacoes: 'Concretagem da laje do bloco B concluída sem intercorrências. Cura iniciada às 16h; o turno seguinte deve manter a laje úmida.',
@@ -81,7 +83,7 @@ function transformExtra(p, body, rdosVar) {
   if (p === '/api/app/tarefas') return JSON.stringify(tarefas())
   if (/^\/api\/app\/projetos\/[^/]+\/resumo$/.test(p)) {
     const j = JSON.parse(body)
-    j.projeto = { ...j.projeto, grupo: 'Residencial', fotoUrl: null }
+    j.projeto = { ...j.projeto, grupo: 'Residencial', fotoUrl: null, empresaTipo: 'CONTRATANTE', empresaContratada: 'Incorporadora Beta S.A.' }
     j.kpis = { totalRdos: 48, pctReal: 62, pctPlanejado: 58, desvio: 4, ocorrenciasAbertas: 2, totalHH: 9312 }
     j.rdosRecentes = rdosVar().slice(0, 5).map(r => ({ id: r.id, numero: r.numero, data: r.data, status: r.status, assinaturas: r.assinaturas, totalFotos: r._count.midias }))
     j.fotos = MIDIAS.map((m, i) => ({ id: m.id, url: m.url, nomeArq: m.nomeArq, descricao: m.descricao, rdoId: 'rx0', rdoNumero: 48 - (i % 3), rdoData: '2026-10-06T00:00:00.000Z' }))

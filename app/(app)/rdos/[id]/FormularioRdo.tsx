@@ -21,7 +21,7 @@ import { UploadZona } from '@/components/rdos/UploadZona'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
   CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L, EQUIPAMENTO_TIPOS,
-  calcHH, calcMoHH, calcPrazo, calcOcDur,
+  calcHH, calcMoHH, calcPrazo, calcOcDur, rotuloEmpresa,
 } from '@/lib/rdo-display'
 
 // ── Props ──────────────────────────────────────────────────
@@ -985,7 +985,7 @@ export function FormularioRdo({ rdoId }: Props) {
               )}
               {rdo.projeto.empresaContratada && (
                 <div className="fr" style={{ flex:'1 1 200px' }}>
-                  <label className="fl">Empresa contratada</label>
+                  <label className="fl">{rotuloEmpresa(rdo.projeto.empresaTipo)}</label>
                   <div className="fi" style={{ background:'var(--s2)', color:'var(--ts)', cursor:'default' }}>
                     {rdo.projeto.empresaContratada}
                   </div>

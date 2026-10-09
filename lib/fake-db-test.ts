@@ -136,7 +136,7 @@ const PLANOS: Record<string, any> = {
 
 const PROJETO = {
   id: PROJETO_ID, tenantId: TENANT_ID, nome: PROJETO_NOME, descricao: 'Projeto fixo do banco falso de testes.',
-  pedidoCompraContrato: 'Contrato 001', empresaContratada: 'Construtora Teste Ltda',
+  pedidoCompraContrato: 'Contrato 001', empresaContratada: 'Construtora Teste Ltda', empresaTipo: 'CONTRATADA',
   status: 'ATIVO', grupo: null, fotoUrl: null,
   dataInicioContrato: new Date('2026-08-01'), dataFimContrato: new Date('2026-12-01'),
   cor: '#29B6D8', gestorId: 'gestor-proj', gestor: { id: 'gestor-proj', nome: 'Gestor Do Projeto' },
@@ -481,7 +481,7 @@ function montarRdo({ id, numero, projeto, dataRdo, status, midias = [] }: {
     projeto: {
       id: projeto.id, nome: projeto.nome,
       dataInicioContrato: projeto.dataInicioContrato, dataFimContrato: projeto.dataFimContrato,
-      pedidoCompraContrato: projeto.pedidoCompraContrato, empresaContratada: projeto.empresaContratada,
+      pedidoCompraContrato: projeto.pedidoCompraContrato, empresaContratada: projeto.empresaContratada, empresaTipo: projeto.empresaTipo ?? 'CONTRATADA',
       assinaturaModo: projeto.assinaturaModo, assinante1: null, assinante2: null, assinante3: null,
       gestor: projeto.gestor ?? null,
     },

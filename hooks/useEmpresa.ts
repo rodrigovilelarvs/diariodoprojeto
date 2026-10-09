@@ -14,7 +14,7 @@ import type {
   EquipamentoCadastro, EquipamentoTipo,
   OcorrenciaTipoCadastro,
   ProjetoAcessoItem, ProjetoAcessoNivel, ProjetoAssinaturaModo, UsuarioAcessoProjeto,
-  UsuarioResumo, Usuario, EmpresaVinculada, EmpresaInfo,
+  UsuarioResumo, Usuario, EmpresaVinculada, EmpresaInfo, EmpresaTipo,
 } from '@/lib/types'
 
 // ── Query keys centralizadas ─────────────────────────────────
@@ -64,6 +64,7 @@ export function useCriarProjeto() {
       descricao?:         string
       pedidoCompraContrato?: string
       empresaContratada?: string
+      empresaTipo?:       EmpresaTipo
       grupo?:             string
       fotoUrl?:           string
       dataInicioContrato?: string
@@ -84,6 +85,7 @@ export function useAtualizarProjeto() {
       descricao?:          string
       pedidoCompraContrato?: string
       empresaContratada?:  string
+      empresaTipo?:        EmpresaTipo
       grupo?:              string
       status?:             string
       fotoUrl?:            string

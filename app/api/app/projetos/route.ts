@@ -2,7 +2,7 @@
 // GET  /api/app/projetos — listar projetos do tenant
 // POST /api/app/projetos — criar projeto
 
-import { LogCategoria } from '@/lib/prisma-enums'
+import { LogCategoria, EmpresaTipo } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -121,6 +121,7 @@ export async function POST(req: NextRequest) {
     descricao?:         string
     pedidoCompraContrato?: string
     empresaContratada?: string
+    empresaTipo?:       string
     grupo?:             string
     fotoUrl?:           string
     dataInicioContrato?: string
@@ -141,6 +142,10 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  if (body.empresaTipo != null && !Object.values(EmpresaTipo).includes(body.empresaTipo as EmpresaTipo)) {
+    return NextResponse.json({ erro: 'Tipo de empresa inválido.' }, { status: 400 })
+  }
+
   const projeto = await prisma.projeto.create({
     data: {
       tenantId,
@@ -148,6 +153,7 @@ export async function POST(req: NextRequest) {
       descricao:          body.descricao          ?? undefined,
       pedidoCompraContrato: body.pedidoCompraContrato ?? undefined,
       empresaContratada:  body.empresaContratada  ?? undefined,
+      empresaTipo:        (body.empresaTipo as EmpresaTipo | undefined) ?? undefined,
       grupo:              body.grupo              ?? undefined,
       fotoUrl:            body.fotoUrl            ?? undefined,
       status:             'NAO_INICIADO',
