@@ -168,6 +168,7 @@ export const SECOES: Secao[] = [
       { t: 'p', x: 'Ao clicar em um projeto no painel você entra na **pasta do projeto**, que tem três abas: **Visão geral**, **Acesso** e **Assinaturas**.' },
       { t: 'h', x: 'Visão geral' },
       { t: 'p', x: 'Mostra os números do projeto (RDOs, atividades, ocorrências, comentários, fotos e vídeos), os **RDOs recentes**, as **fotos recentes** e as informações do contrato: prazo, progresso planejado e real, desvio, H/H total e duração. Clique em qualquer indicador para ver o conteúdo por trás do número. Para alterar os dados, use o botão **Editar**.' },
+      { t: 'p', x: 'No alto da tela fica o botão **Novo RDO**: dentro da pasta de um projeto, tudo que você cria é daquele projeto, então o RDO já abre com o **projeto selecionado** (você só escolhe a data). O botão **Lista de tarefas**, ao lado, também abre só as etapas e atividades deste projeto.' },
       { t: 'img', src: '/ajuda/projeto-visao-geral.webp', alt: 'Visão geral de um projeto', legenda: 'Visão geral do projeto.' },
       { t: 'h', x: 'Acesso: quem pode ver este projeto' },
       { t: 'p', x: 'Por padrão, todo o time enxerga o projeto. Se você adicionar a primeira pessoa na aba **Acesso**, o projeto passa a ser **restrito**: só quem estiver na lista consegue vê-lo. Cada pessoa tem um nível:' },
@@ -239,7 +240,7 @@ export const SECOES: Secao[] = [
       {
         t: 'passos',
         x: [
-          'Clique em **Novo RDO** no menu (ou no botão do topo do painel). Se você estiver dentro da pasta de um projeto, o projeto já vem selecionado.',
+          'Clique em **Novo RDO** no menu (ou no botão do topo do painel). Se você estiver dentro da pasta de um projeto, use o botão **Novo RDO** que fica no alto da pasta: o projeto já vem selecionado.',
           'Escolha o **projeto** e a **data**.',
           'Deixe marcada a opção **Copiar dados do RDO anterior** se quiser aproveitar horários, mão de obra e equipamentos do último RDO do projeto. Isso economiza bastante tempo.',
           'Clique em **Criar RDO**. O formulário abre para você preencher.',

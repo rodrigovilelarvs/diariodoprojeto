@@ -56,7 +56,7 @@ function calcPrazo(ini?: string, fim?: string) {
 export default function ProjetoResumoPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const { session } = useAppAuth()
+  const { session, pode } = useAppAuth()
   const { data, isLoading } = useResumoProjeto(id)
   const { data: usuariosResp } = useUsuarios()
   const gestoresDisponiveis = (usuariosResp?.usuarios ?? []).filter(u => u.status === 'ATIVO')
@@ -211,6 +211,12 @@ export default function ProjetoResumoPage() {
                   {baixandoMidias ? `Baixando... ${baixandoMidias.feito}/${baixandoMidias.total || '?'}` : 'Baixar fotos, vídeos e arquivos'}
                 </button>
               </>
+            )}
+            {/* Dentro da pasta, tudo que se cria é do projeto: o RDO já nasce com ele selecionado */}
+            {pode('emitir_rdo') && (
+              <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${id}`)}>
+                <i className="ti ti-plus" /> Novo RDO
+              </button>
             )}
             <button className="btn btn-sm" onClick={() => setModalTarefas(true)}>
               <i className="ti ti-list-check" /> Lista de tarefas
