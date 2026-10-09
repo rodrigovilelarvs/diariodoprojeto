@@ -144,15 +144,12 @@ export interface UsuarioAcessoProjeto {
   nivel:  ProjetoAcessoNivel | null // nível deste usuário especificamente, se houver
 }
 
-export type EmpresaTipo = 'CONTRATADA' | 'CONTRATANTE'
-
 export interface Projeto {
   id:                  string
   nome:                string
   descricao?:          string
   pedidoCompraContrato?: string
   empresaContratada?:  string
-  empresaTipo?:        EmpresaTipo
   status:              string
   grupo?:              string
   fotoUrl?:            string
@@ -188,7 +185,7 @@ export interface ResumoEquipamentoItem { equipamentoNome: string; quantidade: nu
 export interface ResumoRdoItem { id: string; numero: number; data: string; status: RdoStatus; totalFotos: number; assinaturas: { status: string }[] }
 
 export interface ResumoProjeto {
-  projeto: Pick<Projeto, 'id' | 'nome' | 'descricao' | 'pedidoCompraContrato' | 'empresaContratada' | 'empresaTipo' | 'status' | 'grupo' | 'fotoUrl' | 'cor' | 'dataInicioContrato' | 'dataFimContrato' | 'gestor' | 'podeGerenciar'>
+  projeto: Pick<Projeto, 'id' | 'nome' | 'descricao' | 'pedidoCompraContrato' | 'empresaContratada' | 'status' | 'grupo' | 'fotoUrl' | 'cor' | 'dataInicioContrato' | 'dataFimContrato' | 'gestor' | 'podeGerenciar'>
   kpis: {
     totalRdos: number
     pctReal: number
@@ -355,7 +352,7 @@ export interface Rdo {
   precipitacaoMm?: number
   climaImpacto:   ClimaImpacto
   observacoes?:   string
-  projeto:        Pick<Projeto, 'id' | 'nome' | 'dataInicioContrato' | 'dataFimContrato' | 'pedidoCompraContrato' | 'empresaContratada' | 'empresaTipo' | 'assinaturaModo' | 'assinante1' | 'assinante2' | 'assinante3' | 'gestor'>
+  projeto:        Pick<Projeto, 'id' | 'nome' | 'dataInicioContrato' | 'dataFimContrato' | 'pedidoCompraContrato' | 'empresaContratada' | 'assinaturaModo' | 'assinante1' | 'assinante2' | 'assinante3' | 'gestor'>
   emissor:        UsuarioResumo
   atividadeRegistros: RegistroAtividade[]
   maoDeObra:      MaoDeObraItem[]

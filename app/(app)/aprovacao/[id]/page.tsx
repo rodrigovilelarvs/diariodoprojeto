@@ -18,7 +18,6 @@ import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
   CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L,
   calcHH, calcOcDur, calcPrazo,
-  rotuloEmpresa,
 } from '@/lib/rdo-display'
 import type { AssinaturaItem } from '@/lib/types'
 
@@ -292,7 +291,7 @@ export default function AprovacaoPage() {
                   )}
                   {rdo.projeto.empresaContratada && (
                     <div className="fr" style={{ flex:'1 1 200px' }}>
-                      <label className="fl">{rotuloEmpresa(rdo.projeto.empresaTipo)}</label>
+                      <label className="fl">Empresa contratada</label>
                       <div className="fi" style={{ background:'var(--s2)', color:'var(--ts)', cursor:'default' }}>
                         {rdo.projeto.empresaContratada}
                       </div>

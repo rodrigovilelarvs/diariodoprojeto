@@ -40,13 +40,6 @@ enum UsuarioStatus {
   CONVIDADO // convite enviado, ainda não aceito
 }
 
-// Papel da empresa informada no projeto: a CONTRATADA executa a obra; a CONTRATANTE é o cliente.
-// O sistema serve aos dois lados, então cada projeto marca de qual empresa está falando.
-enum EmpresaTipo {
-  CONTRATADA
-  CONTRATANTE
-}
-
 enum ProjetoStatus {
   NAO_INICIADO
   ATIVO
@@ -381,8 +374,7 @@ model Projeto {
   nome                 String
   descricao            String?
   pedidoCompraContrato String? // Pedido de compra ou contrato — referência mostrada no RDO e no PDF
-  empresaContratada    String? // Nome da empresa do projeto (contratada OU contratante, ver empresaTipo) — mostrado no RDO e no PDF
-  empresaTipo          EmpresaTipo @default(CONTRATADA) // define o rótulo mostrado: "Empresa contratada" ou "Empresa contratante"
+  empresaContratada    String? // Empresa contratada para execução da obra — mostrada no RDO e no PDF
   status               ProjetoStatus @default(NAO_INICIADO)
   grupo                String? // ex: "CAPEX", "Manutenção", "Unidade SP" — texto livre
   fotoUrl              String? // miniatura exibida na lista/cartões do painel

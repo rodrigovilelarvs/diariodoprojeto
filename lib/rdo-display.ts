@@ -2,7 +2,7 @@
 // Constantes e cálculos de exibição do RDO — compartilhados entre o formulário
 // de preenchimento (FormularioRdo) e a tela de aprovação (somente leitura).
 
-import type { MaoDeObraCategoria, EquipamentoTipo, AtividadeStatus, EmpresaTipo } from '@/lib/types'
+import type { MaoDeObraCategoria, EquipamentoTipo, AtividadeStatus } from '@/lib/types'
 import { fmtData } from '@/lib/format'
 
 export const CLIMA: Record<string, string> = {
@@ -15,13 +15,6 @@ export const CLIMA_L: Record<string, string> = {
   SOL: 'Tempo limpo', NUBLADO: 'Nublado', CHUVA: 'Chuva', TEMPESTADE: 'Tempestade',
 }
 export const CLIMAS = ['SOL','NUBLADO','CHUVA','TEMPESTADE'] as const
-
-// Rótulo da empresa do projeto: depende de o projeto estar do lado da contratada ou da contratante
-export const EMPRESA_TIPO_L: Record<EmpresaTipo, string> = {
-  CONTRATADA: 'Empresa contratada', CONTRATANTE: 'Empresa contratante',
-}
-export const EMPRESA_TIPOS: EmpresaTipo[] = ['CONTRATADA', 'CONTRATANTE']
-export const rotuloEmpresa = (tipo?: EmpresaTipo | null) => EMPRESA_TIPO_L[tipo ?? 'CONTRATADA'] ?? EMPRESA_TIPO_L.CONTRATADA
 
 export const CATEGORIA_L: Record<MaoDeObraCategoria, string> = {
   DIRETA: 'Direta', INDIRETA: 'Indireta', TERCEIRIZADO: 'Terceirizada',

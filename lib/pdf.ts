@@ -14,7 +14,7 @@ import type { jsPDF } from 'jspdf'
 import type { CellHookData } from 'jspdf-autotable'
 import type { Rdo, RelatorioResponse } from '@/lib/types'
 import { numeroRdo, fmtData } from '@/lib/format'
-import { CLIMA_L, calcHH, calcOcDur, calcPrazo, CATEGORIA_L, rotuloEmpresa } from '@/lib/rdo-display'
+import { CLIMA_L, calcHH, calcOcDur, calcPrazo, CATEGORIA_L } from '@/lib/rdo-display'
 
 // O plugin jspdf-autotable pendura a última tabela desenhada no próprio doc
 type DocComTabela = jsPDF & { lastAutoTable: { finalY: number } }
@@ -390,7 +390,7 @@ export async function gerarPdfRdo(
       { label:'Data do registro',       valor:fmtData(rdo.data) },
       { label:'Projeto',                valor:truncarCelula(rdo.projeto.nome, larguraLargaId, 7*escala) },
       ...(rdo.projeto.pedidoCompraContrato ? [{ label:'Pedido de compra ou contrato', valor:rdo.projeto.pedidoCompraContrato }] : []),
-      ...(rdo.projeto.empresaContratada ? [{ label:rotuloEmpresa(rdo.projeto.empresaTipo), valor:truncarCelula(rdo.projeto.empresaContratada, larguraEstreitaId, 7*escala) }] : []),
+      ...(rdo.projeto.empresaContratada ? [{ label:'Empresa contratada', valor:truncarCelula(rdo.projeto.empresaContratada, larguraEstreitaId, 7*escala) }] : []),
       { label:'Gestor do Projeto',      valor:rdo.projeto.gestor?.nome ?? 'Sem gestor' },
       ...(prazo ? [
         { label:'Prazo contratual', valor:`${prazo.inicio} a ${prazo.fim}` },
