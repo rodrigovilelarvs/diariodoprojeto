@@ -159,7 +159,8 @@ async function main() {
   if (quer('empresa')) { await go('/empresa'); await shot('empresa') }
   if (quer('notificacoes')) { await go('/notificacoes'); await shot('notificacoes') }
   if (quer('novo-rdo')) {
-    await go('/rdos/novo'); await page.locator('select').first().selectOption({ index: 1 }).catch(() => {}); await shot('novo-rdo')
+    // vindo da pasta do projeto (p1): o projeto já vem selecionado e aparece o botão de voltar à pasta
+    await go('/rdos/novo?projetoId=p1'); await shot('novo-rdo')
   }
 
   if (quer('rdo-form')) {

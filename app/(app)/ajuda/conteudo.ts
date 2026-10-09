@@ -240,7 +240,7 @@ export const SECOES: Secao[] = [
       {
         t: 'passos',
         x: [
-          'Clique em **Novo RDO** no menu (ou no botão do topo do painel). Se você estiver dentro da pasta de um projeto, use o botão **Novo RDO** que fica no alto da pasta: o projeto já vem selecionado.',
+          'Clique em **Novo RDO** no menu (ou no botão do topo do painel). Se você estiver dentro da pasta de um projeto, use o botão **Novo RDO** que fica no alto da pasta: o projeto já vem selecionado, e no alto da tela aparece o botão **Voltar à pasta do projeto** (o **Cancelar** também leva de volta para a pasta).',
           'Escolha o **projeto** e a **data**.',
           'Deixe marcada a opção **Copiar dados do RDO anterior** se quiser aproveitar horários, mão de obra e equipamentos do último RDO do projeto. Isso economiza bastante tempo.',
           'Clique em **Criar RDO**. O formulário abre para você preencher.',

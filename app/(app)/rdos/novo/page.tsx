@@ -24,6 +24,10 @@ function NovoRdoConteudo() {
   // Vindo de dentro de um projeto (?projetoId=...), já chega pré-selecionado
   // — mas o <select> continua livre pra trocar, não é travado.
   const [projetoId, setProjetoId] = useState(() => searchParams.get('projetoId') ?? '')
+  // Pasta de onde a pessoa veio (fica fixa mesmo que ela troque o projeto no campo):
+  // dá o caminho de volta para a pasta do projeto
+  const [pastaOrigem] = useState(() => searchParams.get('projetoId') ?? '')
+  const voltarPara = pastaOrigem ? `/projetos/${pastaOrigem}` : '/rdos'
   const [data, setData] = useState(new Date().toISOString().slice(0,10))
   const [copiar, setCopiar] = useState(true)
 
@@ -50,7 +54,15 @@ function NovoRdoConteudo() {
 
   return (
     <div className="main">
-      <Topbar titulo="Novo RDO" subtitulo="Registro Diário de Obra" />
+      <Topbar
+        titulo="Novo RDO"
+        subtitulo="Registro Diário de Obra"
+        acoes={pastaOrigem ? (
+          <button className="btn btn-sm" onClick={() => router.push(voltarPara)}>
+            <i className="ti ti-folder" /> Voltar à pasta do projeto
+          </button>
+        ) : undefined}
+      />
       <div className="content" style={{ maxWidth: 480 }}>
         <div className="sec">
           <div className="sec-h"><span className="sec-num">1</span><span className="sec-title">Identificação</span></div>
@@ -94,7 +106,7 @@ function NovoRdoConteudo() {
                 </label>
               </div>
               <div style={{ display:'flex', gap:7 }}>
-                <button type="button" className="btn" onClick={() => router.push('/rdos')}>Cancelar</button>
+                <button type="button" className="btn" onClick={() => router.push(voltarPara)}>Cancelar</button>
                 <button type="submit" className="btn btn-p" disabled={criarRdo.isPending}>
                   <i className="ti ti-plus" /> {criarRdo.isPending ? 'Criando...' : 'Criar RDO'}
                 </button>
