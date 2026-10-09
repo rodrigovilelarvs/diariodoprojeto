@@ -61,6 +61,7 @@ function transformExtra(p, body, rdosVar) {
     const j = JSON.parse(body)
     j.limites = { usuarios: 15, rdosMes: 0, projetos: 10 }; j.limiteUsuarios = 15; j.limiteProjetos = 10
     j.uso = { usuarios: 7, rdosMes: 48, projetos: 5 }
+    j.tipoEmpresaProjeto = 'CONTRATANTE' // exemplo: construtora que executa obras para clientes (contratantes)
     Object.assign(j, { cnpj: '12.345.678/0001-90', setor: 'Construção civil', cidade: 'Vila Velha', uf: 'ES', contatoNome: 'Carlos Almeida', contatoEmail: 'carlos@horizonte.com.br', contatoTelefone: '(27) 99999-0000', plano: 'PRO', dataVencimentoPlano: '2026-11-10T00:00:00.000Z', ativadoEm: '2026-01-12T00:00:00.000Z', criadoEm: '2026-01-10T00:00:00.000Z' })
     j.planoConfig = { precoMensal: 100, precoAnual: 960, limiteUsuarios: 15, limiteRdosMes: 0, limiteProjetos: 10, temRelatorios: true, temExportPdf: true, temApi: false, temSuporteDedicado: false, descricao: null }
     return JSON.stringify(j)

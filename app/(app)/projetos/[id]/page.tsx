@@ -19,7 +19,6 @@ import { toast } from 'sonner'
 import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import { EmpresaCampo } from '@/components/projetos/EmpresaCampo'
 import { rotuloEmpresa } from '@/lib/rdo-display'
-import type { EmpresaTipo } from '@/lib/types'
 import { baixarTodosRdosPdf, baixarMidiasProjeto } from '@/lib/download-projeto'
 import { mensagemErro } from '@/lib/api'
 
@@ -70,7 +69,7 @@ export default function ProjetoResumoPage() {
   const [modalRdos, setModalRdos] = useState(false)
   const [modalConteudo, setModalConteudo] = useState(false)
   const [lightbox, setLightbox] = useState<{ itens: MidiaLightboxItem[]; index: number } | null>(null)
-  const [editForm, setEditForm] = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', empresaTipo: 'CONTRATADA' as EmpresaTipo, grupo: '', status: 'NAO_INICIADO', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+  const [editForm, setEditForm] = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', status: 'NAO_INICIADO', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
   const [fotoEdit, setFotoEdit] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' })
   const [baixandoRdos, setBaixandoRdos] = useState<{ feito: number; total: number } | null>(null)
   const [baixandoMidias, setBaixandoMidias] = useState<{ feito: number; total: number } | null>(null)
@@ -91,7 +90,6 @@ export default function ProjetoResumoPage() {
       descricao: data.projeto.descricao ?? '',
       pedidoCompraContrato: data.projeto.pedidoCompraContrato ?? '',
       empresaContratada: data.projeto.empresaContratada ?? '',
-      empresaTipo: data.projeto.empresaTipo ?? 'CONTRATADA',
       grupo: data.projeto.grupo ?? '',
       status: data.projeto.status,
       gestorId: data.projeto.gestor?.id ?? '',
@@ -124,7 +122,6 @@ export default function ProjetoResumoPage() {
         descricao: editForm.descricao,
         pedidoCompraContrato: editForm.pedidoCompraContrato,
         empresaContratada: editForm.empresaContratada,
-        empresaTipo: editForm.empresaTipo,
         grupo: editForm.grupo,
         status: editForm.status,
         gestorId: editForm.gestorId,
@@ -422,8 +419,7 @@ export default function ProjetoResumoPage() {
           <Field label="Pedido de compra ou contrato">
             <Input value={editForm.pedidoCompraContrato} onChange={e => setEditForm(f => ({ ...f, pedidoCompraContrato: e.target.value }))} placeholder="Ex: PC-2026-0142 ou Contrato nº 88/2026" />
           </Field>
-          <EmpresaCampo tipo={editForm.empresaTipo} nome={editForm.empresaContratada}
-            onTipo={t => setEditForm(f => ({ ...f, empresaTipo: t }))} onNome={n => setEditForm(f => ({ ...f, empresaContratada: n }))} />
+          <EmpresaCampo nome={editForm.empresaContratada} onNome={n => setEditForm(f => ({ ...f, empresaContratada: n }))} />
           <Field label="Grupo">
             <Input value={editForm.grupo} onChange={e => setEditForm(f => ({ ...f, grupo: e.target.value }))} placeholder="Ex: CAPEX, Manutenção, Unidade SP..." />
           </Field>

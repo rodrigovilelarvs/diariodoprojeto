@@ -39,8 +39,8 @@ export const PROJETO_GRANDE_NOME = 'Obra Grande E2E'
 // Host fictício das mídias — o teste intercepta as requisições a ele (page.route)
 export const STORAGE_FAKE = 'https://storage-fake.teste/rdos'
 
-const TENANT2 = { id: 't2', nome: 'Empresa Dois', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0 }
-const TENANT = { id: TENANT_ID, nome: 'Empresa Teste', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0 }
+const TENANT2 = { id: 't2', nome: 'Empresa Dois', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0, tipoEmpresaProjeto: 'CONTRATADA' }
+const TENANT = { id: TENANT_ID, nome: 'Empresa Teste', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0, tipoEmpresaProjeto: 'CONTRATADA' }
 
 const SEM_PERMISSOES = {
   permEmitirRdo: false, permAprovarRdo: false, permGerenciarProjetos: false,
@@ -136,7 +136,7 @@ const PLANOS: Record<string, any> = {
 
 const PROJETO = {
   id: PROJETO_ID, tenantId: TENANT_ID, nome: PROJETO_NOME, descricao: 'Projeto fixo do banco falso de testes.',
-  pedidoCompraContrato: 'Contrato 001', empresaContratada: 'Construtora Teste Ltda', empresaTipo: 'CONTRATADA',
+  pedidoCompraContrato: 'Contrato 001', empresaContratada: 'Construtora Teste Ltda',
   status: 'ATIVO', grupo: null, fotoUrl: null,
   dataInicioContrato: new Date('2026-08-01'), dataFimContrato: new Date('2026-12-01'),
   cor: '#29B6D8', gestorId: 'gestor-proj', gestor: { id: 'gestor-proj', nome: 'Gestor Do Projeto' },
@@ -207,6 +207,13 @@ const fakeDbBase = {
         .map(t => comContagem(t, include)),
     count: async ({ where }: any = {}) =>
       TENANTS_ADMIN.filter(t => (!where?.plano || t.plano === where.plano) && (!where?.status || t.status === where.status)).length,
+    // edição dos dados da própria empresa (Dados da empresa)
+    update: async ({ where, data }: any) => {
+      const t = [TENANT, TENANT2].find(x => x.id === where.id)
+      if (!t) throw new Error('tenant não encontrado')
+      Object.assign(t, data)
+      return t
+    },
     // atualização em massa: aplica `data` nas empresas do plano e devolve quantas mudaram
     updateMany: async ({ where, data }: any) => {
       const alvo = TENANTS_ADMIN.filter(t => !where?.plano || t.plano === where.plano)
@@ -481,7 +488,7 @@ function montarRdo({ id, numero, projeto, dataRdo, status, midias = [] }: {
     projeto: {
       id: projeto.id, nome: projeto.nome,
       dataInicioContrato: projeto.dataInicioContrato, dataFimContrato: projeto.dataFimContrato,
-      pedidoCompraContrato: projeto.pedidoCompraContrato, empresaContratada: projeto.empresaContratada, empresaTipo: projeto.empresaTipo ?? 'CONTRATADA',
+      pedidoCompraContrato: projeto.pedidoCompraContrato, empresaContratada: projeto.empresaContratada,
       assinaturaModo: projeto.assinaturaModo, assinante1: null, assinante2: null, assinante3: null,
       gestor: projeto.gestor ?? null,
     },

@@ -1,51 +1,22 @@
 'use client'
-// Campo "empresa do projeto": o sistema serve tanto a quem contrata (contratante)
-// quanto a quem executa a obra (contratada). Aqui a pessoa marca de qual lado está
-// a empresa informada; o rótulo escolhido aparece no RDO, na aprovação e nos PDFs.
+// Campo "empresa do projeto". O rótulo (Empresa contratada / Empresa contratante)
+// vem da configuração da empresa, em "Dados da empresa" — o sistema serve tanto a
+// quem executa a obra quanto a quem contrata.
 
-import { Input } from '@/components/ui'
-import { EMPRESA_TIPOS, EMPRESA_TIPO_L } from '@/lib/rdo-display'
-import type { EmpresaTipo } from '@/lib/types'
+import { Field, Input } from '@/components/ui'
+import { useEmpresaInfo } from '@/hooks/useEmpresa'
+import { rotuloEmpresa } from '@/lib/rdo-display'
 
-interface Props {
-  tipo:   EmpresaTipo
-  nome:   string
-  onTipo: (t: EmpresaTipo) => void
-  onNome: (n: string) => void
-}
-
-export function EmpresaCampo({ tipo, nome, onTipo, onNome }: Props) {
+export function EmpresaCampo({ nome, onNome }: { nome: string; onNome: (n: string) => void }) {
+  const { data: empresa } = useEmpresaInfo()
+  const tipo = empresa?.tipoEmpresaProjeto ?? 'CONTRATADA'
   return (
-    <div className="fr">
-      <label className="fl">Empresa do projeto</label>
-      <div role="radiogroup" aria-label="Tipo da empresa" style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-        {EMPRESA_TIPOS.map(t => {
-          const on = tipo === t
-          return (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => onTipo(t)}
-              style={{
-                flex: 1, padding: '8px 10px', borderRadius: 'var(--r)', cursor: 'pointer', fontSize: 12, fontWeight: 500,
-                fontFamily: 'inherit', border: `.5px solid ${on ? 'var(--ba)' : 'var(--b)'}`,
-                background: on ? 'var(--bga)' : 'var(--s1)', color: on ? 'var(--ta)' : 'var(--tp)',
-              }}
-            >
-              <i className={`ti ${on ? 'ti-circle-check' : 'ti-circle'}`} style={{ marginRight: 5 }} />
-              {EMPRESA_TIPO_L[t]}
-            </button>
-          )
-        })}
-      </div>
+    <Field label={rotuloEmpresa(tipo)}>
       <Input
         value={nome}
         onChange={e => onNome(e.target.value)}
-        aria-label={`Nome da ${EMPRESA_TIPO_L[tipo].toLowerCase()}`}
-        placeholder={tipo === 'CONTRATADA' ? 'Nome da empresa contratada. Ex: Construtora Alfa Ltda' : 'Nome da empresa contratante. Ex: Incorporadora Beta S.A.'}
+        placeholder={tipo === 'CONTRATADA' ? 'Ex: Construtora Alfa Ltda' : 'Ex: Incorporadora Beta S.A.'}
       />
-    </div>
+    </Field>
   )
 }

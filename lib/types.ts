@@ -107,6 +107,7 @@ export interface EmpresaInfo {
   dataVencimentoPlano?: string
   ativadoEm?:          string
   criadoEm:            string
+  tipoEmpresaProjeto:  EmpresaTipo
   limites: { usuarios: number; rdosMes: number; projetos: number }
   uso:     { usuarios: number; rdosMes: number; projetos: number }
   planoConfig?: {

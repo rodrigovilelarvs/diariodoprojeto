@@ -139,8 +139,7 @@ async function main() {
     await go('/painel'); await page.getByRole('button', { name: /Novo projeto/ }).click(); await page.waitForTimeout(700)
     await page.getByPlaceholder('Ex: Reforma Edifício Central').fill('Residencial Vista Verde')
     await page.getByPlaceholder(/Ex: PC-/).first().fill('Contrato 2026-021')
-    await page.getByRole('radio', { name: 'Empresa contratante' }).click()
-    await page.getByPlaceholder(/Nome da empresa contratante/).fill('Incorporadora Beta S.A.')
+    await page.getByPlaceholder(/Ex: Incorporadora Beta/).fill('Incorporadora Beta S.A.')
     await shot('novo-projeto')
   }
   if (quer('menu-acoes')) { await go('/painel'); await page.getByTitle('Mais ações').first().click(); await shot('menu-acoes', { wait: 700 }) }

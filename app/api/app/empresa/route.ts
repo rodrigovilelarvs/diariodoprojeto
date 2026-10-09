@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth } from '@/lib/auth'
-import { LogCategoria, UsuarioPerfil } from '@/lib/prisma-enums'
+import { LogCategoria, UsuarioPerfil, EmpresaTipo } from '@/lib/prisma-enums'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
 // lib/prisma.ts) — anotado aqui localmente com a forma usada abaixo.
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       plano: true, status: true, dataVencimentoPlano: true,
       ativadoEm: true, criadoEm: true,
       limiteUsuarios: true, limiteRdosMes: true, limiteProjetos: true,
+      tipoEmpresaProjeto: true,
     },
   })
   if (!tenant) {
@@ -91,6 +92,7 @@ export async function PATCH(req: NextRequest) {
   let body: {
     nome?: string; cnpj?: string; setor?: string; cidade?: string; uf?: string
     contatoNome?: string; contatoEmail?: string; contatoTelefone?: string
+    tipoEmpresaProjeto?: string
   }
   try {
     body = await req.json()
@@ -98,13 +100,17 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ erro: 'JSON inválido.' }, { status: 400 })
   }
 
-  const { nome, cnpj, setor, cidade, uf, contatoNome, contatoEmail, contatoTelefone } = body
+  const { nome, cnpj, setor, cidade, uf, contatoNome, contatoEmail, contatoTelefone, tipoEmpresaProjeto } = body
 
   if (nome != null && !nome.trim()) {
     return NextResponse.json({ erro: 'Nome da empresa não pode ficar vazio.' }, { status: 400 })
   }
   if (contatoEmail != null && contatoEmail && !/^\S+@\S+\.\S+$/.test(contatoEmail)) {
     return NextResponse.json({ erro: 'E-mail de contato inválido.' }, { status: 400 })
+  }
+
+  if (tipoEmpresaProjeto != null && !Object.values(EmpresaTipo).includes(tipoEmpresaProjeto as EmpresaTipo)) {
+    return NextResponse.json({ erro: 'Tipo de empresa dos projetos inválido.' }, { status: 400 })
   }
 
   const atualizado = await prisma.tenant.update({
@@ -118,10 +124,12 @@ export async function PATCH(req: NextRequest) {
       ...(contatoNome !== undefined && { contatoNome: contatoNome?.trim() || null }),
       ...(contatoEmail !== undefined && { contatoEmail: contatoEmail?.trim() || null }),
       ...(contatoTelefone !== undefined && { contatoTelefone: contatoTelefone?.trim() || null }),
+      ...(tipoEmpresaProjeto != null && { tipoEmpresaProjeto: tipoEmpresaProjeto as EmpresaTipo }),
     },
     select: {
       id: true, nome: true, cnpj: true, setor: true, cidade: true, uf: true,
       contatoNome: true, contatoEmail: true, contatoTelefone: true,
+      tipoEmpresaProjeto: true,
     },
   })
 

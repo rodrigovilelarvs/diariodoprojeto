@@ -31,7 +31,6 @@ export async function GET(req: NextRequest, { params }: Params) {
           dataFimContrato:    true,
           pedidoCompraContrato: true,
           empresaContratada: true,
-          empresaTipo: true,
           assinaturaModo: true,
           gestor: { select: { id: true, nome: true } },
           assinante1: { select: { id: true, nome: true, email: true, perfil: true } },
@@ -109,7 +108,12 @@ export async function GET(req: NextRequest, { params }: Params) {
     })
   }
 
-  return NextResponse.json(rdo)
+  // O lado da empresa (contratada/contratante) é uma configuração da empresa, não do projeto
+  const empresa = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { tipoEmpresaProjeto: true } })
+  return NextResponse.json({
+    ...rdo,
+    projeto: { ...rdo.projeto, empresaTipo: empresa?.tipoEmpresaProjeto ?? 'CONTRATADA' },
+  })
 }
 
 // ── PATCH — salvar rascunho ──────────────────────────────────

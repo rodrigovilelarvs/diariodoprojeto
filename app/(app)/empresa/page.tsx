@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { Topbar } from '@/components/layout/Topbar'
 import { Secao, Field, Input, Skeleton, Badge } from '@/components/ui'
 import { useEmpresaInfo, useAtualizarEmpresaInfo } from '@/hooks/useEmpresa'
+import { EMPRESA_TIPOS, rotuloEmpresa } from '@/lib/rdo-display'
+import type { EmpresaTipo } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'
 
 const PLANO_LABEL: Record<string, string> = { STARTER: 'Starter', PRO: 'Pro', ENTERPRISE: 'Enterprise' }
@@ -48,6 +50,7 @@ export default function EmpresaPage() {
   const [form, setForm] = useState({
     nome: '', cnpj: '', setor: '', cidade: '', uf: '',
     contatoNome: '', contatoEmail: '', contatoTelefone: '',
+    tipoEmpresaProjeto: 'CONTRATADA' as EmpresaTipo,
   })
   const [salvando, setSalvando] = useState(false)
 
@@ -58,6 +61,7 @@ export default function EmpresaPage() {
         cidade: empresa.cidade ?? '', uf: empresa.uf ?? '',
         contatoNome: empresa.contatoNome ?? '', contatoEmail: empresa.contatoEmail ?? '',
         contatoTelefone: empresa.contatoTelefone ?? '',
+        tipoEmpresaProjeto: empresa.tipoEmpresaProjeto ?? 'CONTRATADA',
       })
     }
   }, [empresa])
@@ -105,7 +109,34 @@ export default function EmpresaPage() {
                 </Field>
               </div>
 
-              <div style={{ fontSize: 10.5, color: 'var(--tm)', margin: '2px 0 12px' }}>
+              <div className="fr" style={{ marginTop: 2 }}>
+                <label className="fl">Os projetos desta empresa são criados para</label>
+                <div role="radiogroup" aria-label="Tipo de empresa dos projetos" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {EMPRESA_TIPOS.map(t => {
+                    const on = form.tipoEmpresaProjeto === t
+                    return (
+                      <button
+                        key={t} type="button" role="radio" aria-checked={on}
+                        onClick={() => setForm(f => ({ ...f, tipoEmpresaProjeto: t }))}
+                        style={{
+                          flex: '1 1 220px', padding: '9px 12px', borderRadius: 'var(--r)', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+                          fontFamily: 'inherit', border: `.5px solid ${on ? 'var(--ba)' : 'var(--b)'}`,
+                          background: on ? 'var(--bga)' : 'var(--s1)', color: on ? 'var(--ta)' : 'var(--tp)', textAlign: 'left',
+                        }}
+                      >
+                        <i className={`ti ${on ? 'ti-circle-check' : 'ti-circle'}`} style={{ marginRight: 6 }} />
+                        {t === 'CONTRATADA' ? 'Empresas contratadas' : 'Empresas contratantes'}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div style={{ fontSize: 10.5, color: 'var(--ts)', marginTop: 5 }}>
+                  Define como o campo da empresa aparece nos projetos, nos RDOs, na aprovação e nos PDFs:
+                  &quot;{rotuloEmpresa(form.tipoEmpresaProjeto)}&quot;. Escolha &quot;contratadas&quot; se você contrata as empresas que executam a obra; escolha &quot;contratantes&quot; se você executa a obra para clientes.
+                </div>
+              </div>
+
+              <div style={{ fontSize: 10.5, color: 'var(--tm)', margin: '10px 0 12px' }}>
                 Cadastrada em {fmtData(empresa?.criadoEm)}{empresa?.ativadoEm && <> · Ativa desde {fmtData(empresa.ativadoEm)}</>}
               </div>
 

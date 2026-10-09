@@ -31,6 +31,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const { tenantId } = auth.ctx
   const projetoId = (await params).id
 
+  const empresa = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { tipoEmpresaProjeto: true } })
   const projeto = await prisma.projeto.findFirst({
     where:   { id: projetoId, tenantId },
     include: { gestor: { select: { id: true, nome: true } } },
@@ -145,7 +146,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       id: projeto.id, nome: projeto.nome, descricao: projeto.descricao,
       pedidoCompraContrato: projeto.pedidoCompraContrato,
       empresaContratada: projeto.empresaContratada,
-      empresaTipo: projeto.empresaTipo,
+      empresaTipo: empresa?.tipoEmpresaProjeto ?? 'CONTRATADA',
       status: projeto.status, grupo: projeto.grupo, fotoUrl: projeto.fotoUrl, cor: projeto.cor,
       dataInicioContrato: projeto.dataInicioContrato, dataFimContrato: projeto.dataFimContrato,
       gestor: projeto.gestor,

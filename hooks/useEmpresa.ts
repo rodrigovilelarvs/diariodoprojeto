@@ -64,7 +64,6 @@ export function useCriarProjeto() {
       descricao?:         string
       pedidoCompraContrato?: string
       empresaContratada?: string
-      empresaTipo?:       EmpresaTipo
       grupo?:             string
       fotoUrl?:           string
       dataInicioContrato?: string
@@ -85,7 +84,6 @@ export function useAtualizarProjeto() {
       descricao?:          string
       pedidoCompraContrato?: string
       empresaContratada?:  string
-      empresaTipo?:        EmpresaTipo
       grupo?:              string
       status?:             string
       fotoUrl?:            string
@@ -735,6 +733,7 @@ export function useAtualizarEmpresaInfo() {
     mutationFn: (body: {
       nome?: string; cnpj?: string; setor?: string; cidade?: string; uf?: string
       contatoNome?: string; contatoEmail?: string; contatoTelefone?: string
+      tipoEmpresaProjeto?: EmpresaTipo
     }) => api.patch<Partial<EmpresaInfo>>('/api/app/empresa', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.empresaInfo }),
   })
