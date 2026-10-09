@@ -49,3 +49,4 @@ next-env.d.ts
 
 # Configuração local do Claude Code (contém tokens de teste nas permissões)
 .claude/
+scripts/manual/.capturas/

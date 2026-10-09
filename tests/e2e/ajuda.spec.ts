@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { login } from './helpers'
 import { SECOES } from '../../app/(app)/ajuda/conteudo'
@@ -58,4 +58,54 @@ test('clicar numa captura de tela abre a imagem ampliada e Esc fecha', async ({ 
   }).toPass({ timeout: 15000 })
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+// ── Proteção contra manual desatualizado ───────────────────────────────────
+// Lê rótulos que o usuário vê direto do código-fonte das telas e exige que o
+// manual os mencione. Se alguém criar um item de menu, uma permissão, um status
+// ou um tipo de aviso novo sem atualizar o manual, este teste falha.
+// Regra completa: CLAUDE.md ("Manual do usuário") e scripts/manual/README.md.
+
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const textoManual = norm(JSON.stringify(SECOES).replace(/\*\*/g, ''))
+
+function rotulos(arquivo: string, regex: RegExp, recorte?: [string, string]): string[] {
+  let src = readFileSync(join(process.cwd(), arquivo), 'utf8')
+  if (recorte) {
+    const a = src.indexOf(recorte[0])
+    const b = src.indexOf(recorte[1], a + 1)
+    expect(a, `${arquivo}: marcador "${recorte[0]}" não encontrado`).toBeGreaterThanOrEqual(0)
+    src = src.slice(a, b > a ? b : undefined)
+  }
+  return [...src.matchAll(regex)].map(m => m[1])
+}
+
+function exigirNoManual(origem: string, lista: string[], minimo: number) {
+  expect(lista.length, `${origem}: nenhum rótulo lido (o código mudou de formato?)`).toBeGreaterThanOrEqual(minimo)
+  const faltando = lista.filter(r => !textoManual.includes(norm(r)))
+  expect(faltando, `${origem}: o manual (app/(app)/ajuda/conteudo.ts) não menciona`).toEqual([])
+}
+
+test('manual cita todos os itens do menu lateral', () => {
+  exigirNoManual('Sidebar', rotulos('components/layout/Sidebar.tsx', /label: '([^']+)'/g, ['const NAV', 'export function Sidebar']), 9)
+})
+
+test('manual cita todas as permissões de usuário', () => {
+  exigirNoManual('Usuários > permissões', rotulos('app/(app)/usuarios/page.tsx', /key: 'perm\w+',\s+label: '([^']+)'/g), 6)
+})
+
+test('manual cita todos os status de RDO', () => {
+  exigirNoManual('Status do RDO', rotulos('components/ui/index.tsx', /label: '([^']+)'/g, ['const RDO_ST', 'export function RdoStatusBadge']), 4)
+})
+
+test('manual cita todos os status de projeto', () => {
+  exigirNoManual('Status do projeto', rotulos('app/(app)/painel/page.tsx', /: '([^']+)'/g, ['const STATUS_L', 'const STATUS_V']), 5)
+})
+
+test('manual cita todos os níveis de acesso ao projeto', () => {
+  exigirNoManual('Acesso ao projeto', rotulos('app/(app)/projetos/[id]/acesso/page.tsx', /: '([^']+)'/g, ['const NIVEL_L', 'const NIVEL_DESC']), 3)
+})
+
+test('manual cita todos os avisos por e-mail (notificações)', () => {
+  exigirNoManual('Notificações', rotulos('lib/notificacao-eventos.ts', /label: '([^']+)'/g).filter(r => r.length > 0), 6)
 })
