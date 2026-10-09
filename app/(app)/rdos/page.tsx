@@ -28,6 +28,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   const searchParams = useSearchParams()
   const { session } = useAppAuth()
   const [busca, setBusca] = useState('')
+  const [buscaAplicada, setBuscaAplicada] = useState('')
   const [status, setStatus] = useState(() => searchParams.get('status') ?? '')
   const [grupo, setGrupo] = useState('')
   const [projetoId] = useState(() => projetoIdFixo ?? searchParams.get('projetoId') ?? '')
@@ -52,10 +53,16 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
     setStatus(searchParams.get('status') ?? '')
   }, [searchParams])
 
+  // A busca é feita no servidor (todas as páginas): espera a pessoa parar de digitar
+  useEffect(() => {
+    const t = setTimeout(() => { setBuscaAplicada(busca.trim()); setPagina(1) }, 350)
+    return () => clearTimeout(t)
+  }, [busca])
+
   const { data: projetos } = useProjetos()
   const grupos = Array.from(new Set((projetos ?? []).map(p => p.grupo).filter(Boolean) as string[])).sort()
 
-  const { data, isLoading } = useRdos({ status: status || undefined, projetoId: projetoId || undefined, grupo: grupo || undefined, pagina, sortBy, sortDir })
+  const { data, isLoading } = useRdos({ status: status || undefined, projetoId: projetoId || undefined, grupo: grupo || undefined, busca: buscaAplicada || undefined, pagina, sortBy, sortDir })
   const nomeProjetoFiltrado = data?.rdos.find(r => r.projeto.id === projetoId)?.projeto.nome
 
   const rdos    = data?.rdos ?? []
@@ -64,11 +71,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   const pendentes = rdos.filter(r => r.status === 'PENDENTE_APROVACAO').length
   const rascunhos = rdos.filter(r => r.status === 'RASCUNHO').length
 
-  const filtrados = rdos.filter(r =>
-    !busca || r.projeto.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    (r.projeto.gestor?.nome ?? '').toLowerCase().includes(busca.toLowerCase()) ||
-    r.emissor.nome.toLowerCase().includes(busca.toLowerCase()),
-  )
+  const filtrados = rdos
 
   async function handleNovoRdo() {
     // Sem projeto selecionado abre página de criação
@@ -100,7 +103,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
         </div>
 
         <div className="fr-row">
-          <AutocompleteSearchInput placeholder="Buscar por projeto, data, responsável..." value={busca} onChange={setBusca}
+          <AutocompleteSearchInput placeholder="Buscar por projeto, número, data ou gestor..." value={busca} onChange={setBusca}
             opcoes={Array.from(new Map(rdos.map(r => [r.projeto.id, r.projeto.nome])).entries()).map(([id, nome]) => ({ id, label: nome }))} />
           {!projetoIdFixo && (
             <select className="fsel" value={grupo} onChange={e => { setGrupo(e.target.value); setPagina(1) }}>

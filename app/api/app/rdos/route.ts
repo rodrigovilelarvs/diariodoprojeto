@@ -2,6 +2,7 @@
 // GET  /api/app/rdos  — listar RDOs do tenant
 // POST /api/app/rdos  — criar novo RDO
 
+import { filtroBuscaRdo } from '@/lib/busca-rdo'
 import type { Prisma } from '@prisma/client'
 import { AtividadeStatus, LogCategoria, LogNivel, MaoDeObraCategoria, RdoStatus } from '@/lib/prisma-enums'
 
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
   const sortDir   = searchParams.get('sortDir') === 'asc' ? 'asc' : 'desc'
   const dataParam = searchParams.get('data') ?? undefined
   const grupo     = searchParams.get('grupo')  ?? undefined
+  const busca     = filtroBuscaRdo(searchParams.get('busca'))
 
   const orderBy: Record<string, unknown>[] =
     sortBy === 'projeto' ? [{ projeto: { nome: sortDir } }] :
@@ -78,6 +80,7 @@ export async function GET(req: NextRequest) {
     ...(projetoId ? { projetoId } : projetosExcluidos.length > 0 ? { projetoId: { notIn: projetosExcluidos } } : {}),
     ...(status    ? { status }    : {}),
     ...(dataParam ? { data: new Date(dataParam) } : {}),
+    ...(busca     ? { OR: busca } : {}),
   }
 
   const rdos = await prisma.rdo.findMany({

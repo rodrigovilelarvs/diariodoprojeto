@@ -393,7 +393,7 @@ export const SECOES: Secao[] = [
       {
         t: 'lista',
         x: [
-          '**Buscar**: digite parte do nome do projeto, da data ou do responsável.',
+          '**Buscar**: a busca olha **todos** os RDOs, não só os que estão na tela. Digite parte do **nome do projeto**, o **número** do RDO (como 3 ou #0003), a **data** (21/09/2026, 21/09, 09/2026 ou só o ano 2026) ou o **gestor do projeto**. O resultado aparece quando você para de digitar.',
           '**Filtros**: escolha um **grupo** de projetos e/ou um **status**.',
           '**Ordenar**: clique no título de uma coluna (#, Projeto, Grupo, Data, Gestor do Projeto, Status). Clique de novo para inverter.',
           '**Abrir** (ou clicar na linha): rascunhos e RDOs a revisar abrem no formulário, para edição; pendentes e aprovados abrem na tela de Aprovação, em modo leitura.',

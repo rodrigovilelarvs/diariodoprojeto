@@ -193,7 +193,7 @@ export function useAtualizarAssinaturasProjeto() {
 // ════════════════════════════════════════
 
 export function useRdos(
-  filtros?: { projetoId?: string; grupo?: string; status?: string; pagina?: number; por?: number; sortBy?: string; sortDir?: string; data?: string },
+  filtros?: { projetoId?: string; grupo?: string; status?: string; pagina?: number; por?: number; sortBy?: string; sortDir?: string; data?: string; busca?: string },
   opcoes?: { enabled?: boolean },
 ) {
   const params = new URLSearchParams()
@@ -205,6 +205,7 @@ export function useRdos(
   if (filtros?.sortBy)    params.set('sortBy',    filtros.sortBy)
   if (filtros?.sortDir)   params.set('sortDir',   filtros.sortDir)
   if (filtros?.data)      params.set('data',      filtros.data)
+  if (filtros?.busca)     params.set('busca',     filtros.busca)
 
   const qs = params.toString()
   return useQuery({
@@ -212,6 +213,8 @@ export function useRdos(
     queryFn:  () => api.get<RdosResponse>(`/api/app/rdos${qs ? `?${qs}` : ''}`),
     staleTime: 30_000,
     enabled: opcoes?.enabled ?? true,
+    // mantém a lista anterior na tela enquanto a nova busca carrega (sem piscar)
+    placeholderData: (anterior: RdosResponse | undefined) => anterior,
   })
 }
 
