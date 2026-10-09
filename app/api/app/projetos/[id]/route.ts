@@ -1,7 +1,7 @@
 // src/api/app/projetos/[id]/route.ts
 // PATCH /api/app/projetos/:id — editar projeto (nome, grupo, status, datas, etc.)
 
-import { LogCategoria, ProjetoStatus } from '@/lib/prisma-enums'
+import { LogCategoria, ProjetoStatus, EmpresaTipo } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -32,6 +32,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     descricao?:          string
     pedidoCompraContrato?: string
     empresaContratada?:  string
+    empresaTipo?:        string
     grupo?:              string
     status?:             string
     fotoUrl?:            string
@@ -54,6 +55,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Status inválido.' }, { status: 400 })
   }
 
+  if (body.empresaTipo != null && !Object.values(EmpresaTipo).includes(body.empresaTipo as EmpresaTipo)) {
+    return NextResponse.json({ erro: 'Tipo de empresa inválido.' }, { status: 400 })
+  }
+
   const atualizado = await prisma.projeto.update({
     where: { id: projetoId },
     data: {
@@ -61,6 +66,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(body.descricao != null && { descricao: body.descricao }),
       ...(body.pedidoCompraContrato != null && { pedidoCompraContrato: body.pedidoCompraContrato || null }),
       ...(body.empresaContratada != null && { empresaContratada: body.empresaContratada || null }),
+      ...(body.empresaTipo != null && { empresaTipo: body.empresaTipo as EmpresaTipo }),
       ...(body.grupo != null && { grupo: body.grupo || null }),
       ...(body.fotoUrl != null && { fotoUrl: body.fotoUrl || null }),
       ...(body.status != null && { status: body.status as ProjetoStatus }),

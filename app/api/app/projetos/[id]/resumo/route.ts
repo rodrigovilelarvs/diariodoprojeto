@@ -145,6 +145,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       id: projeto.id, nome: projeto.nome, descricao: projeto.descricao,
       pedidoCompraContrato: projeto.pedidoCompraContrato,
       empresaContratada: projeto.empresaContratada,
+      empresaTipo: projeto.empresaTipo,
       status: projeto.status, grupo: projeto.grupo, fotoUrl: projeto.fotoUrl, cor: projeto.cor,
       dataInicioContrato: projeto.dataInicioContrato, dataFimContrato: projeto.dataFimContrato,
       gestor: projeto.gestor,

@@ -8,7 +8,8 @@ import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar }    from '@/components/layout/Topbar'
 import { KpiCard, DualBar, Desvio, Badge, Skeleton, AutocompleteSearchInput, Modal, Field, Input, Textarea, Select, Btn } from '@/components/ui'
 import { toast }     from 'sonner'
-import type { Projeto } from '@/lib/types'
+import type { Projeto, EmpresaTipo } from '@/lib/types'
+import { EmpresaCampo } from '@/components/projetos/EmpresaCampo'
 import { mensagemErro } from '@/lib/api'
 
 const STATUS_L: Record<string, string> = { NAO_INICIADO: 'Não iniciado', ATIVO: 'Em andamento', PAUSADO: 'Paralisado', CONCLUIDO: 'Concluído', CANCELADO: 'Cancelado' }
@@ -67,11 +68,11 @@ export default function PainelPage() {
   }, [prefsCarregadas, busca, filtSt, filtGrupo, view])
 
   const [modalProjeto, setModalProjeto] = useState(false)
-  const [formProjeto, setFormProjeto]   = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+  const [formProjeto, setFormProjeto]   = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', empresaTipo: 'CONTRATADA' as EmpresaTipo, grupo: '', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
   const [fotoNovo, setFotoNovo] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' })
 
   const [modalEdit, setModalEdit] = useState<Projeto | null>(null)
-  const [editForm, setEditForm]   = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', status: 'NAO_INICIADO', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+  const [editForm, setEditForm]   = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', empresaTipo: 'CONTRATADA' as EmpresaTipo, grupo: '', status: 'NAO_INICIADO', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
   const [fotoEdit, setFotoEdit] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' })
 
   const [modalDuplicar, setModalDuplicar] = useState<Projeto | null>(null)
@@ -122,6 +123,7 @@ export default function PainelPage() {
         descricao:          formProjeto.descricao || undefined,
         pedidoCompraContrato: formProjeto.pedidoCompraContrato || undefined,
         empresaContratada:  formProjeto.empresaContratada || undefined,
+        empresaTipo:        formProjeto.empresaTipo,
         grupo:              formProjeto.grupo || undefined,
         gestorId:           formProjeto.gestorId || undefined,
         dataInicioContrato: formProjeto.dataInicioContrato || undefined,
@@ -138,7 +140,7 @@ export default function PainelPage() {
       }
       toast.success(`Projeto "${formProjeto.nome}" criado!`)
       setModalProjeto(false)
-      setFormProjeto({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+      setFormProjeto({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', empresaTipo: 'CONTRATADA' as EmpresaTipo, grupo: '', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
       setFotoNovo({ file: null, preview: '' })
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao criar projeto.'))
@@ -152,6 +154,7 @@ export default function PainelPage() {
       descricao: p.descricao ?? '',
       pedidoCompraContrato: p.pedidoCompraContrato ?? '',
       empresaContratada: p.empresaContratada ?? '',
+      empresaTipo: p.empresaTipo ?? 'CONTRATADA',
       grupo: p.grupo ?? '',
       status: p.status,
       gestorId: p.gestor?.id ?? '',
@@ -178,6 +181,7 @@ export default function PainelPage() {
         descricao: editForm.descricao,
         pedidoCompraContrato: editForm.pedidoCompraContrato,
         empresaContratada: editForm.empresaContratada,
+        empresaTipo: editForm.empresaTipo,
         grupo: editForm.grupo,
         status: editForm.status,
         gestorId: editForm.gestorId,
@@ -262,9 +266,8 @@ export default function PainelPage() {
           <Field label="Pedido de compra ou contrato">
             <Input value={formProjeto.pedidoCompraContrato} onChange={e => setFormProjeto(f => ({ ...f, pedidoCompraContrato: e.target.value }))} placeholder="Ex: PC-2026-0142 ou Contrato nº 88/2026" />
           </Field>
-          <Field label="Empresa contratada">
-            <Input value={formProjeto.empresaContratada} onChange={e => setFormProjeto(f => ({ ...f, empresaContratada: e.target.value }))} placeholder="Ex: Construtora Alfa Ltda" />
-          </Field>
+          <EmpresaCampo tipo={formProjeto.empresaTipo} nome={formProjeto.empresaContratada}
+            onTipo={t => setFormProjeto(f => ({ ...f, empresaTipo: t }))} onNome={n => setFormProjeto(f => ({ ...f, empresaContratada: n }))} />
           <Field label="Grupo">
             <Input value={formProjeto.grupo} onChange={e => setFormProjeto(f => ({ ...f, grupo: e.target.value }))} placeholder="Ex: CAPEX, Manutenção, Unidade SP..." list="grupos-existentes" />
           </Field>
@@ -307,9 +310,8 @@ export default function PainelPage() {
           <Field label="Pedido de compra ou contrato">
             <Input value={editForm.pedidoCompraContrato} onChange={e => setEditForm(f => ({ ...f, pedidoCompraContrato: e.target.value }))} placeholder="Ex: PC-2026-0142 ou Contrato nº 88/2026" />
           </Field>
-          <Field label="Empresa contratada">
-            <Input value={editForm.empresaContratada} onChange={e => setEditForm(f => ({ ...f, empresaContratada: e.target.value }))} placeholder="Ex: Construtora Alfa Ltda" />
-          </Field>
+          <EmpresaCampo tipo={editForm.empresaTipo} nome={editForm.empresaContratada}
+            onTipo={t => setEditForm(f => ({ ...f, empresaTipo: t }))} onNome={n => setEditForm(f => ({ ...f, empresaContratada: n }))} />
           <Field label="Grupo">
             <Input value={editForm.grupo} onChange={e => setEditForm(f => ({ ...f, grupo: e.target.value }))} placeholder="Ex: CAPEX, Manutenção, Unidade SP..." list="grupos-existentes" />
           </Field>

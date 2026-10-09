@@ -147,7 +147,8 @@ export const SECOES: Secao[] = [
         t: 'passos',
         x: [
           'Clique em **Novo projeto** (canto superior direito).',
-          'Preencha o **nome** (obrigatório). Os demais campos ajudam a organizar: pedido de compra ou contrato, empresa contratada, **grupo** (para agrupar projetos, como "Manutenção" ou "Unidade SP"), **gestor** e as datas de início e fim do contrato.',
+          'Preencha o **nome** (obrigatório). Os demais campos ajudam a organizar: pedido de compra ou contrato, **empresa do projeto**, **grupo** (para agrupar projetos, como "Manutenção" ou "Unidade SP"), **gestor** e as datas de início e fim do contrato.',
+          'Em **Empresa do projeto**, marque **Empresa contratada** (quem executa a obra) ou **Empresa contratante** (o cliente) e digite o nome dela. Assim o sistema atende tanto quem executa a obra quanto quem contrata: cada projeto mostra o rótulo certo. O rótulo marcado aparece no RDO, na tela de aprovação e nos PDFs.',
           'Se quiser, adicione uma **foto** do projeto.',
           'Clique em **Criar projeto**.',
         ],
@@ -259,7 +260,7 @@ export const SECOES: Secao[] = [
     blocos: [
       { t: 'p', x: 'O formulário é dividido em seções numeradas. Você pode preenchê-lo aos poucos e salvar como rascunho a qualquer momento.' },
       { t: 'h', x: '1. Identificação' },
-      { t: 'p', x: 'Mostra o **número do RDO**, a **data** (com o dia da semana), o projeto, o pedido de compra ou contrato, a empresa contratada e o gestor. O quadro verde resume o **prazo contratual**: datas, dias decorridos e dias restantes.' },
+      { t: 'p', x: 'Mostra o **número do RDO**, a **data** (com o dia da semana), o projeto, o pedido de compra ou contrato, a **empresa** do projeto (com o rótulo "Empresa contratada" ou "Empresa contratante", conforme marcado no cadastro do projeto) e o gestor. O quadro verde resume o **prazo contratual**: datas, dias decorridos e dias restantes.' },
       { t: 'img', src: '/ajuda/rdo-identificacao.webp', alt: 'Seção Identificação do RDO' },
       { t: 'h', x: '2. Condições climáticas' },
       { t: 'p', x: 'Toque na condição da **manhã** e da **tarde**: tempo limpo, nublado, chuva ou tempestade. Para obras com turno da noite, use **Adicionar turno da noite**. Informe a **precipitação (mm)** e o **impacto no serviço**: **Nenhum**, **Parcial** ou **Total (paralisado)**.' },
@@ -564,6 +565,7 @@ export const SECOES: Secao[] = [
           ['Planejado × Real', 'Quanto da obra deveria estar pronto pelas datas × quanto já foi realmente executado.'],
           ['Desvio', 'Real menos planejado. Positivo = adiantado; negativo = atrasado.'],
           ['Grupo', 'Rótulo para agrupar projetos (por exemplo, "Manutenção" ou "Unidade SP") e filtrar listas e relatórios.'],
+          ['Empresa contratada / contratante', 'Marcação do cadastro do projeto que diz de que lado está a empresa informada: contratada (executa a obra) ou contratante (o cliente). O rótulo aparece no RDO e nos PDFs.'],
           ['Gestor do projeto', 'Pessoa responsável pelo projeto, definida no cadastro dele.'],
           ['Mão de obra direta / indireta / terceirizada', 'Direta: equipe que executa a obra. Indireta: apoio e supervisão. Terceirizada: contratada de fora.'],
           ['Assinante', 'Quem assina (aprova) os RDOs de um projeto.'],

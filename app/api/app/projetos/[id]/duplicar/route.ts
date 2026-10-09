@@ -5,7 +5,7 @@
 // RDOs, ocorrências, comentários, mídias e assinaturas de RDO nunca são copiados —
 // são histórico operacional do projeto original, não fazem parte de um "molde".
 
-import { LogCategoria, ProjetoAssinaturaModo } from '@/lib/prisma-enums'
+import { LogCategoria, ProjetoAssinaturaModo, EmpresaTipo } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -22,7 +22,7 @@ type AtividadeParaCopiar = {
 type EtapaParaCopiar = { numero: string; nome: string; ordem: number; atividades: AtividadeParaCopiar[] }
 type ProjetoParaDuplicar = {
   nome: string; descricao: string | null
-  pedidoCompraContrato: string | null; empresaContratada: string | null
+  pedidoCompraContrato: string | null; empresaContratada: string | null; empresaTipo: EmpresaTipo
   grupo: string | null; fotoUrl: string | null; cor: string
   dataInicioContrato: Date | null; dataFimContrato: Date | null
   gestorId: string | null
@@ -77,6 +77,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       descricao:            original.descricao,
       pedidoCompraContrato: original.pedidoCompraContrato,
       empresaContratada:    original.empresaContratada,
+      empresaTipo:          original.empresaTipo,
       grupo:                original.grupo,
       fotoUrl:              original.fotoUrl,
       cor:                  original.cor,

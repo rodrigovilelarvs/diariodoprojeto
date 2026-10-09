@@ -1,6 +1,7 @@
 // Enums do Prisma definidos localmente para type-check sem banco real
 export enum PlanoTipo      { STARTER = 'STARTER', PRO = 'PRO', ENTERPRISE = 'ENTERPRISE' }
 export enum TenantStatus   { AGUARDANDO = 'AGUARDANDO', ATIVO = 'ATIVO', SUSPENSO = 'SUSPENSO' }
+export enum EmpresaTipo { CONTRATADA='CONTRATADA', CONTRATANTE='CONTRATANTE' }
 export enum ProjetoStatus  { NAO_INICIADO='NAO_INICIADO', ATIVO='ATIVO', PAUSADO='PAUSADO', CONCLUIDO='CONCLUIDO', CANCELADO='CANCELADO' }
 export enum UsuarioPerfil  { ADMIN='ADMIN', PERSONALIZADO='PERSONALIZADO' }
 export enum UsuarioStatus  { ATIVO='ATIVO', INATIVO='INATIVO', CONVIDADO='CONVIDADO' }
