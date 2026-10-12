@@ -16,6 +16,11 @@ export const CLIMA_L: Record<string, string> = {
 }
 export const CLIMAS = ['SOL','NUBLADO','CHUVA','TEMPESTADE'] as const
 
+// Para onde abre cada RDO: rascunho e a revisar no formulário; enviados e aprovados na
+// tela de Aprovação (mesma regra da Lista de RDOs).
+export const urlDoRdo = (r: { id: string; status: string }) =>
+  r.status === 'APROVADO' || r.status === 'PENDENTE_APROVACAO' ? `/aprovacao/${r.id}` : `/rdos/${r.id}`
+
 // Rótulo da empresa do projeto: depende de o projeto estar do lado da contratada ou da contratante
 export const EMPRESA_TIPO_L: Record<EmpresaTipo, string> = {
   CONTRATADA: 'Empresa contratada', CONTRATANTE: 'Empresa contratante',

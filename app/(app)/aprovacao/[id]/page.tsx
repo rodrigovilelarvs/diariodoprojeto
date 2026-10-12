@@ -14,6 +14,7 @@ import { ApiError, mensagemErro } from '@/lib/api'
 import { RdoStatusBadge, Skeleton, Modal } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { UploadZona } from '@/components/rdos/UploadZona'
+import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
   CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L,
@@ -230,6 +231,7 @@ export default function AprovacaoPage() {
         subtitulo={`${rdo.projeto.nome} · ${fmtData(rdo.data)}`}
         acoes={
           <>
+            <NavegacaoRdos rdoId={id} projetoId={rdo.projeto.id} numero={rdo.numero} />
             <button className="btn btn-sm" onClick={() => router.push(`/projetos/${rdo.projeto.id}`)}>
               <i className="ti ti-folder" /> Voltar à pasta do projeto
             </button>

@@ -309,7 +309,7 @@ export const SECOES: Secao[] = [
         linhas: [
           ['Cancelar', 'Sai do RDO e volta para a Lista de RDOs. Salve como rascunho antes se não quiser perder o que preencheu.'],
           ['Excluir RDO', 'Apaga o RDO (aparece nos rascunhos e para quem pode aprovar).'],
-          ['Setas ‹ ›', 'Navegam para o RDO anterior ou o próximo do mesmo projeto, sem voltar à lista.'],
+          ['Setas ‹ ›', 'Navegam para o RDO anterior ou o próximo do mesmo projeto, sem voltar à lista. Funcionam em qualquer estado (rascunho, enviado para aprovação ou aprovado) e também na tela de aprovação; cada RDO abre na tela certa para o seu estado.'],
           ['Rascunho', 'Salva o que você preencheu e mantém o RDO como rascunho.'],
           ['Gerar PDF', 'Gera o PDF do RDO para guardar ou enviar.'],
           ['Enviar para aprovação', 'Envia o RDO para os assinantes assinarem. Você continua na tela do RDO, que passa a aparecer bloqueado para edição.'],
