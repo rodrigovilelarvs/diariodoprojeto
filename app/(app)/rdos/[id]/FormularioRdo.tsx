@@ -549,15 +549,16 @@ export function FormularioRdo({ rdoId }: Props) {
 
   function addAtividade() {
     if (novaAvulsa) {
-      if (!novaEtapaTexto.trim() || !novaNomeTexto.trim()) {
-        toast.error('Informe a etapa e o nome da atividade avulsa.')
+      // A etapa é opcional na atividade avulsa — só o nome é obrigatório
+      if (!novaNomeTexto.trim()) {
+        toast.error('Informe o nome da atividade avulsa.')
         return
       }
       setForm(f => f ? {
         ...f,
         atividadeRegistros: [...f.atividadeRegistros, {
           pctAnterior: 0, pctAtual: 0, deltaHoje: 0,
-          avulsa: true, avulsaEtapa: novaEtapaTexto.trim(), avulsaNome: novaNomeTexto.trim(),
+          avulsa: true, avulsaEtapa: novaEtapaTexto.trim() || undefined, avulsaNome: novaNomeTexto.trim(),
         }],
       } : f)
     } else {
@@ -1135,7 +1136,7 @@ export function FormularioRdo({ rdoId }: Props) {
               const pct  = reg.pctAtual
               const cor  = pct >= 90 ? 'var(--fsu)' : pct >= 60 ? 'var(--fa)' : pct > 0 ? 'var(--fw)' : 'var(--tm)'
               const etapaLabel = reg.avulsa
-                ? (reg.avulsaEtapa ?? 'Avulsa')
+                ? (reg.avulsaEtapa || 'Avulsa')
                 : ativ?.etapa ? `${ativ.etapa.numero} · ${ativ.etapa.nome}` : ''
               const atividadeLabel = reg.avulsa
                 ? (reg.avulsaNome ?? '')
@@ -1730,10 +1731,10 @@ export function FormularioRdo({ rdoId }: Props) {
 
               {novaAvulsa ? (
                 <>
-                  <label className="fl">Etapa</label>
+                  <label className="fl">Etapa <span style={{ color:'var(--tm)', fontWeight:400 }}>(opcional)</span></label>
                   <input className="fi" value={novaEtapaTexto} style={{ marginBottom:8 }}
                     placeholder="Ex: Serviços extras" onChange={e => setNovaEtapaTexto(e.target.value)} />
-                  <label className="fl">Nome da atividade</label>
+                  <label className="fl">Nome da atividade *</label>
                   <input className="fi" value={novaNomeTexto}
                     placeholder="Descreva a atividade" onChange={e => setNovaNomeTexto(e.target.value)} />
                 </>

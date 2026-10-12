@@ -416,7 +416,7 @@ export default function AprovacaoPage() {
                   const pct  = reg.pctAtual
                   const cor  = pct >= 90 ? 'var(--fsu)' : pct >= 60 ? 'var(--fa)' : pct > 0 ? 'var(--fw)' : 'var(--tm)'
                   const etapaLabel = reg.avulsa
-                    ? (reg.avulsaEtapa ?? 'Avulsa')
+                    ? (reg.avulsaEtapa || 'Avulsa')
                     : ativ?.etapa ? `${ativ.etapa.numero} · ${ativ.etapa.nome}` : ''
                   const atividadeLabel = reg.avulsa
                     ? (reg.avulsaNome ?? '')

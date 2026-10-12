@@ -431,7 +431,7 @@ export async function gerarPdfRdo(
     } else {
       regs.forEach((r) => {
         const ativ  = r.atividade
-        const etapaLabel = r.avulsa ? (r.avulsaEtapa ?? 'Avulsa') : (ativ?.etapa ? `${ativ.etapa.numero} · ${ativ.etapa.nome}` : '')
+        const etapaLabel = r.avulsa ? (r.avulsaEtapa || 'Avulsa') : (ativ?.etapa ? `${ativ.etapa.numero} · ${ativ.etapa.nome}` : '')
         const nome  = r.avulsa ? (r.avulsaNome ?? '') : (ativ ? `${ativ.numero} · ${ativ.nome}` : '—')
         const pct   = r.pctAtual
         const corPb = pct>=90 ? COR.tsu : pct>=60 ? COR.ta : pct>0 ? COR.tw : COR.ts

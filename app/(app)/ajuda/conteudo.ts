@@ -271,7 +271,7 @@ export const SECOES: Secao[] = [
         t: 'passos',
         x: [
           'Informe o **início**, o **término** e o **intervalo (h)**. O sistema calcula o **total trabalhado**.',
-          'Clique em **Adicionar atividade** e escolha uma atividade da **lista de tarefas** (ou registre uma atividade avulsa, informando a etapa e o nome).',
+          'Clique em **Adicionar atividade** e escolha uma atividade da **lista de tarefas** (ou marque **Atividade avulsa** para registrar algo fora da lista: basta informar o **nome**; a **etapa** é opcional).',
           'Para cada atividade, arraste a barra ou use os botões **−** e **+** do **ajuste fino** para informar o **percentual acumulado**. O campo **Avanço hoje** mostra quanto andou neste dia, e **Anterior** mostra o acumulado que já existia.',
           'Escreva em **Observações** o que foi executado no dia.',
         ],
