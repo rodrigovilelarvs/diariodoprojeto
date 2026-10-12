@@ -825,6 +825,11 @@ export default function AprovacaoPage() {
             <button className="btn btn-sm" onClick={() => router.push('/rdos')}>
               <i className="ti ti-arrow-left" /> Voltar à lista
             </button>
+            {pode('emitir_rdo') && (
+              <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${rdo.projeto.id}`)}>
+                <i className="ti ti-plus" /> Novo RDO
+              </button>
+            )}
             {rdo.status !== 'RASCUNHO' && (
               pode('aprovar_rdo') ||
               (pode('emitir_rdo') && rdo.emissor.id === session?.usuario.id && rdo.status !== 'APROVADO')

@@ -653,11 +653,18 @@ export function FormularioRdo({ rdoId }: Props) {
       await salvar.mutateAsync({ id: rdoId, ...form })
       const res = await enviar.mutateAsync(rdoId)
       toast.success(`RDO #${numeroRdo(rdo?.numero ?? 0)} enviado para ${res.aprovadores} aprovador(es)!`)
-      router.push('/rdos')
+      // Continua nesta página: o RDO recarrega já bloqueado e dá para criar o próximo daqui
+      setDirty(false)
     } catch (err) {
       if (err instanceof LimitePlanoError) toast.error(err.message)
       else toast.error('Erro ao enviar RDO.')
     }
+  }
+
+  // Novo RDO do mesmo projeto, sem precisar sair para outra tela
+  function handleNovoRdo() {
+    if (dirty && !window.confirm('Há alterações não salvas neste RDO. Sair mesmo assim?')) return
+    router.push(`/rdos/novo?projetoId=${rdo?.projeto.id ?? ''}`)
   }
 
   async function handleVoltarRascunho() {
@@ -963,10 +970,15 @@ export function FormularioRdo({ rdoId }: Props) {
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
 
       {/* ── Voltar à pasta do projeto ── */}
-      <div style={{ padding:'8px 16px', borderBottom:'.5px solid var(--b)', flexShrink:0 }}>
+      <div style={{ padding:'8px 16px', borderBottom:'.5px solid var(--b)', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, flexWrap:'wrap' }}>
         <button className="btn btn-sm" onClick={() => router.push(`/projetos/${rdo.projeto.id}`)}>
           <i className="ti ti-folder" /> Voltar à pasta do projeto
         </button>
+        {pode('emitir_rdo') && (
+          <button className="btn btn-p btn-sm" onClick={handleNovoRdo}>
+            <i className="ti ti-plus" /> Novo RDO
+          </button>
+        )}
       </div>
 
       {/* ── Banner aprovado ── */}
