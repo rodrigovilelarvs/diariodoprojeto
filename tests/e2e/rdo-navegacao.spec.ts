@@ -109,3 +109,35 @@ test('aberto pela Lista de RDOs normal, as setas continuam andando por todos os 
   await page.locator('tbody tr').first().click()
   await page.waitForURL(u => /^\/(rdos|aprovacao)\//.test(u.pathname) && !u.search.includes('fila='))
 })
+
+test('na fila de aprovação filtrada por projeto, as setas só consideram os pendentes daquele projeto', async ({ page, playwright }) => {
+  const api = await apiComo(playwright)
+  const r = await api.post('/api/app/rdos', { data: { projetoId: PROJETO_ID, data: '2027-03-01', copiarAnterior: false } })
+  const { id } = await r.json()
+  expect((await api.post(`/api/app/rdos/${id}/enviar`, { data: {} })).status()).toBe(200)
+  await api.dispose()
+
+  await login(page)
+  await page.goto('/rdos?status=PENDENTE_APROVACAO')
+  // filtra por projeto na lista
+  const selecao = page.locator('select.fsel').filter({ has: page.locator('option', { hasText: 'Todos os projetos' }) })
+  await selecao.selectOption(PROJETO_ID)
+  await expect(page.locator('tbody tr').first()).toBeVisible()
+
+  // ao abrir um RDO, o filtro vai junto para a fila e para as consultas das setas
+  const pedido = page.waitForRequest(req => {
+    const u = new URL(req.url())
+    return u.pathname === '/api/app/rdos' && u.searchParams.get('status') === 'PENDENTE_APROVACAO'
+      && u.searchParams.get('projetoId') === PROJETO_ID && u.searchParams.get('sortBy') === 'data'
+  })
+  await page.locator('tbody tr').first().click()
+  await page.waitForURL(u => u.pathname.startsWith('/aprovacao/')
+    && u.searchParams.get('fila') === 'pendentes' && u.searchParams.get('projetoId') === PROJETO_ID)
+  await pedido
+
+  // "Voltar à lista" recupera o filtro de projeto
+  await page.getByRole('button', { name: 'Voltar à lista' }).click()
+  await page.waitForURL(u => u.pathname === '/rdos' && u.searchParams.get('projetoId') === PROJETO_ID
+    && u.searchParams.get('status') === 'PENDENTE_APROVACAO')
+  await expect(page.locator('select.fsel').filter({ has: page.locator('option', { hasText: 'Todos os projetos' }) })).toHaveValue(PROJETO_ID)
+})

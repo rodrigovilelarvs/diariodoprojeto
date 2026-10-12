@@ -5,8 +5,9 @@
 //  - padrão: os RDOs do MESMO projeto, em ordem de número, em qualquer estado (rascunho,
 //    enviado para aprovação ou aprovado);
 //  - fila de aprovação (?fila=pendentes, quando o RDO foi aberto pelo item "Aprovação" do
-//    menu): só os RDOs pendentes de assinatura, de todos os projetos, do mais antigo para o
-//    mais novo — assim quem aprova vai assinando e passando pelas setas.
+//    menu): só os RDOs pendentes de assinatura, do mais antigo para o mais novo — assim quem
+//    aprova vai assinando e passando pelas setas. Respeita os filtros ativos na lista de onde
+//    veio (projeto, grupo, busca): filtrou um projeto, só anda pelos pendentes dele.
 // Cada RDO abre na tela certa para o seu estado (ver urlDoRdo).
 
 import { Suspense } from 'react'
@@ -36,12 +37,19 @@ export function NavegacaoRdos(props: Props) {
 
 function Navegacao({ rdoId, projetoId, numero, data }: Props) {
   const router = useRouter()
-  const emFila = useSearchParams().get('fila') === 'pendentes'
+  const parametros = useSearchParams()
+  const emFila = parametros.get('fila') === 'pendentes'
+  // Na fila, vale o mesmo recorte da lista de onde a pessoa veio (projeto, grupo, busca)
+  const filtrosFila = {
+    projetoId: parametros.get('projetoId') || undefined,
+    grupo:     parametros.get('grupo')     || undefined,
+    busca:     parametros.get('busca')     || undefined,
+  }
 
   // Lista completa (não paginada de propósito: `por` alto) só para achar anterior/próximo.
   const { data: resposta } = useRdos(
     emFila
-      ? { status: 'PENDENTE_APROVACAO', sortBy: 'data', sortDir: 'asc', por: 500 }
+      ? { status: 'PENDENTE_APROVACAO', ...filtrosFila, sortBy: 'data', sortDir: 'asc', por: 500 }
       : { projetoId, sortBy: 'numero', sortDir: 'asc', por: 500 },
     { enabled: emFila || !!projetoId },
   )
@@ -63,7 +71,8 @@ function Navegacao({ rdoId, projetoId, numero, data }: Props) {
 
   if (!anterior && !proximo) return null
 
-  const ir = (r: Item) => router.push(urlDoRdo(r) + (emFila ? '?fila=pendentes' : ''))
+  // na fila, a URL do próximo mantém todos os parâmetros (fila + filtros)
+  const ir = (r: Item) => router.push(urlDoRdo(r) + (emFila ? `?${parametros.toString()}` : ''))
   const rotulo = (r: Item) => `RDO #${numeroRdo(r.numero)}${r.projeto?.nome ? ` — ${r.projeto.nome}` : ''}`
 
   return (

@@ -375,7 +375,7 @@ export const SECOES: Secao[] = [
           'Para devolver, escreva o **motivo** no campo de texto e clique em **Revisar**. O emissor recebe o aviso para ajustar.',
         ],
       },
-      { t: 'dica', x: 'Aprovando vários RDOs em sequência: quando você abre o RDO pelo item **Aprovação** do menu, as setas **‹ ›** do rodapé passam a andar **somente pelos RDOs pendentes de assinatura**, de todos os projetos, do mais antigo para o mais novo (o rodapé mostra "pendente 2 de 5"). Assine, clique em **›** e siga para o próximo. **Voltar à lista** leva de volta à lista dos pendentes. Abrindo o RDO pela **Lista de RDOs**, as setas andam por todos os RDOs do projeto.' },
+      { t: 'dica', x: 'Aprovando vários RDOs em sequência: quando você abre o RDO pelo item **Aprovação** do menu, as setas **‹ ›** do rodapé passam a andar **somente pelos RDOs pendentes de assinatura**, de todos os projetos, do mais antigo para o mais novo (o rodapé mostra "pendente 2 de 5"). Se a lista estiver **filtrada** (por projeto, grupo ou busca), as setas andam só pelos pendentes daquele recorte: filtrou um projeto, passa apenas pelos RDOs pendentes dele. Assine, clique em **›** e siga para o próximo. **Voltar à lista** leva de volta à lista dos pendentes, com os mesmos filtros. Abrindo o RDO pela **Lista de RDOs**, as setas andam por todos os RDOs do projeto.' },
       { t: 'img', src: '/ajuda/aprovacao-topo.webp', alt: 'RDO aberto para aprovação' },
       { t: 'img', src: '/ajuda/aprovacao-assinaturas.webp', alt: 'Seção Assinaturas do RDO', legenda: 'Seção Assinaturas: quem já assinou, quem falta, campo de motivo e botões Revisar e Assinar.' },
       { t: 'aviso', x: 'Para assinar, você precisa ter **cadastrado a sua assinatura digital** em **Meu perfil**. Se ainda não cadastrou, o botão vira **Cadastrar assinatura pra assinar** e leva você até lá.' },
@@ -402,7 +402,7 @@ export const SECOES: Secao[] = [
         t: 'lista',
         x: [
           '**Buscar**: a busca olha **todos** os RDOs, não só os que estão na tela. Digite parte do **nome do projeto**, o **número** do RDO (como 3 ou #0003), a **data** (21/09/2026, 21/09, 09/2026 ou só o ano 2026) ou o **gestor do projeto**. O resultado aparece quando você para de digitar.',
-          '**Filtros**: escolha um **grupo** de projetos e/ou um **status**.',
+          '**Filtros**: escolha um **projeto**, um **grupo** de projetos e/ou um **status**.',
           '**Ordenar**: clique no título de uma coluna (#, Projeto, Grupo, Data, Gestor do Projeto, Status). Clique de novo para inverter.',
           '**Abrir** (ou clicar na linha): rascunhos abrem no formulário, para edição; os já enviados abrem bloqueados (pendentes e aprovados na tela de Aprovação, a revisar no formulário), com o botão **Voltar para rascunho**.',
           '**PDF**: gera o PDF do RDO direto da lista.',

@@ -28,11 +28,12 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   const router  = useRouter()
   const searchParams = useSearchParams()
   const { session } = useAppAuth()
-  const [busca, setBusca] = useState('')
-  const [buscaAplicada, setBuscaAplicada] = useState('')
+  // Os filtros podem vir na URL (ao voltar da tela de aprovação com a fila filtrada)
+  const [busca, setBusca] = useState(() => searchParams.get('busca') ?? '')
+  const [buscaAplicada, setBuscaAplicada] = useState(() => (searchParams.get('busca') ?? '').trim())
   const [status, setStatus] = useState(() => searchParams.get('status') ?? '')
-  const [grupo, setGrupo] = useState('')
-  const [projetoId] = useState(() => projetoIdFixo ?? searchParams.get('projetoId') ?? '')
+  const [grupo, setGrupo] = useState(() => searchParams.get('grupo') ?? '')
+  const [projetoId, setProjetoId] = useState(() => projetoIdFixo ?? searchParams.get('projetoId') ?? '')
   const [pagina, setPagina] = useState(1)
   const [sortBy, setSortBy]   = useState<'numero' | 'projeto' | 'grupo' | 'data' | 'gestor' | 'status'>('numero')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -75,9 +76,16 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   const filtrados = rdos
 
   // Aberto pelo filtro "pendentes" (item Aprovação do menu): as setas do RDO passam a andar só
-  // pelos RDOs pendentes de assinatura (modo fila — ver NavegacaoRdos).
-  const abrirRdo = (r: { id: string; status: string }) =>
-    urlDoRdo(r) + (status === 'PENDENTE_APROVACAO' ? '?fila=pendentes' : '')
+  // pelos RDOs pendentes de assinatura (modo fila — ver NavegacaoRdos), e só pelos que batem
+  // com os filtros ativos (projeto, grupo, busca).
+  const abrirRdo = (r: { id: string; status: string }) => {
+    if (status !== 'PENDENTE_APROVACAO') return urlDoRdo(r)
+    const q = new URLSearchParams({ fila: 'pendentes' })
+    if (projetoId) q.set('projetoId', projetoId)
+    if (grupo) q.set('grupo', grupo)
+    if (buscaAplicada) q.set('busca', buscaAplicada)
+    return `${urlDoRdo(r)}?${q.toString()}`
+  }
 
   async function handleNovoRdo() {
     // Sem projeto selecionado abre página de criação
@@ -111,6 +119,12 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
         <div className="fr-row">
           <AutocompleteSearchInput placeholder="Buscar por projeto, número, data ou gestor..." value={busca} onChange={setBusca}
             opcoes={Array.from(new Map(rdos.map(r => [r.projeto.id, r.projeto.nome])).entries()).map(([id, nome]) => ({ id, label: nome }))} />
+          {!projetoIdFixo && (
+            <select className="fsel" value={projetoId} onChange={e => { setProjetoId(e.target.value); setPagina(1) }}>
+              <option value="">Todos os projetos</option>
+              {[...(projetos ?? [])].sort((a, b) => a.nome.localeCompare(b.nome)).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+          )}
           {!projetoIdFixo && (
             <select className="fsel" value={grupo} onChange={e => { setGrupo(e.target.value); setPagina(1) }}>
               <option value="">Todos os grupos</option>

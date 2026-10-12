@@ -832,9 +832,15 @@ export default function AprovacaoPage() {
       <div className="ab" style={{ gap: 8, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <button className="btn btn-sm" onClick={() => {
-            // veio da fila de aprovação? volta para a lista dos pendentes
-            const emFila = new URLSearchParams(window.location.search).get('fila') === 'pendentes'
-            router.push(emFila ? '/rdos?status=PENDENTE_APROVACAO' : '/rdos')
+            // veio da fila de aprovação? volta para a lista dos pendentes, com os mesmos filtros
+            const q = new URLSearchParams(window.location.search)
+            if (q.get('fila') === 'pendentes') {
+              q.delete('fila')
+              q.set('status', 'PENDENTE_APROVACAO')
+              router.push(`/rdos?${q.toString()}`)
+            } else {
+              router.push('/rdos')
+            }
           }}>
             <i className="ti ti-arrow-left" /> Voltar à lista
           </button>
