@@ -469,7 +469,7 @@ export const SECOES: Secao[] = [
           ['Gerenciar equipe', 'Convidar, remover e editar usuários.'],
         ],
       },
-      { t: 'aviso', x: '**Perfil visualizador**: quem não tem as permissões **Emitir RDOs** nem **Aprovar RDOs** só consulta. Essa pessoa vê apenas os RDOs que já foram **enviados para aprovação** ou estão **aprovados** (rascunhos e RDOs a revisar não aparecem para ela, nem nos números e relatórios) e não edita nada. Quem emite ou aprova vê todos.' },
+      { t: 'aviso', x: '**Perfil visualizador**: quem não tem as permissões **Emitir RDOs** nem **Aprovar RDOs** só consulta. Essa pessoa vê apenas os RDOs que já foram **enviados para aprovação** ou estão **aprovados** (rascunhos e RDOs a revisar não aparecem para ela, nem nos números e relatórios) e não edita nada, **nem comenta** (a caixa de comentário não aparece para ela). Quem emite ou aprova vê todos.' },
       { t: 'h', x: 'Adicionar um usuário' },
       {
         t: 'passos',

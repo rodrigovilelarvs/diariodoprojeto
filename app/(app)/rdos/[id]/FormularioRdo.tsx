@@ -905,6 +905,8 @@ export function FormularioRdo({ rdoId }: Props) {
   // Só o rascunho é editável: depois de enviado para aprovação (pendente, a revisar ou
   // aprovado) o RDO fica travado, e a saída é voltar para rascunho.
   const somenteLeitura = rdo.status !== 'RASCUNHO'
+  // Visualizador (nem emite nem aprova) só consulta: não comenta
+  const podeComentar = pode('emitir_rdo') || pode('aprovar_rdo')
   const podeVoltarRascunho = somenteLeitura && (
     pode('aprovar_rdo') ||
     (pode('emitir_rdo') && rdo.emissor?.id === session?.usuario.id && rdo.status !== 'APROVADO')
@@ -1631,7 +1633,7 @@ export function FormularioRdo({ rdoId }: Props) {
                     <span style={{ fontSize:10, color:'var(--tm)' }}>
                       {new Date(c.criadoEm).toLocaleDateString('pt-BR')}
                     </span>
-                    {session?.usuario.perfil === 'ADMIN' && (
+                    {podeComentar && session?.usuario.perfil === 'ADMIN' && (
                       <button title="Excluir comentário" onClick={() => handleExcluirComentario(c.id)}
                         style={{ marginLeft:'auto', background:'rgba(224,92,92,.1)', border:'1px solid rgba(224,92,92,.5)', borderRadius:'50%', width:18, height:18, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'var(--td)', fontSize:11, fontWeight:700, lineHeight:1, flexShrink:0 }}>
                         ✕
@@ -1639,16 +1641,16 @@ export function FormularioRdo({ rdoId }: Props) {
                     )}
                   </div>
                   <div style={{ fontSize:12, lineHeight:1.5 }}>{c.texto}</div>
-                  <div style={{ marginTop:5 }}>
+                  {podeComentar && <div style={{ marginTop:5 }}>
                     <button style={{ background:'none', border:'none', cursor:'pointer', fontSize:10, color:'var(--tm)', fontFamily:'inherit', display:'inline-flex', alignItems:'center', gap:3 }}
                       onClick={() => { if (cmtRef.current) { cmtRef.current.value = `@${c.autor.nome} `; cmtRef.current.focus() } }}>
                       <i className="ti ti-corner-down-right" /> Responder
                     </button>
-                  </div>
+                  </div>}
                 </div>
               </div>
             ))}
-            <div style={{ display:'flex', gap:8, alignItems:'flex-start', marginTop:4 }}>
+            {podeComentar && <div style={{ display:'flex', gap:8, alignItems:'flex-start', marginTop:4 }}>
               <div className="av" style={{ width:28, height:28, fontSize:10, background:'var(--bga)', color:'var(--ta)', marginTop:2 }}>
                 {rdo.emissor.nome.split(' ').slice(0,2).map((n: string) => n[0]).join('')}
               </div>
@@ -1662,7 +1664,7 @@ export function FormularioRdo({ rdoId }: Props) {
                   </button>
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
         </div>
 

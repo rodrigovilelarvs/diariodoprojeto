@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, resolverAcessoProjeto, podeVerProjeto, rdoOcultoParaVisualizador } from '@/lib/auth'
+import { requireAuth, resolverAcessoProjeto, podeVerProjeto, rdoOcultoParaVisualizador, soVeRdosEnviados } from '@/lib/auth'
 import { LogCategoria } from '@/lib/prisma-enums'
 import { enviarEmailSeguro, enviarComentarioRdo } from '@/lib/email'
 import { filtrarEEnfileirar } from '@/lib/notificacoes'
@@ -28,6 +28,11 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { tenantId, usuarioId } = auth.ctx
   const { ipAddress, userAgent } = getRequestMeta(req)
   const rdoId = (await params).id
+
+  // Visualizador (nem emite nem aprova) só consulta: não comenta
+  if (soVeRdosEnviados(auth.ctx)) {
+    return NextResponse.json({ erro: 'Seu perfil é somente de visualização: você não pode comentar nem alterar comentários.' }, { status: 403 })
+  }
 
   const rdo: RdoParaComentario | null = await prisma.rdo.findFirst({
     where:  { id: rdoId, projeto: { tenantId } },

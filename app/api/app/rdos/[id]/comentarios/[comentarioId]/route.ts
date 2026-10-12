@@ -5,7 +5,7 @@
 import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth } from '@/lib/auth'
+import { requireAuth, soVeRdosEnviados } from '@/lib/auth'
 import { LogCategoria, UsuarioPerfil } from '@/lib/prisma-enums'
 
 type Params = { params: Promise<{ id: string; comentarioId: string }> }
@@ -13,6 +13,11 @@ type Params = { params: Promise<{ id: string; comentarioId: string }> }
 export async function PATCH(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
+
+  // Visualizador (nem emite nem aprova) só consulta: não edita nem apaga comentário
+  if (soVeRdosEnviados(auth.ctx)) {
+    return NextResponse.json({ erro: 'Seu perfil é somente de visualização: você não pode comentar nem alterar comentários.' }, { status: 403 })
+  }
 
   const { tenantId, usuarioId, perfil } = auth.ctx
   const { ipAddress, userAgent } = getRequestMeta(req)
@@ -62,6 +67,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 export async function DELETE(req: NextRequest, { params }: Params) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
+
+  // Visualizador (nem emite nem aprova) só consulta: não edita nem apaga comentário
+  if (soVeRdosEnviados(auth.ctx)) {
+    return NextResponse.json({ erro: 'Seu perfil é somente de visualização: você não pode comentar nem alterar comentários.' }, { status: 403 })
+  }
 
   const { tenantId, usuarioId, perfil } = auth.ctx
   const { ipAddress, userAgent } = getRequestMeta(req)

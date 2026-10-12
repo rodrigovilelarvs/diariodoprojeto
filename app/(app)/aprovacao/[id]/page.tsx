@@ -49,6 +49,8 @@ export default function AprovacaoPage() {
   const { id }    = useParams<{ id: string }>()
   const router    = useRouter()
   const { session, pode } = useAppAuth()
+  // Visualizador (nem emite nem aprova) só consulta: não comenta
+  const podeComentar = pode('emitir_rdo') || pode('aprovar_rdo')
   const { data: rdo, isLoading, isError } = useRdo(id)
   const enviarCmt  = useEnviarComentario()
   const editarComentario = useEditarComentario()
@@ -620,7 +622,7 @@ export default function AprovacaoPage() {
                   (rdo.comentarios ?? []).map((c) => {
                     const estilo = COR_PERFIL[c.autor.perfil] ?? COR_PERFIL.PERSONALIZADO
                     const meu    = c.autor.id === session?.usuario.id
-                    const podeEditar = meu || session?.usuario.perfil === 'ADMIN'
+                    const podeEditar = podeComentar && (meu || session?.usuario.perfil === 'ADMIN')
                     const editando = editandoId === c.id
                     return (
                       <div key={c.id} className="cmt-item">
@@ -667,7 +669,7 @@ export default function AprovacaoPage() {
                             <>
                               <div style={{ fontSize: 12, lineHeight: 1.5 }}>{c.texto}</div>
                               <div style={{ marginTop: 5, display: 'flex', gap: 10 }}>
-                                <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, color: 'var(--tm)', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                                {podeComentar && <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, color: 'var(--tm)', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 3 }}
                                   onClick={() => {
                                     if (cmtRef.current) {
                                       cmtRef.current.value = `@${c.autor.nome} `
@@ -675,7 +677,7 @@ export default function AprovacaoPage() {
                                     }
                                   }}>
                                   <i className="ti ti-corner-down-right" /> Responder
-                                </button>
+                                </button>}
                               </div>
                             </>
                           )}
@@ -685,8 +687,8 @@ export default function AprovacaoPage() {
                   })
                 )}
 
-                {/* Input novo comentário */}
-                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 }}>
+                {/* Input novo comentário (não aparece para o visualizador) */}
+                {podeComentar && <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 }}>
                   <div className="av" style={{ width: 28, height: 28, fontSize: 10, background: 'var(--bga)', color: 'var(--ta)', marginTop: 2, flexShrink: 0 }}>
                     {session ? iniciais(session.usuario.nome) : 'U'}
                   </div>
@@ -700,7 +702,7 @@ export default function AprovacaoPage() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </div>}
               </div>
             </div>
 
