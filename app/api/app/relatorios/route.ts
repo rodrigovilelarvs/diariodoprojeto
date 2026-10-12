@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, podeVerRelatorios } from '@/lib/auth'
+import { requireAuth, podeVerRelatorios, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
@@ -47,8 +47,14 @@ export async function GET(req: NextRequest) {
     ? new Date(`${dataFimParam}T23:59:59`)
     : new Date()
 
+  // Visualizador: os relatórios só consideram RDOs enviados para aprovação ou aprovados
+  const filtroStatusRdo = soVeRdosEnviados(auth.ctx)
+    ? { status: { in: STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } }
+    : {}
+
   // Filtro base — sempre scoped ao tenant
   const whereRdo = {
+    ...filtroStatusRdo,
     projeto: {
       tenantId,
       ...(projetoId ? { id: projetoId } : {}),
@@ -63,7 +69,7 @@ export async function GET(req: NextRequest) {
   }
   // Fotos/vídeos/anexos/armazenamento são acumulados — ignoram o período,
   // só respeitam o filtro de grupo/projeto (ver whereProjeto)
-  const whereRdoSemPeriodo = { projeto: whereProjeto }
+  const whereRdoSemPeriodo = { projeto: whereProjeto, ...filtroStatusRdo }
 
   const [
     totalRdos,
@@ -144,7 +150,7 @@ export async function GET(req: NextRequest) {
             },
           },
         },
-        _count: { select: { rdos: true } },
+        _count: { select: { rdos: { where: filtroStatusRdo } } },
       },
     }),
 

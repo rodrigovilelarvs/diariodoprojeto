@@ -8,7 +8,7 @@ import { AtividadeStatus, LogCategoria, LogNivel, MaoDeObraCategoria, RdoStatus 
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeEmitirRdo, podeGerenciarProjetos, resolverAcessoProjeto, podeEditarProjetoConteudo } from '@/lib/auth'
+import { requireAuth, podeEmitirRdo, podeGerenciarProjetos, resolverAcessoProjeto, podeEditarProjetoConteudo, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
 // lib/prisma.ts) — anotado aqui localmente com a forma do `include` usado
@@ -75,10 +75,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ rdos: [], total: 0, pagina, por })
   }
 
+  // Visualizador: só os já enviados para aprovação ou aprovados
+  const soEnviados = soVeRdosEnviados(auth.ctx)
+  if (soEnviados && status && !STATUS_RDO_VISIVEIS_AO_VISUALIZADOR.includes(status)) {
+    return NextResponse.json({ rdos: [], total: 0, pagina, por })
+  }
+
   const whereBase = {
     projeto: { tenantId, ...(grupo ? { grupo } : {}) },
     ...(projetoId ? { projetoId } : projetosExcluidos.length > 0 ? { projetoId: { notIn: projetosExcluidos } } : {}),
-    ...(status    ? { status }    : {}),
+    ...(status    ? { status }    : soEnviados ? { status: { in: STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } } : {}),
     ...(dataParam ? { data: new Date(dataParam) } : {}),
     ...(busca     ? { OR: busca } : {}),
   }

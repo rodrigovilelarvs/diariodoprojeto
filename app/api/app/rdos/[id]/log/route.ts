@@ -6,7 +6,7 @@ import { LogCategoria } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, resolverAcessoProjeto, podeVerProjeto } from '@/lib/auth'
+import { requireAuth, resolverAcessoProjeto, podeVerProjeto, rdoOcultoParaVisualizador } from '@/lib/auth'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -19,9 +19,9 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const rdo = await prisma.rdo.findFirst({
     where:  { id: rdoId, projeto: { tenantId } },
-    select: { id: true, projetoId: true },
+    select: { id: true, projetoId: true, status: true },
   })
-  if (!rdo) {
+  if (!rdo || rdoOcultoParaVisualizador(auth.ctx, rdo.status)) {
     return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
   }
 

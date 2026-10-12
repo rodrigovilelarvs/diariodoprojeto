@@ -197,6 +197,19 @@ export function podeAprovarRdo(ctx: CtxPerm): boolean {
   return ctx.perfil === UsuarioPerfil.ADMIN || ctx.permissoes.aprovarRdo
 }
 
+// Perfil "visualizador" (nem emite nem aprova RDOs): só enxerga os RDOs já enviados para
+// aprovação ou aprovados. Rascunhos e RDOs a revisar são trabalho em andamento de quem emite.
+export const STATUS_RDO_VISIVEIS_AO_VISUALIZADOR: string[] = ['PENDENTE_APROVACAO', 'APROVADO']
+
+export function soVeRdosEnviados(ctx: CtxPerm): boolean {
+  return !podeEmitirRdo(ctx) && !podeAprovarRdo(ctx)
+}
+
+// Esse RDO (pelo status) está escondido para este usuário?
+export function rdoOcultoParaVisualizador(ctx: CtxPerm, status: string): boolean {
+  return soVeRdosEnviados(ctx) && !STATUS_RDO_VISIVEIS_AO_VISUALIZADOR.includes(status)
+}
+
 export function podeGerenciarProjetos(ctx: CtxPerm): boolean {
   return ctx.perfil === UsuarioPerfil.ADMIN || ctx.permissoes.gerenciarProjetos
 }

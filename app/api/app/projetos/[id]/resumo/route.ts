@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, resolverAcessoProjeto, podeVerProjeto, podeGerenciarProjeto } from '@/lib/auth'
+import { requireAuth, resolverAcessoProjeto, podeVerProjeto, podeGerenciarProjeto, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 type Params = { params: Promise<{ id: string }> }
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const pctPlanejado = calcPctPlanejado(atividades)
 
   const rdos: RdoResumo[] = await prisma.rdo.findMany({
-    where: { projetoId },
+    where: { projetoId, ...(soVeRdosEnviados(auth.ctx) ? { status: { in: STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } } : {}) },
     select: {
       id: true, numero: true, data: true, status: true,
       climaManha: true, climaTarde: true, climaNoite: true, precipitacaoMm: true, climaImpacto: true,

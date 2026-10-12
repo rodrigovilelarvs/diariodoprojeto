@@ -6,7 +6,7 @@ import { LogCategoria } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeGerenciarProjetos } from '@/lib/auth'
+import { requireAuth, podeGerenciarProjetos, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 import type { Projeto } from '@/lib/types'
 
@@ -21,12 +21,17 @@ export async function GET(req: NextRequest) {
 
   const { tenantId, usuarioId } = auth.ctx
 
+  // Visualizador: as contagens consideram só os RDOs enviados para aprovação ou aprovados
+  const filtroStatusRdo = soVeRdosEnviados(auth.ctx)
+    ? { status: { in: STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } }
+    : {}
+
   let projetos: ProjetoSemProgresso[] = await prisma.projeto.findMany({
     where: { tenantId },
     include: {
       gestor: { select: { id: true, nome: true } },
       _count: {
-        select: { rdos: true, etapas: true },
+        select: { rdos: { where: filtroStatusRdo }, etapas: true },
       },
     },
     orderBy: { criadoEm: 'desc' },
@@ -58,11 +63,11 @@ export async function GET(req: NextRequest) {
       const pctPlanejado = calcPctPlanejado(atividades)
 
       const [ocorrenciasAbertas, totalOcorrencias, totalComentarios, totalFotos, totalVideos] = await Promise.all([
-        prisma.ocorrencia.count({ where: { resolvida: false, rdo: { projetoId: p.id } } }),
-        prisma.ocorrencia.count({ where: { rdo: { projetoId: p.id } } }),
-        prisma.comentario.count({ where: { rdo: { projetoId: p.id } } }),
-        prisma.midia.count({ where: { rdo: { projetoId: p.id }, tipo: 'FOTO' } }),
-        prisma.midia.count({ where: { rdo: { projetoId: p.id }, tipo: 'VIDEO' } }),
+        prisma.ocorrencia.count({ where: { resolvida: false, rdo: { projetoId: p.id, ...filtroStatusRdo } } }),
+        prisma.ocorrencia.count({ where: { rdo: { projetoId: p.id, ...filtroStatusRdo } } }),
+        prisma.comentario.count({ where: { rdo: { projetoId: p.id, ...filtroStatusRdo } } }),
+        prisma.midia.count({ where: { rdo: { projetoId: p.id, ...filtroStatusRdo }, tipo: 'FOTO' } }),
+        prisma.midia.count({ where: { rdo: { projetoId: p.id, ...filtroStatusRdo }, tipo: 'VIDEO' } }),
       ])
 
       return {

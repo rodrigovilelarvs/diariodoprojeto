@@ -8,7 +8,7 @@ import { LogCategoria, LogNivel, RdoStatus } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeEmitirRdo, podeAprovarRdo, resolverAcessoProjeto, podeVerProjeto, podeEditarProjetoConteudo } from '@/lib/auth'
+import { requireAuth, podeEmitirRdo, podeAprovarRdo, resolverAcessoProjeto, podeVerProjeto, podeEditarProjetoConteudo, rdoOcultoParaVisualizador } from '@/lib/auth'
 type Params = { params: Promise<{ id: string }> }
 
 // ── GET ─────────────────────────────────────────────────────
@@ -84,6 +84,11 @@ export async function GET(req: NextRequest, { params }: Params) {
 
   const acessoProjeto = await resolverAcessoProjeto(rdo.projeto.id, auth.ctx)
   if (!podeVerProjeto(acessoProjeto)) {
+    return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
+  }
+
+  // Visualizador não enxerga rascunho nem RDO a revisar: para ele, é como se não existisse
+  if (rdoOcultoParaVisualizador(auth.ctx, rdo.status)) {
     return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
   }
 
