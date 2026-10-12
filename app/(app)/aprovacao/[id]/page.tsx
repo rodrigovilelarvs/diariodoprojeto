@@ -156,14 +156,14 @@ export default function AprovacaoPage() {
   async function handleReabrir() {
     if (!rdo) return
     if (!window.confirm(
-      `Reabrir o RDO #${numeroRdo(rdo.numero)} para rascunho? As assinaturas já registradas serão resetadas e ele precisará ser reaprovado.`,
+      `Voltar o RDO #${numeroRdo(rdo.numero)} para rascunho? As assinaturas já registradas serão descartadas e ele precisará ser enviado para aprovação de novo.`,
     )) return
     try {
       await reabrirRdo.mutateAsync(id)
-      toast.success('RDO reaberto para rascunho.')
+      toast.success('RDO voltou para rascunho. Agora você pode editar.')
       router.push(`/rdos/${id}`)
     } catch (err) {
-      toast.error(mensagemErro(err, 'Erro ao reabrir RDO.'))
+      toast.error(mensagemErro(err, 'Erro ao voltar o RDO para rascunho.'))
     }
   }
 
@@ -825,12 +825,15 @@ export default function AprovacaoPage() {
             <button className="btn btn-sm" onClick={() => router.push('/rdos')}>
               <i className="ti ti-arrow-left" /> Voltar à lista
             </button>
-            {pode('aprovar_rdo') && rdo.status !== 'RASCUNHO' && (
+            {rdo.status !== 'RASCUNHO' && (
+              pode('aprovar_rdo') ||
+              (pode('emitir_rdo') && rdo.emissor.id === session?.usuario.id && rdo.status !== 'APROVADO')
+            ) && (
               <button className="btn btn-sm"
                 disabled={reabrirRdo.isPending} onClick={handleReabrir}>
                 <i className={`ti ${reabrirRdo.isPending ? 'ti-loader' : 'ti-lock-open'}`}
                   style={reabrirRdo.isPending ? {animation:'spin 1s linear infinite'} : {}} />
-                {reabrirRdo.isPending ? 'Reabrindo...' : 'Reabrir para rascunho'}
+                {reabrirRdo.isPending ? 'Voltando...' : 'Voltar para rascunho'}
               </button>
             )}
             {pode('aprovar_rdo') && (

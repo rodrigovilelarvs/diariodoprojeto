@@ -484,6 +484,13 @@ const fakeDbBase = {
       }
       return null
     },
+    // aplica a edição no RDO em memória (status, observações...) pra os testes verem o efeito
+    update: async ({ where, data }: any) => {
+      const rdo = rdosCriados.get(where?.id) ?? rdosConcluido.get(where?.id)
+      if (!rdo) return null
+      for (const [k, v] of Object.entries(data ?? {})) if (!(v && typeof v === 'object' && !(v instanceof Date))) rdo[k] = v
+      return rdo
+    },
     findMany: async ({ where, take }: any) => {
       const projetoId = where?.projetoId ?? where?.projeto?.id
       if (projetoId in PROJETOS_CONCLUIDOS) return [...rdosConcluido.values()].filter(r => r.projetoId === projetoId)
@@ -535,6 +542,9 @@ const rdoCreate = async ({ data }: any) => {
     horaInicio: data.horaInicio ?? null, horaTermino: data.horaTermino ?? null,
     intervaloHoras: data.intervaloHoras ?? null, totalHoras: data.totalHoras ?? null,
   }
+  // quem criou é o emissor (antes ficava sempre o admin)
+  const emissor = USUARIOS.find(u => u.id === data.emissorId)
+  if (emissor) { criado.emissorId = emissor.id; criado.emissor = { id: emissor.id, nome: emissor.nome } }
   rdosCriados.set(id, criado)
   return { id, numero }
 }

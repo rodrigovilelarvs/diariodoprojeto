@@ -1,12 +1,13 @@
 // app/api/app/rdos/[id]/reabrir/route.ts
-// POST /api/app/rdos/:id/reabrir — reabre um RDO enviado/aprovado/rejeitado de volta para rascunho,
-// para permitir correções (ex: legenda de foto esquecida). Reseta as assinaturas — precisa ser
+// POST /api/app/rdos/:id/reabrir — volta um RDO enviado/aprovado/a revisar para rascunho, para
+// permitir correções (ex: legenda de foto esquecida). Reseta as assinaturas — precisa ser
 // reaprovado do zero após as correções.
+// Quem pode: quem aprova RDOs (qualquer status) ou quem emitiu o RDO (enquanto não aprovado).
 
 import type { Prisma } from '@prisma/client'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeAprovarRdo } from '@/lib/auth'
+import { requireAuth, podeAprovarRdo, podeEmitirRdo } from '@/lib/auth'
 import { RdoStatus, AssinaturaStatus, LogCategoria, LogNivel } from '@/lib/prisma-enums'
 
 type Params = { params: Promise<{ id: string }> }
@@ -19,16 +20,25 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { ipAddress, userAgent } = getRequestMeta(req)
   const rdoId = (await params).id
 
-  if (!podeAprovarRdo(auth.ctx)) {
-    return NextResponse.json({ erro: 'Sem permissão para reabrir RDOs.' }, { status: 403 })
-  }
-
   const rdo = await prisma.rdo.findFirst({
     where: { id: rdoId, projeto: { tenantId } },
   })
 
   if (!rdo) {
     return NextResponse.json({ erro: 'RDO não encontrado.' }, { status: 404 })
+  }
+
+  const ehEmissor = podeEmitirRdo(auth.ctx) && rdo.emissorId === usuarioId
+  const podeVoltar = podeAprovarRdo(auth.ctx) || (ehEmissor && rdo.status !== RdoStatus.APROVADO)
+  if (!podeVoltar) {
+    return NextResponse.json(
+      {
+        erro: ehEmissor
+          ? 'Um RDO aprovado só pode ser voltado para rascunho por quem aprova RDOs.'
+          : 'Sem permissão para voltar este RDO para rascunho.',
+      },
+      { status: 403 },
+    )
   }
 
   if (rdo.status === RdoStatus.RASCUNHO) {
@@ -65,7 +75,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     usuarioId,
     nivel:     LogNivel.ERRO,
     categoria: LogCategoria.RDO,
-    mensagem:  `RDO #${rdo.numero} reaberto para rascunho (estava ${statusAnterior}) — assinaturas resetadas`,
+    mensagem:  `RDO #${rdo.numero} voltou para rascunho (estava ${statusAnterior}) — assinaturas resetadas`,
     detalhe:   { rdoId, statusAnterior },
     ipAddress,
     userAgent,

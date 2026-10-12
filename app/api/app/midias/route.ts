@@ -21,8 +21,17 @@ async function bloquearEdicaoDeMidia(
   if (!podeEditarProjetoConteudo(acesso)) {
     return NextResponse.json({ erro: 'Você não tem permissão de edição neste projeto.' }, { status: 403 })
   }
-  if (rdo.status === RdoStatus.APROVADO) {
-    return NextResponse.json({ erro: 'RDO aprovado não pode ser editado.' }, { status: 400 })
+  // Só rascunho aceita mudança de mídia; depois do envio é preciso voltar para rascunho
+  if (rdo.status !== RdoStatus.RASCUNHO) {
+    return NextResponse.json(
+      {
+        erro: rdo.status === RdoStatus.APROVADO
+          ? 'RDO aprovado não pode ser editado. Volte-o para rascunho para fazer alterações.'
+          : 'Este RDO já foi enviado para aprovação e não pode ser editado. Volte-o para rascunho para fazer alterações.',
+        codigo: 'RDO_TRAVADO',
+      },
+      { status: 400 },
+    )
   }
   return null
 }

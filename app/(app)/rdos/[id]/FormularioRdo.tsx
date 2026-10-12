@@ -7,7 +7,7 @@ import {
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { useRdo, useRdos, useSalvarRdo, useEnviarRdo, useMinhaAssinatura, useEnviarComentario, useExcluirComentario, useEap, useFuncoes, useCriarFuncao, useEditarFuncao, useExcluirFuncao, useEquipamentosCadastro, useCriarEquipamentoCadastro, useEditarEquipamentoCadastro, useExcluirEquipamentoCadastro, useOcorrenciaTipos, useCriarOcorrenciaTipo, useExcluirRdo } from '@/hooks/useEmpresa'
+import { useRdo, useRdos, useSalvarRdo, useEnviarRdo, useMinhaAssinatura, useEnviarComentario, useExcluirComentario, useEap, useFuncoes, useCriarFuncao, useEditarFuncao, useExcluirFuncao, useEquipamentosCadastro, useCriarEquipamentoCadastro, useEditarEquipamentoCadastro, useExcluirEquipamentoCadastro, useOcorrenciaTipos, useCriarOcorrenciaTipo, useExcluirRdo, useReabrirRdo } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { api, LimitePlanoError, mensagemErro } from '@/lib/api'
 import { gerarPdfRdo }   from '@/lib/pdf'
@@ -441,6 +441,7 @@ export function FormularioRdo({ rdoId }: Props) {
   const proximoRdo  = indiceAtual >= 0 && indiceAtual < listaRdosProjeto.length - 1 ? listaRdosProjeto[indiceAtual + 1] : null
   const salvar     = useSalvarRdo()
   const enviar     = useEnviarRdo()
+  const reabrirRdo = useReabrirRdo()
   const excluirRdo = useExcluirRdo()
   const { data: minhaAssinaturaData } = useMinhaAssinatura()
   const enviarComentario = useEnviarComentario()
@@ -656,6 +657,19 @@ export function FormularioRdo({ rdoId }: Props) {
     } catch (err) {
       if (err instanceof LimitePlanoError) toast.error(err.message)
       else toast.error('Erro ao enviar RDO.')
+    }
+  }
+
+  async function handleVoltarRascunho() {
+    if (!rdo) return
+    if (!window.confirm(
+      `Voltar o RDO #${numeroRdo(rdo.numero)} para rascunho? As assinaturas já registradas serão descartadas e ele precisará ser enviado para aprovação de novo.`,
+    )) return
+    try {
+      await reabrirRdo.mutateAsync(rdoId)
+      toast.success('RDO voltou para rascunho. Agora você pode editar.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao voltar o RDO para rascunho.'))
     }
   }
 
@@ -892,7 +906,13 @@ export function FormularioRdo({ rdoId }: Props) {
   if (isError || !rdo) return <div className="content" style={{color:'var(--td)'}}>RDO não encontrado.</div>
   if (!form) return null
 
-  const somenteLeitura = rdo.status === 'APROVADO'
+  // Só o rascunho é editável: depois de enviado para aprovação (pendente, a revisar ou
+  // aprovado) o RDO fica travado, e a saída é voltar para rascunho.
+  const somenteLeitura = rdo.status !== 'RASCUNHO'
+  const podeVoltarRascunho = somenteLeitura && (
+    pode('aprovar_rdo') ||
+    (pode('emitir_rdo') && rdo.emissor?.id === session?.usuario.id && rdo.status !== 'APROVADO')
+  )
   const midiasIniciais: MidiaItem[] = rdo.midias ?? []
   const podeSalvar     = pode('emitir_rdo') && !somenteLeitura
   const podeEnviar     = pode('emitir_rdo') && rdo.status === 'RASCUNHO'
@@ -950,7 +970,20 @@ export function FormularioRdo({ rdoId }: Props) {
       </div>
 
       {/* ── Banner aprovado ── */}
-      {somenteLeitura && (
+      {somenteLeitura && rdo.status !== 'APROVADO' && (
+        <div style={{ background:'rgba(230,168,23,.1)', border:'.5px solid rgba(230,168,23,.35)', padding:'8px 16px', fontSize:11, color:'var(--tw)', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+          <i className="ti ti-lock" />
+          <span style={{ flex:1, minWidth:200 }}>
+            Este RDO já foi enviado para aprovação e está bloqueado para edição. Para alterar, volte-o para rascunho — as assinaturas já registradas são descartadas e ele precisa ser reenviado.
+          </span>
+          {podeVoltarRascunho && (
+            <button type="button" className="btn btn-sm" disabled={reabrirRdo.isPending} onClick={handleVoltarRascunho}>
+              <i className="ti ti-arrow-back-up" /> {reabrirRdo.isPending ? 'Voltando...' : 'Voltar para rascunho'}
+            </button>
+          )}
+        </div>
+      )}
+      {somenteLeitura && rdo.status === 'APROVADO' && (
         <div style={{ background:'rgba(76,175,125,.1)', border:'.5px solid rgba(76,175,125,.3)', padding:'8px 16px', fontSize:11, color:'var(--tsu)', display:'flex', alignItems:'center', gap:7, flexShrink:0 }}>
           <i className="ti ti-circle-check" /> RDO aprovado — somente leitura
         </div>

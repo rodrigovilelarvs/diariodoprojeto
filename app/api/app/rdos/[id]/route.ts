@@ -141,9 +141,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Você não tem permissão de edição neste projeto.' }, { status: 403 })
   }
 
-  if (rdo.status === RdoStatus.APROVADO) {
+  // Só rascunho é editável. Depois de enviado para aprovação (pendente, a revisar ou aprovado)
+  // o RDO fica travado: para alterar, é preciso voltá-lo para rascunho (POST .../reabrir),
+  // o que reseta as assinaturas e fica registrado no log.
+  if (rdo.status !== RdoStatus.RASCUNHO) {
     return NextResponse.json(
-      { erro: 'RDO aprovado não pode ser editado.' },
+      {
+        erro: rdo.status === RdoStatus.APROVADO
+          ? 'RDO aprovado não pode ser editado. Volte-o para rascunho para fazer alterações.'
+          : 'Este RDO já foi enviado para aprovação e não pode ser editado. Volte-o para rascunho para fazer alterações.',
+        codigo: 'RDO_TRAVADO',
+      },
       { status: 400 },
     )
   }
