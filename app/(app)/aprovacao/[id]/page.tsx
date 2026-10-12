@@ -231,7 +231,6 @@ export default function AprovacaoPage() {
         subtitulo={`${rdo.projeto.nome} · ${fmtData(rdo.data)}`}
         acoes={
           <>
-            <NavegacaoRdos rdoId={id} projetoId={rdo.projeto.id} numero={rdo.numero} />
             <button className="btn btn-sm" onClick={() => router.push(`/projetos/${rdo.projeto.id}`)}>
               <i className="ti ti-folder" /> Voltar à pasta do projeto
             </button>
@@ -822,35 +821,42 @@ export default function AprovacaoPage() {
             </div>
           </div>
 
-          {/* Ações secundárias — a decisão de assinar/revisar já está na seção acima */}
-          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-            <button className="btn btn-sm" onClick={() => router.push('/rdos')}>
-              <i className="ti ti-arrow-left" /> Voltar à lista
-            </button>
-            {pode('emitir_rdo') && (
-              <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${rdo.projeto.id}`)}>
-                <i className="ti ti-plus" /> Novo RDO
-              </button>
-            )}
-            {rdo.status !== 'RASCUNHO' && (
-              pode('aprovar_rdo') ||
-              (pode('emitir_rdo') && rdo.emissor.id === session?.usuario.id && rdo.status !== 'APROVADO')
-            ) && (
-              <button className="btn btn-sm"
-                disabled={reabrirRdo.isPending} onClick={handleReabrir}>
-                <i className={`ti ${reabrirRdo.isPending ? 'ti-loader' : 'ti-lock-open'}`}
-                  style={reabrirRdo.isPending ? {animation:'spin 1s linear infinite'} : {}} />
-                {reabrirRdo.isPending ? 'Voltando...' : 'Voltar para rascunho'}
-              </button>
-            )}
-            {pode('aprovar_rdo') && (
-              <button className="btn btn-sm" style={{ color: 'var(--td)', borderColor: 'rgba(224,92,92,.35)' }}
-                disabled={excluirRdo.isPending} onClick={handleExcluir}>
-                <i className="ti ti-trash" /> Excluir RDO
-              </button>
-            )}
-          </div>
 
+        </div>
+      </div>
+
+      {/* Barra fixa no rodapé: sempre à mostra, sem precisar rolar até o fim da tela.
+          A decisão de assinar/revisar fica na seção Assinaturas. */}
+      <div className="ab" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <button className="btn btn-sm" onClick={() => router.push('/rdos')}>
+            <i className="ti ti-arrow-left" /> Voltar à lista
+          </button>
+          {pode('emitir_rdo') && (
+            <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${rdo.projeto.id}`)}>
+              <i className="ti ti-plus" /> Novo RDO
+            </button>
+          )}
+        </div>
+        <NavegacaoRdos rdoId={id} projetoId={rdo.projeto.id} numero={rdo.numero} />
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {rdo.status !== 'RASCUNHO' && (
+            pode('aprovar_rdo') ||
+            (pode('emitir_rdo') && rdo.emissor.id === session?.usuario.id && rdo.status !== 'APROVADO')
+          ) && (
+            <button className="btn btn-sm"
+              disabled={reabrirRdo.isPending} onClick={handleReabrir}>
+              <i className={`ti ${reabrirRdo.isPending ? 'ti-loader' : 'ti-lock-open'}`}
+                style={reabrirRdo.isPending ? {animation:'spin 1s linear infinite'} : {}} />
+              {reabrirRdo.isPending ? 'Voltando...' : 'Voltar para rascunho'}
+            </button>
+          )}
+          {pode('aprovar_rdo') && (
+            <button className="btn btn-sm" style={{ color: 'var(--td)', borderColor: 'rgba(224,92,92,.35)' }}
+              disabled={excluirRdo.isPending} onClick={handleExcluir}>
+              <i className="ti ti-trash" /> Excluir RDO
+            </button>
+          )}
         </div>
       </div>
 

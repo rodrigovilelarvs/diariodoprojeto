@@ -380,7 +380,7 @@ export const SECOES: Secao[] = [
       { t: 'aviso', x: 'Para assinar, você precisa ter **cadastrado a sua assinatura digital** em **Meu perfil**. Se ainda não cadastrou, o botão vira **Cadastrar assinatura pra assinar** e leva você até lá.' },
       { t: 'h', x: 'Voltar para rascunho e excluir' },
       { t: 'lista', x: [
-        '**Voltar para rascunho**: depois do envio o RDO não pode ser editado; este botão o devolve ao estado de rascunho para você corrigir. Quem **emitiu** o RDO pode usá-lo enquanto ele não estiver aprovado; quem tem permissão de **aprovar RDOs** pode usá-lo em qualquer estado. O botão aparece na tela de aprovação e no próprio RDO. As assinaturas já feitas são descartadas, o RDO precisa ser enviado de novo, e a ação fica registrada no log.',
+        '**Voltar para rascunho**: depois do envio o RDO não pode ser editado; este botão o devolve ao estado de rascunho para você corrigir. Quem **emitiu** o RDO pode usá-lo enquanto ele não estiver aprovado; quem tem permissão de **aprovar RDOs** pode usá-lo em qualquer estado. O botão fica na **barra fixa do rodapé** da tela de aprovação (junto de **Voltar à lista**, **Novo RDO**, das setas entre RDOs e de **Excluir RDO**, sempre à mostra, sem precisar rolar) e também aparece no próprio RDO. As assinaturas já feitas são descartadas, o RDO precisa ser enviado de novo, e a ação fica registrada no log.',
         '**Excluir RDO**: apaga o relatório.',
         'No rodapé do RDO, **Log de edições** e **Visualizações** mostram quem alterou e quem abriu o relatório, com data e hora.',
       ] },

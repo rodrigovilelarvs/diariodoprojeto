@@ -42,3 +42,22 @@ test('RDO enviado para aprovação continua com as setas e leva ao anterior e de
   await page.goto(`/rdos/${b}`)
   await expect(page.getByRole('button', { name: 'RDO anterior' })).toBeEnabled()
 })
+
+test('na tela de aprovação a barra de ações fica fixa no rodapé (sem rolar até o fim)', async ({ page, playwright }) => {
+  const api = await apiComo(playwright)
+  const r = await api.post('/api/app/rdos', { data: { projetoId: PROJETO_ID, data: '2026-11-13', copiarAnterior: false } })
+  const { id } = await r.json()
+  expect((await api.post(`/api/app/rdos/${id}/enviar`, { data: {} })).status()).toBe(200)
+  await api.dispose()
+
+  await login(page)
+  await page.goto(`/aprovacao/${id}`)
+  for (const nome of ['Voltar à lista', 'Novo RDO', 'Voltar para rascunho', 'Excluir RDO']) {
+    await expect(page.getByRole('button', { name: nome }), nome).toBeInViewport()
+  }
+  // continua visível mesmo com a página rolada
+  await page.locator('.content').evaluate(e => { e.scrollTop = e.scrollHeight })
+  await expect(page.getByRole('button', { name: 'Excluir RDO' })).toBeInViewport()
+  await page.locator('.content').evaluate(e => { e.scrollTop = 0 })
+  await expect(page.getByRole('button', { name: 'Excluir RDO' })).toBeInViewport()
+})
