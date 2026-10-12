@@ -359,6 +359,25 @@ const fakeDbBase = {
     },
   }),
   registroRdoAtividade: modelo({
+    // leitura/remoção/edição dos registros de atividade guardados dentro do RDO em memória
+    findMany: async ({ where }: any) => {
+      const rdo = rdosCriados.get(where?.rdoId) ?? rdosConcluido.get(where?.rdoId)
+      return rdo ? [...rdo.atividadeRegistros] : []
+    },
+    update: async ({ where, data }: any) => {
+      for (const rdo of [...rdosCriados.values(), ...rdosConcluido.values()]) {
+        const item = rdo.atividadeRegistros.find((r: any) => r.id === where.id)
+        if (item) { Object.assign(item, data); return item }
+      }
+      return null
+    },
+    delete: async ({ where }: any) => {
+      for (const rdo of [...rdosCriados.values(), ...rdosConcluido.values()]) {
+        const i = rdo.atividadeRegistros.findIndex((r: any) => r.id === where.id)
+        if (i >= 0) return rdo.atividadeRegistros.splice(i, 1)[0]
+      }
+      return null
+    },
     create: async ({ data }: any) => {
       const rdo = rdosCriados.get(data.rdoId) ?? rdosConcluido.get(data.rdoId)
       const item = { id: `ra-fake-${Math.random().toString(36).slice(2, 8)}`, atividade: null, ...data }

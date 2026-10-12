@@ -202,6 +202,42 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
     // % Acumulado — upsert por atividade (ou create/update por id para avulsas)
     if (Array.isArray(atividadeRegistros)) {
+      // Atividades que a pessoa removeu do RDO: a tela manda a lista completa, então o que
+      // está salvo e não veio mais nela precisa ser apagado (antes só se inseria/atualizava,
+      // e a atividade removida voltava ao recarregar).
+      const enviadas = atividadeRegistros as Array<{ id?: string; atividadeId?: string; avulsa?: boolean }>
+      const manterAtividades = new Set(enviadas.filter(r => r.atividadeId).map(r => r.atividadeId as string))
+      const manterAvulsas    = new Set(enviadas.filter(r => !r.atividadeId && r.avulsa && r.id).map(r => r.id as string))
+      const salvas: Array<{
+        id: string; atividadeId: string | null; pctAnterior: number; pctAtual: number
+      }> = await tx.registroRdoAtividade.findMany({
+        where:  { rdoId: (await params).id },
+        select: { id: true, atividadeId: true, pctAnterior: true, pctAtual: true },
+      })
+      for (const ex of salvas) {
+        const fica = ex.atividadeId ? manterAtividades.has(ex.atividadeId) : manterAvulsas.has(ex.id)
+        if (fica) continue
+        await tx.registroRdoAtividade.delete({ where: { id: ex.id } })
+        if (!ex.atividadeId) continue
+
+        // O % acumulado mestre da atividade foi gravado quando este RDO foi salvo: se ninguém
+        // mexeu nele depois, volta ao que era antes deste RDO (e o status acompanha).
+        const ativ = await tx.atividade.findUnique({
+          where:  { id: ex.atividadeId },
+          select: { pctAcumulado: true },
+        })
+        if (ativ && Number(ativ.pctAcumulado) === Number(ex.pctAtual)) {
+          const volta = Number(ex.pctAnterior)
+          await tx.atividade.update({
+            where: { id: ex.atividadeId },
+            data: {
+              pctAcumulado: volta,
+              status: volta >= 100 ? 'CONCLUIDA' : volta > 0 ? 'EM_ANDAMENTO' : 'NAO_INICIADA',
+            },
+          })
+        }
+      }
+
       for (const reg of atividadeRegistros as Array<{
         id?:          string
         atividadeId?: string
