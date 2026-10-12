@@ -1756,7 +1756,7 @@ export function FormularioRdo({ rdoId }: Props) {
           </div>
           {/* Transitar entre os RDOs do mesmo projeto, em ordem de número —
               some se o RDO for o único do projeto (sem vizinho em nenhum lado). */}
-          <NavegacaoRdos rdoId={rdoId} projetoId={rdo.projeto.id} numero={rdo.numero} />
+          <NavegacaoRdos rdoId={rdoId} projetoId={rdo.projeto.id} numero={rdo.numero} data={rdo.data} />
           <div style={{ display:'flex', gap:6 }}>
             {podeSalvar && (
               <button className="btn btn-sm" disabled={salvar.isPending || !dirty}

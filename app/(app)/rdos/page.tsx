@@ -11,6 +11,7 @@ import { toast }   from 'sonner'
 import { gerarPdfRdo } from '@/lib/pdf'
 import { api } from '@/lib/api'
 import { numeroRdo, fmtData } from '@/lib/format'
+import { urlDoRdo } from '@/lib/rdo-display'
 import type { Rdo } from '@/lib/types'
 
 export default function RdosPage() {
@@ -72,6 +73,11 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   const rascunhos = rdos.filter(r => r.status === 'RASCUNHO').length
 
   const filtrados = rdos
+
+  // Aberto pelo filtro "pendentes" (item Aprovação do menu): as setas do RDO passam a andar só
+  // pelos RDOs pendentes de assinatura (modo fila — ver NavegacaoRdos).
+  const abrirRdo = (r: { id: string; status: string }) =>
+    urlDoRdo(r) + (status === 'PENDENTE_APROVACAO' ? '?fila=pendentes' : '')
 
   async function handleNovoRdo() {
     // Sem projeto selecionado abre página de criação
@@ -145,11 +151,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
               ) : filtrados.length === 0 ? (
                 <tr><td colSpan={projetoIdFixo ? 6 : 7} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>Nenhum RDO encontrado.</td></tr>
               ) : filtrados.map(r => (
-                <tr key={r.id} onClick={() => router.push(
-                  r.status === 'APROVADO' || r.status === 'PENDENTE_APROVACAO'
-                    ? `/aprovacao/${r.id}`
-                    : `/rdos/${r.id}`,
-                )}>
+                <tr key={r.id} onClick={() => router.push(abrirRdo(r))}>
                   <td style={{ fontSize: 11, fontWeight: 600, color: 'var(--ta)' }}>#{numeroRdo(r.numero)}</td>
                   <td style={{ fontSize: 12, fontWeight: 500 }}>{r.projeto.nome}</td>
                   {!projetoIdFixo && <td className="col-sec" style={{ fontSize: 11, color: 'var(--ts)' }}>{r.projeto.grupo ?? '—'}</td>}
@@ -160,7 +162,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
                   <td><RdoStatusBadge status={r.status} assinaturas={r.assinaturas} /></td>
                   <td>
                     <div className="proj-ac" style={{ justifyContent: 'flex-end' }}>
-                      <button className="proj-ab" onClick={e => { e.stopPropagation(); router.push(`/rdos/${r.id}`) }} title="Abrir">
+                      <button className="proj-ab" onClick={e => { e.stopPropagation(); router.push(abrirRdo(r)) }} title="Abrir">
                         <i className="ti ti-eye" /> Abrir
                       </button>
                       <button className="proj-ab" disabled={exportandoId === r.id} onClick={e => { e.stopPropagation(); handleExportarPdf(r.id) }} title="Exportar PDF">

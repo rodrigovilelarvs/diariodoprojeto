@@ -1,9 +1,9 @@
 import { expect, type APIRequestContext, type Page, type PlaywrightWorkerArgs } from '@playwright/test'
 import { ADMIN_EMAIL, ADMIN_SENHA, SUPERADMIN_EMAIL } from '../../lib/fake-db-test'
 
-export async function login(page: Page) {
+export async function login(page: Page, email: string = ADMIN_EMAIL) {
   await page.goto('/login')
-  await page.getByPlaceholder('seu@email.com').fill(ADMIN_EMAIL)
+  await page.getByPlaceholder('seu@email.com').fill(email)
   await page.locator('input[type="password"]').fill(ADMIN_SENHA)
   await page.getByRole('button', { name: 'Entrar' }).click()
   await page.waitForURL('**/painel', { timeout: 15_000 })

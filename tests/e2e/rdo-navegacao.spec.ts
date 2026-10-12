@@ -61,3 +61,51 @@ test('na tela de aprovação a barra de ações fica fixa no rodapé (sem rolar 
   await page.locator('.content').evaluate(e => { e.scrollTop = 0 })
   await expect(page.getByRole('button', { name: 'Excluir RDO' })).toBeInViewport()
 })
+
+test('aberto pela fila de aprovação, as setas andam só pelos RDOs pendentes', async ({ page, playwright }) => {
+  const api = await apiComo(playwright)
+  const criar = async (data: string) => {
+    const r = await api.post('/api/app/rdos', { data: { projetoId: PROJETO_ID, data, copiarAnterior: false } })
+    expect(r.status()).toBe(201)
+    return (await r.json()).id as string
+  }
+  // A pendente (01/01), D rascunho (02/01), B pendente (03/01)
+  const a = await criar('2027-01-01')
+  await criar('2027-01-02')
+  const b = await criar('2027-01-03')
+  expect((await api.post(`/api/app/rdos/${a}/enviar`, { data: {} })).status()).toBe(200)
+  expect((await api.post(`/api/app/rdos/${b}/enviar`, { data: {} })).status()).toBe(200)
+  await api.dispose()
+
+  await login(page)
+  await page.goto(`/aprovacao/${b}?fila=pendentes`)
+  await expect(page.getByText(/pendente \d+ de \d+/)).toBeVisible()
+
+  // ‹ pula o rascunho e vai direto para o A, mantendo a fila na URL
+  await page.getByRole('button', { name: 'RDO anterior' }).click()
+  await page.waitForURL(u => u.pathname.endsWith(`/aprovacao/${a}`) && u.search.includes('fila=pendentes'))
+
+  // › volta para o B
+  await page.getByRole('button', { name: 'Próximo RDO' }).click()
+  await page.waitForURL(u => u.pathname.endsWith(`/aprovacao/${b}`) && u.search.includes('fila=pendentes'))
+})
+
+test('abrir um RDO pela lista filtrada em "pendentes" (item Aprovação do menu) entra no modo fila', async ({ page }) => {
+  await login(page)
+  await page.goto('/rdos?status=PENDENTE_APROVACAO')
+  const linha = page.locator('tbody tr').first()
+  await expect(linha).toBeVisible()
+  await linha.click()
+  await page.waitForURL(u => u.pathname.startsWith('/aprovacao/') && u.search.includes('fila=pendentes'))
+
+  // "Voltar à lista" volta para a lista dos pendentes
+  await page.getByRole('button', { name: 'Voltar à lista' }).click()
+  await page.waitForURL(u => u.pathname === '/rdos' && u.search.includes('status=PENDENTE_APROVACAO'))
+})
+
+test('aberto pela Lista de RDOs normal, as setas continuam andando por todos os RDOs do projeto', async ({ page }) => {
+  await login(page)
+  await page.goto('/rdos')
+  await page.locator('tbody tr').first().click()
+  await page.waitForURL(u => /^\/(rdos|aprovacao)\//.test(u.pathname) && !u.search.includes('fila='))
+})

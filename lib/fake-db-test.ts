@@ -500,6 +500,7 @@ const fakeDbBase = {
       // por outro teste (ex.: em rascunho) vaza pras métricas que exigem
       // status/enviadoEm específicos e quebra a rota com dado inconsistente.
       if (where?.status?.in) lista = lista.filter(r => where.status.in.includes(r.status))
+      if (typeof where?.status === 'string') lista = lista.filter(r => r.status === where.status)
       if (where?.enviadoEm?.not === null) lista = lista.filter(r => r.enviadoEm != null)
       return take ? lista.slice(0, take) : lista
     },

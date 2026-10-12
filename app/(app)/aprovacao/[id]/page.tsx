@@ -829,7 +829,11 @@ export default function AprovacaoPage() {
           A decisão de assinar/revisar fica na seção Assinaturas. */}
       <div className="ab" style={{ gap: 8, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <button className="btn btn-sm" onClick={() => router.push('/rdos')}>
+          <button className="btn btn-sm" onClick={() => {
+            // veio da fila de aprovação? volta para a lista dos pendentes
+            const emFila = new URLSearchParams(window.location.search).get('fila') === 'pendentes'
+            router.push(emFila ? '/rdos?status=PENDENTE_APROVACAO' : '/rdos')
+          }}>
             <i className="ti ti-arrow-left" /> Voltar à lista
           </button>
           {pode('emitir_rdo') && (
@@ -838,7 +842,7 @@ export default function AprovacaoPage() {
             </button>
           )}
         </div>
-        <NavegacaoRdos rdoId={id} projetoId={rdo.projeto.id} numero={rdo.numero} />
+        <NavegacaoRdos rdoId={id} projetoId={rdo.projeto.id} numero={rdo.numero} data={rdo.data} />
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {rdo.status !== 'RASCUNHO' && (
             pode('aprovar_rdo') ||

@@ -375,6 +375,7 @@ export const SECOES: Secao[] = [
           'Para devolver, escreva o **motivo** no campo de texto e clique em **Revisar**. O emissor recebe o aviso para ajustar.',
         ],
       },
+      { t: 'dica', x: 'Aprovando vários RDOs em sequência: quando você abre o RDO pelo item **Aprovação** do menu, as setas **‹ ›** do rodapé passam a andar **somente pelos RDOs pendentes de assinatura**, de todos os projetos, do mais antigo para o mais novo (o rodapé mostra "pendente 2 de 5"). Assine, clique em **›** e siga para o próximo. **Voltar à lista** leva de volta à lista dos pendentes. Abrindo o RDO pela **Lista de RDOs**, as setas andam por todos os RDOs do projeto.' },
       { t: 'img', src: '/ajuda/aprovacao-topo.webp', alt: 'RDO aberto para aprovação' },
       { t: 'img', src: '/ajuda/aprovacao-assinaturas.webp', alt: 'Seção Assinaturas do RDO', legenda: 'Seção Assinaturas: quem já assinou, quem falta, campo de motivo e botões Revisar e Assinar.' },
       { t: 'aviso', x: 'Para assinar, você precisa ter **cadastrado a sua assinatura digital** em **Meu perfil**. Se ainda não cadastrou, o botão vira **Cadastrar assinatura pra assinar** e leva você até lá.' },
