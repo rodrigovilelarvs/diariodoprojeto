@@ -557,6 +557,8 @@ model RegistroRdoAtividade {
   avulsaEtapa String?
   avulsaNome  String?
 
+  // Posição da atividade na lista do RDO (a pessoa reordena na tela); empate cai no criadoEm
+  ordem    Int      @default(0)
   criadoEm DateTime @default(now())
 
   @@unique([rdoId, atividadeId])

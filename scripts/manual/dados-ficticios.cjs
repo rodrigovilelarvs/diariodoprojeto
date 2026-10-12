@@ -24,6 +24,8 @@ function rdoRico(base, o) {
     atividadeRegistros: [
       { id: 'r1', atividadeId: 'a1', pctAnterior: 48, pctAtual: 62, deltaHoje: 14, atividade: { id: 'a1', nome: 'Concretagem da laje', pctAcumulado: 62, status: 'EM_ANDAMENTO', etapa: { numero: '3.0', nome: 'Estrutura' }, numero: '3.1', etapaId: 'e3', registrosRdo: [] } },
       { id: 'r2', atividadeId: 'a2', pctAnterior: 30, pctAtual: 35, deltaHoje: 5, atividade: { id: 'a2', nome: 'Alvenaria de vedação', pctAcumulado: 35, status: 'EM_ANDAMENTO', etapa: { numero: '4.0', nome: 'Vedações' }, numero: '4.1', etapaId: 'e4', registrosRdo: [] } },
+      // atividade avulsa (fora da lista de tarefas), sem etapa: mostra o botão de editar
+      { id: 'r3', atividadeId: null, avulsa: true, avulsaNome: 'Limpeza e organização do canteiro', avulsaEtapa: null, pctAnterior: 0, pctAtual: 100, deltaHoje: 100, atividade: null },
     ],
     maoDeObra: [
       { id: 'mo1', funcaoNome: 'Mestre de obras', categoria: 'INDIRETA', quantidade: 1, horaEntrada: '07:00', horaSaida: '17:00', totalHH: 9 },

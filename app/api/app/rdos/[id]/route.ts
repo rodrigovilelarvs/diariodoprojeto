@@ -45,7 +45,7 @@ export async function GET(req: NextRequest, { params }: Params) {
             include: { etapa: { select: { numero: true, nome: true } } },
           },
         },
-        orderBy: { criadoEm: 'asc' },
+        orderBy: [{ ordem: 'asc' }, { criadoEm: 'asc' }],
       },
       maoDeObra:   { include: { funcaoCadastro: true } },
       equipamentos: { include: { equipamentoCadastro: true } },
@@ -238,18 +238,21 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         }
       }
 
+      // A ordem da lista enviada pela tela é a ordem do RDO (a pessoa pode reordenar)
+      let posicao = 0
       for (const reg of atividadeRegistros as Array<{
         id?:          string
         atividadeId?: string
         pctAnterior:  number
         pctAtual:     number
         avulsa?:      boolean
-        avulsaEtapa?: string
+        avulsaEtapa?: string | null
         avulsaNome?:  string
       }>) {
         if (!reg.atividadeId && !reg.avulsa) continue
 
         const delta = reg.pctAtual - reg.pctAnterior
+        const ordem = posicao++
 
         if (reg.atividadeId) {
           await tx.registroRdoAtividade.upsert({
@@ -259,13 +262,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
                 atividadeId: reg.atividadeId,
               },
             },
-            update: { pctAtual: reg.pctAtual, deltaHoje: delta },
+            update: { pctAtual: reg.pctAtual, deltaHoje: delta, ordem },
             create: {
               rdoId:       (await params).id,
               atividadeId: reg.atividadeId,
               pctAnterior: reg.pctAnterior,
               pctAtual:    reg.pctAtual,
               deltaHoje:   delta,
+              ordem,
             },
           })
 
@@ -288,8 +292,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             await tx.registroRdoAtividade.update({
               where: { id: reg.id },
               data: {
-                pctAtual: reg.pctAtual, deltaHoje: delta,
-                avulsaEtapa: reg.avulsaEtapa, avulsaNome: reg.avulsaNome,
+                pctAtual: reg.pctAtual, deltaHoje: delta, ordem,
+                // ?? null: permite limpar a etapa ao editar a atividade avulsa
+                avulsaEtapa: reg.avulsaEtapa ?? null, avulsaNome: reg.avulsaNome,
               },
             })
           } else {
@@ -300,7 +305,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
                 pctAtual:    reg.pctAtual,
                 deltaHoje:   delta,
                 avulsa:      true,
-                avulsaEtapa: reg.avulsaEtapa,
+                ordem,
+                avulsaEtapa: reg.avulsaEtapa ?? null,
                 avulsaNome:  reg.avulsaNome,
               },
             })

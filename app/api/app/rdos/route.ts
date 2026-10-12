@@ -216,6 +216,7 @@ export async function POST(req: NextRequest) {
         include: {
           atividadeRegistros: {
             include: { atividade: true },
+            orderBy: [{ ordem: 'asc' }, { criadoEm: 'asc' }],
           },
           maoDeObra:   true,
           equipamentos: true,
@@ -250,10 +251,11 @@ export async function POST(req: NextRequest) {
         (r) => r.atividade?.status !== AtividadeStatus.CONCLUIDA,
       )
 
-      for (const reg of atividadesParaCopiar) {
+      for (const [posicao, reg] of atividadesParaCopiar.entries()) {
         await tx.registroRdoAtividade.create({
           data: {
             rdoId:        novoRdo.id,
+            ordem:        posicao,
             atividadeId:  reg.atividadeId,
             pctAnterior:  reg.pctAtual,   // % do RDO anterior vira "anterior"
             pctAtual:     reg.pctAtual,   // começa igual (delta = 0)

@@ -467,6 +467,8 @@ export function FormularioRdo({ rdoId }: Props) {
   const [novaAtividadeId, setNovaAtividadeId] = useState('')
   const [novaEtapaTexto, setNovaEtapaTexto] = useState('')
   const [novaNomeTexto, setNovaNomeTexto] = useState('')
+  // índice da atividade avulsa em edição (null = modal está adicionando uma nova)
+  const [editandoAvulsa, setEditandoAvulsa] = useState<number | null>(null)
   const [modalFuncao, setModalFuncao] = useState(false)
   const [funcaoMoIndex, setFuncaoMoIndex] = useState<number | null>(null)
   const [novaFuncaoNome, setNovaFuncaoNome] = useState('')
@@ -540,6 +542,7 @@ export function FormularioRdo({ rdoId }: Props) {
   }
 
   function abrirModalAtividade() {
+    setEditandoAvulsa(null)
     setNovaAvulsa(false)
     setNovaAtividadeId('')
     setNovaEtapaTexto('')
@@ -547,11 +550,49 @@ export function FormularioRdo({ rdoId }: Props) {
     setModalAtividade(true)
   }
 
+  // Editar nome/etapa de uma atividade avulsa já lançada no RDO
+  function abrirEdicaoAvulsa(index: number) {
+    const reg = form?.atividadeRegistros[index]
+    if (!reg?.avulsa) return
+    setEditandoAvulsa(index)
+    setNovaAvulsa(true)
+    setNovaAtividadeId('')
+    setNovaEtapaTexto(reg.avulsaEtapa ?? '')
+    setNovaNomeTexto(reg.avulsaNome ?? '')
+    setModalAtividade(true)
+  }
+
+  // Reordena as atividades do RDO (a ordem vale também na aprovação e no PDF)
+  function moverAtividade(index: number, direcao: -1 | 1) {
+    setForm(f => {
+      if (!f) return f
+      const destino = index + direcao
+      if (destino < 0 || destino >= f.atividadeRegistros.length) return f
+      const lista = [...f.atividadeRegistros]
+      ;[lista[index], lista[destino]] = [lista[destino], lista[index]]
+      return { ...f, atividadeRegistros: lista }
+    })
+    setDirty(true)
+  }
+
   function addAtividade() {
     if (novaAvulsa) {
       // A etapa é opcional na atividade avulsa — só o nome é obrigatório
       if (!novaNomeTexto.trim()) {
         toast.error('Informe o nome da atividade avulsa.')
+        return
+      }
+      if (editandoAvulsa !== null) {
+        const alvo = editandoAvulsa
+        setForm(f => f ? {
+          ...f,
+          atividadeRegistros: f.atividadeRegistros.map((r, i) => i === alvo
+            ? { ...r, avulsaEtapa: novaEtapaTexto.trim() || undefined, avulsaNome: novaNomeTexto.trim() }
+            : r),
+        } : f)
+        setDirty(true)
+        setEditandoAvulsa(null)
+        setModalAtividade(false)
         return
       }
       setForm(f => f ? {
@@ -1143,7 +1184,7 @@ export function FormularioRdo({ rdoId }: Props) {
                 : ativ ? `${ativ.numero} · ${ativ.nome}` : `Atividade ${ri+1}`
 
               return (
-                <div key={reg.atividadeId ?? ri} className="acb">
+                <div key={reg.id ?? reg.atividadeId ?? ri} className="acb">
                   <div className="rdo-pct-row" style={{ display:'flex', alignItems:'center', gap:14 }}>
                     <div className="rdo-pct-col" style={{ width:'50%', display:'flex', flexDirection:'column', gap:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:5, minWidth:0 }}>
@@ -1221,8 +1262,21 @@ export function FormularioRdo({ rdoId }: Props) {
                         </div>
                       </div>
                       {podeSalvar && (
-                        <button onClick={() => removeAtividade(ri)} title="Remover atividade deste RDO"
-                          style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:12 }}>✕</button>
+                        <div style={{ display:'flex', alignItems:'center', gap:2, flexShrink:0 }}>
+                          <button type="button" onClick={() => moverAtividade(ri, -1)} disabled={ri === 0}
+                            title="Mover para cima" aria-label="Mover atividade para cima"
+                            style={{ background:'none', border:'none', cursor: ri === 0 ? 'default' : 'pointer', color:'var(--tm)', fontSize:13, lineHeight:1, padding:'2px 4px', opacity: ri === 0 ? .3 : 1 }}>↑</button>
+                          <button type="button" onClick={() => moverAtividade(ri, 1)} disabled={ri === form.atividadeRegistros.length - 1}
+                            title="Mover para baixo" aria-label="Mover atividade para baixo"
+                            style={{ background:'none', border:'none', cursor: ri === form.atividadeRegistros.length - 1 ? 'default' : 'pointer', color:'var(--tm)', fontSize:13, lineHeight:1, padding:'2px 4px', opacity: ri === form.atividadeRegistros.length - 1 ? .3 : 1 }}>↓</button>
+                          {reg.avulsa && (
+                            <button type="button" onClick={() => abrirEdicaoAvulsa(ri)}
+                              title="Editar atividade avulsa" aria-label="Editar atividade avulsa"
+                              style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:13, lineHeight:1, padding:'2px 4px' }}>✎</button>
+                          )}
+                          <button type="button" onClick={() => removeAtividade(ri)} title="Remover atividade deste RDO" aria-label="Remover atividade deste RDO"
+                            style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:12, padding:'2px 4px' }}>✕</button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1716,18 +1770,20 @@ export function FormularioRdo({ rdoId }: Props) {
         <div className="overlay" onClick={e => e.target === e.currentTarget && setModalAtividade(false)}>
           <div className="modal" style={{ width:440 }}>
             <div className="mh">
-              <div className="mh-t"><i className="ti ti-list-check" /> Adicionar atividade</div>
+              <div className="mh-t"><i className="ti ti-list-check" /> {editandoAvulsa !== null ? 'Editar atividade avulsa' : 'Adicionar atividade'}</div>
               <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:17 }}
                 onClick={() => setModalAtividade(false)}><i className="ti ti-x" /></button>
             </div>
             <div className="mb">
-              <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:12 }}>
-                <input type="checkbox" id="novaAvulsa" checked={novaAvulsa}
-                  onChange={e => setNovaAvulsa(e.target.checked)} />
-                <label htmlFor="novaAvulsa" style={{ fontSize:12, color:'var(--ts)', cursor:'pointer' }}>
-                  Atividade avulsa (fora da lista de tarefas)
-                </label>
-              </div>
+              {editandoAvulsa === null && (
+                <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:12 }}>
+                  <input type="checkbox" id="novaAvulsa" checked={novaAvulsa}
+                    onChange={e => setNovaAvulsa(e.target.checked)} />
+                  <label htmlFor="novaAvulsa" style={{ fontSize:12, color:'var(--ts)', cursor:'pointer' }}>
+                    Atividade avulsa (fora da lista de tarefas)
+                  </label>
+                </div>
+              )}
 
               {novaAvulsa ? (
                 <>
@@ -1764,7 +1820,7 @@ export function FormularioRdo({ rdoId }: Props) {
             <div className="mf2">
               <button className="btn" onClick={() => setModalAtividade(false)}>Cancelar</button>
               <button className="btn btn-p" onClick={addAtividade}>
-                <i className="ti ti-plus" /> Adicionar
+                <i className={`ti ${editandoAvulsa !== null ? 'ti-check' : 'ti-plus'}`} /> {editandoAvulsa !== null ? 'Salvar' : 'Adicionar'}
               </button>
             </div>
           </div>

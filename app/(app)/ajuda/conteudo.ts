@@ -277,6 +277,11 @@ export const SECOES: Secao[] = [
         ],
       },
       { t: 'img', src: '/ajuda/rdo-atividades.webp', alt: 'Seção Atividade, horários e progresso' },
+      { t: 'lista', x: [
+        '**↑ e ↓**: mudam a posição da atividade na lista do RDO. A ordem que você deixar é a que aparece na aprovação e no PDF.',
+        '**✎ (editar)**: aparece nas atividades avulsas e permite corrigir o **nome** e a **etapa** (a etapa é opcional).',
+        '**✕**: remove a atividade deste RDO.',
+      ] },
       { t: 'aviso', x: 'O percentual acumulado não pode ficar abaixo do que já tinha sido informado antes, nem passar de 100%.' },
       { t: 'h', x: '4. Mão de obra' },
       { t: 'p', x: 'Clique em **Adicionar mão de obra** e escolha as funções (pedreiro, servente, eletricista...). Para cada função informe a **quantidade** de pessoas e os horários de **entrada** e **saída**; o sistema calcula as **H/H** (horas-homem). Cada função tem uma categoria: **Direta**, **Indireta** ou **Terceirizada**. No cabeçalho aparece o total de H/H e a divisão por categoria.' },

@@ -367,7 +367,11 @@ const fakeDbBase = {
     update: async ({ where, data }: any) => {
       for (const rdo of [...rdosCriados.values(), ...rdosConcluido.values()]) {
         const item = rdo.atividadeRegistros.find((r: any) => r.id === where.id)
-        if (item) { Object.assign(item, data); return item }
+        if (item) {
+          Object.assign(item, data)
+          rdo.atividadeRegistros.sort((a: any, b: any) => (a.ordem ?? 0) - (b.ordem ?? 0)) // como o orderBy do banco
+          return item
+        }
       }
       return null
     },
@@ -381,7 +385,10 @@ const fakeDbBase = {
     create: async ({ data }: any) => {
       const rdo = rdosCriados.get(data.rdoId) ?? rdosConcluido.get(data.rdoId)
       const item = { id: `ra-fake-${Math.random().toString(36).slice(2, 8)}`, atividade: null, ...data }
-      if (rdo) rdo.atividadeRegistros.push(item)
+      if (rdo) {
+        rdo.atividadeRegistros.push(item)
+        rdo.atividadeRegistros.sort((a: any, b: any) => (a.ordem ?? 0) - (b.ordem ?? 0)) // como o orderBy do banco
+      }
       return item
     },
   }),
@@ -469,6 +476,9 @@ const fakeDbBase = {
       if (where?.projetoId) {
         let todos = [...rdosCriados.values(), ...rdosConcluido.values()].filter((r) => r.projetoId === where.projetoId)
         if (where.status?.in) todos = todos.filter((r) => where.status.in.includes(r.status))
+        // checagem de número duplicado do PATCH: { projetoId, numero, NOT: { id } }
+        if (where.numero != null) todos = todos.filter((r) => r.numero === where.numero)
+        if (where.NOT?.id) todos = todos.filter((r) => r.id !== where.NOT.id)
         if (orderBy?.numero === 'desc') todos.sort((a, b) => b.numero - a.numero)
         return todos[0] ?? null
       }
