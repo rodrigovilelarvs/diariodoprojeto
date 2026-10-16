@@ -20,6 +20,8 @@ export const ADMIN_SENHA = 'teste123'
 export const LEITOR_EMAIL = 'leitor@teste.com'   // nenhuma permissão marcada
 export const EMISSOR_EMAIL = 'emissor@teste.com' // só "emitir RDO"
 export const GERENTE_EMAIL = 'gerente@teste.com' // só "gerenciar equipe" (não é ADMIN)
+export const APROVADOR1_EMAIL = 'aprovador1@teste.com' // só "aprovar RDO" — 1º assinante nos testes de ordem
+export const APROVADOR2_EMAIL = 'aprovador2@teste.com' // só "aprovar RDO" — 2º assinante nos testes de ordem
 // Mesmo e-mail em mais de uma empresa (testes de "uma senha por e-mail")
 export const TENANT2_ID = 't2'
 export const MULTI_EMAIL = 'multi@teste.com'       // contas em t1 e t2, MESMA credencial (teste123)
@@ -71,6 +73,8 @@ const ADMIN = usuarioFake('admin1', 'Rodrigo Vilela Santos', ADMIN_EMAIL, 'ADMIN
 const LEITOR  = usuarioFake('leitor1', 'Leitor Sem Permissoes', LEITOR_EMAIL, 'PERSONALIZADO', {})
 const EMISSOR = usuarioFake('emissor1', 'Emissor De RDO', EMISSOR_EMAIL, 'PERSONALIZADO', { permEmitirRdo: true })
 const GERENTE = usuarioFake('gerente1', 'Gerente De Equipe', GERENTE_EMAIL, 'PERSONALIZADO', { permGerenciarEquipe: true })
+const APROVADOR1 = usuarioFake('aprovador1', 'Primeiro Assinante', APROVADOR1_EMAIL, 'PERSONALIZADO', { permAprovarRdo: true })
+const APROVADOR2 = usuarioFake('aprovador2', 'Segundo Assinante', APROVADOR2_EMAIL, 'PERSONALIZADO', { permAprovarRdo: true })
 // Mesmo e-mail em duas empresas, com a MESMA credencial (a senha é uma só por e-mail)
 const MULTI_A = usuarioFake('multi-a', 'Multi Empresa', MULTI_EMAIL, 'ADMIN', {})
 const MULTI_B = usuarioFake('multi-b', 'Multi Empresa', MULTI_EMAIL, 'PERSONALIZADO', { permEmitirRdo: true }, { tenant: TENANT2 })
@@ -79,7 +83,7 @@ const MULTI_B = usuarioFake('multi-b', 'Multi Empresa', MULTI_EMAIL, 'PERSONALIZ
 const DONO_A = usuarioFake('dono-a', 'Dono Da Conta', DONO_EMAIL, 'ADMIN', {})
 const DONO_B = usuarioFake('dono-b', 'Dono Da Conta', DONO_EMAIL, 'PERSONALIZADO', {}, { tenant: TENANT2, senha: HASH_ATACANTE })
 const VIAJANTE = usuarioFake('viajante-a', 'Viajante', VIAJANTE_EMAIL, 'PERSONALIZADO', {})
-const USUARIOS = [ADMIN, LEITOR, EMISSOR, GERENTE, MULTI_A, MULTI_B, DONO_A, DONO_B, VIAJANTE]
+const USUARIOS = [ADMIN, LEITOR, EMISSOR, GERENTE, APROVADOR1, APROVADOR2, MULTI_A, MULTI_B, DONO_A, DONO_B, VIAJANTE]
 
 // Convites pendentes pra empresa t2
 const conviteFake = (token: string, email: string) => ({
@@ -93,7 +97,7 @@ const CONVITES = [conviteFake('conv-viajante', VIAJANTE_EMAIL), conviteFake('con
 // where de usuário usado pelas rotas de login/convite/perfil: e-mail, id, empresa e senha (preenchida ou não)
 const casaUsuario = (u: any, where: any = {}) =>
   (where.email == null || u.email === where.email) &&
-  (where.id == null || u.id === where.id) &&
+  (where.id == null || (typeof where.id === 'object' ? !!where.id.in?.includes(u.id) : u.id === where.id)) &&
   (where.tenantId == null || u.tenantId === where.tenantId) &&
   (where.senha === undefined ? true : where.senha?.not === null ? u.senha != null : u.senha === where.senha)
 
@@ -291,6 +295,10 @@ const fakeDbBase = {
       where?.id === PROJETO_ID ? PROJETO : PROJETOS_CONCLUIDOS[where?.id] ?? null,
     findMany: async () => [PROJETO],
     count: async () => 1,
+    update: async ({ where, data }: any) => {
+      if (where?.id === PROJETO_ID) Object.assign(PROJETO, data)
+      return PROJETO
+    },
   }),
 
   // Atividades (EAP) por projeto — usadas pra testar o cálculo de desvio:
@@ -357,6 +365,37 @@ const fakeDbBase = {
       if (rdo) rdo.equipamentos.push(item)
       return item
     },
+  }),
+  // Assinaturas do RDO: ficam em rdo.assinaturas (em memória), como os demais itens do RDO
+  assinatura: modelo({
+    upsert: async ({ where, update, create }: any) => {
+      const { rdoId, usuarioId } = where.rdoId_usuarioId
+      const rdo = rdosCriados.get(rdoId) ?? rdosConcluido.get(rdoId)
+      if (!rdo) return null
+      const existente = rdo.assinaturas.find((a: any) => a.usuarioId === usuarioId)
+      if (existente) { Object.assign(existente, update); return existente }
+      const u = USUARIOS.find(x => x.id === usuarioId)
+      const item = { id: `as-fake-${Math.random().toString(36).slice(2, 8)}`, usuarioId, usuario: { id: usuarioId, nome: u?.nome, email: u?.email, perfil: u?.perfil }, assinaturaDigital: null, assinadoEm: null, ...create }
+      rdo.assinaturas.push(item)
+      return item
+    },
+    findMany: async ({ where }: any) => (rdosCriados.get(where?.rdoId) ?? rdosConcluido.get(where?.rdoId))?.assinaturas ?? [],
+    update: async ({ where, data }: any) => {
+      for (const rdo of [...rdosCriados.values(), ...rdosConcluido.values()]) {
+        const item = rdo.assinaturas.find((a: any) => a.id === where.id)
+        if (item) { Object.assign(item, data); return item }
+      }
+      return null
+    },
+    updateMany: async ({ where, data }: any) => {
+      const rdo = rdosCriados.get(where?.rdoId) ?? rdosConcluido.get(where?.rdoId)
+      rdo?.assinaturas.forEach((a: any) => Object.assign(a, data))
+      return { count: rdo?.assinaturas.length ?? 0 }
+    },
+  }),
+  // todo mundo tem assinatura digital cadastrada (necessária para assinar)
+  assinaturaDigital: modelo({
+    findUnique: async ({ where }: any) => ({ id: `sig-${where.usuarioId}`, imagemUrl: 'data:image/png;base64,' }),
   }),
   registroRdoAtividade: modelo({
     // leitura/remoção/edição dos registros de atividade guardados dentro do RDO em memória
@@ -513,6 +552,11 @@ const fakeDbBase = {
   // criação e o findUnique/findFirst subsequentes na mesma request.
 }
 
+// assinante do projeto como a API devolve ({ id, nome, email, perfil }) a partir do id
+function assinanteFake(id?: string | null) {
+  const u = id ? USUARIOS.find(x => x.id === id) : null
+  return u ? { id: u.id, nome: u.nome, email: u.email, perfil: u.perfil } : null
+}
 function montarRdo({ id, numero, projeto, dataRdo, status, midias = [] }: {
   id: string; numero: number; projeto: typeof PROJETO; dataRdo: Date; status: string; midias?: any[]
 }) {
@@ -526,7 +570,9 @@ function montarRdo({ id, numero, projeto, dataRdo, status, midias = [] }: {
       id: projeto.id, nome: projeto.nome,
       dataInicioContrato: projeto.dataInicioContrato, dataFimContrato: projeto.dataFimContrato,
       pedidoCompraContrato: projeto.pedidoCompraContrato, empresaContratada: projeto.empresaContratada,
-      assinaturaModo: projeto.assinaturaModo, assinante1: null, assinante2: null, assinante3: null,
+      assinaturaModo: projeto.assinaturaModo,
+      assinante1: assinanteFake(projeto.assinante1Id), assinante2: assinanteFake(projeto.assinante2Id), assinante3: assinanteFake(projeto.assinante3Id),
+      assinante1Id: projeto.assinante1Id ?? null, assinante2Id: projeto.assinante2Id ?? null, assinante3Id: projeto.assinante3Id ?? null,
       gestor: projeto.gestor ?? null,
     },
     atividadeRegistros: [], maoDeObra: [], equipamentos: [],

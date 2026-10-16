@@ -16,6 +16,8 @@ import {
 }                                                  from '@/lib/email'
 import { podeEnviarAgoraOuEnfileirar }              from '@/lib/notificacoes'
 import { numeroRdo }                                from '@/lib/format'
+import { sequenciaDeAssinantes, vezDeAssinar, proximoAAssinar } from '@/lib/assinatura-ordem'
+import { avisarAprovadores }                    from '@/lib/aprovacao-aviso'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -55,8 +57,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       status:  RdoStatus.PENDENTE_APROVACAO,
     },
     include: {
-      projeto: { select: { nome: true } },
+      projeto: { select: { nome: true, assinaturaModo: true, assinante1Id: true, assinante2Id: true, assinante3Id: true } },
       emissor: { select: { id: true, nome: true, email: true } },
+      atividadeRegistros: { select: { pctAtual: true } },
+      maoDeObra:          { select: { totalHH: true } },
       assinaturas: {
         include: { usuario: { select: { id: true, nome: true, email: true } } },
       },
@@ -71,7 +75,10 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   // Verifica se este usuário é um aprovador registrado no RDO
-  const assinaturasRdo: Array<{ id: string; status: string; usuario: { id: string } }> = rdo.assinaturas
+  const assinaturasRdo: Array<{ id: string; status: string; usuario: { id: string; nome: string; email: string } }> = rdo.assinaturas
+  // Com assinantes pré-definidos a assinatura é em sequência (1º, 2º, 3º)
+  const sequencia = sequenciaDeAssinantes(rdo.projeto)
+  const slots = assinaturasRdo.map((a) => ({ usuarioId: a.usuario.id, status: a.status }))
   const minhaAssinatura = assinaturasRdo.find((a) => a.usuario.id === usuarioId)
 
   if (!minhaAssinatura) {
@@ -86,6 +93,19 @@ export async function POST(req: NextRequest, { params }: Params) {
       { erro: 'Você já assinou este RDO.' },
       { status: 400 },
     )
+  }
+
+  // Assinar fora da ordem não pode: o 2º só depois do 1º, o 3º só depois do 2º
+  // (pedir revisão continua livre para qualquer aprovador).
+  if (body.aprovado) {
+    const vez = vezDeAssinar(sequencia, slots, usuarioId)
+    if (!vez.podeAssinar) {
+      const quem = assinaturasRdo.find((a) => a.usuario.id === vez.aguardandoId)?.usuario.nome ?? 'o assinante anterior'
+      return NextResponse.json(
+        { erro: `Aguarde: ${quem} precisa assinar este RDO antes de você.`, codigo: 'ORDEM_ASSINATURA' },
+        { status: 409 },
+      )
+    }
   }
 
   // Busca dados do aprovador atual
@@ -289,6 +309,19 @@ export async function POST(req: NextRequest, { params }: Params) {
       todosAssinaram: true,
       mensagem:     `RDO #${rdo.numero} totalmente aprovado! Emissor notificado.`,
     })
+  }
+
+  // Assinatura em sequência: avisa quem é o próximo, que agora pode assinar
+  if (sequencia.length > 1) {
+    const proximoId = proximoAAssinar(sequencia, slots.map((s) => s.usuarioId === usuarioId ? { ...s, status: AssinaturaStatus.ASSINADO } : s))
+    const proximo = assinaturasRdo.find((a) => a.usuario.id === proximoId)?.usuario
+    if (proximo) {
+      await avisarAprovadores([proximo], {
+        id: rdoId, numero: rdo.numero, data: rdo.data,
+        projetoNome: rdo.projeto.nome, emissorNome: rdo.emissor.nome,
+        atividadeRegistros: rdo.atividadeRegistros, maoDeObra: rdo.maoDeObra,
+      }, 'chegou a sua vez de assinar')
+    }
   }
 
   // Aprovação parcial — ainda falta(m) assinatura(s)

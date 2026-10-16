@@ -197,10 +197,11 @@ export const SECOES: Secao[] = [
         t: 'lista',
         x: [
           '**Aberta** (padrão): qualquer pessoa do time com permissão de aprovar RDOs pode assinar.',
-          '**Pré-definida**: você escolhe **até 3 pessoas** (Assinante 1, 2 e 3). Só elas assinam os RDOs deste projeto, e o RDO só fica totalmente aprovado quando todas assinarem.',
+          '**Pré-definida**: você escolhe **até 3 pessoas** (Assinante 1, 2 e 3). Só elas assinam os RDOs deste projeto, e o RDO só fica totalmente aprovado quando todas assinarem. **As assinaturas seguem a ordem**: o Assinante 2 só consegue assinar depois do 1, e o 3 só depois do 2.',
         ],
       },
       { t: 'img', src: '/ajuda/projeto-assinaturas.webp', alt: 'Aba Assinaturas do projeto', legenda: 'Modo "Pré-definida", com os três assinantes.' },
+      { t: 'aviso', x: 'Na ordem de assinatura, quem ainda não está na vez vê a mensagem **"Aguardando a assinatura de ..."** no lugar do botão **Assinar** (o botão **Revisar** continua disponível para todos). Ao enviar o RDO, só o Assinante 1 recebe o aviso por e-mail; cada um dos próximos é avisado quando a vez dele chega. No modo **Aberta** não há ordem.' },
       { t: 'p', x: 'Depois de escolher, clique em **Salvar**.' },
     ],
     quem: 'Acesso e assinaturas são gerenciados por administradores, por quem tem "Gerenciar projetos" e por quem tem Gerenciamento total no projeto.',
@@ -371,7 +372,7 @@ export const SECOES: Secao[] = [
         x: [
           'Em **Aprovação**, clique em **Abrir** no RDO. Você vê o relatório completo, em modo leitura.',
           'Confira as informações, as fotos e os comentários. Se quiser, use **Exportar PDF**.',
-          'Role até a seção **Assinaturas**. Para aprovar, clique em **Assinar**: sua assinatura digital é aplicada ao RDO.',
+          'Role até a seção **Assinaturas**. Para aprovar, clique em **Assinar**: sua assinatura digital é aplicada ao RDO. Se o projeto tem assinantes em sequência e ainda não é a sua vez, aparece "Aguardando a assinatura de ..." e você assina quando o anterior terminar.',
           'Para devolver, escreva o **motivo** no campo de texto e clique em **Revisar**. O emissor recebe o aviso para ajustar.',
         ],
       },

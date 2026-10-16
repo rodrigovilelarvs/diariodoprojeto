@@ -7,9 +7,7 @@ import { AssinaturaStatus, LogCategoria, RdoStatus, UsuarioPerfil } from '@/lib/
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeEmitirRdo } from '@/lib/auth'
-import { enviarEmailSeguro, enviarRdoParaAprovacao } from '@/lib/email'
-import { filtrarEEnfileirar } from '@/lib/notificacoes'
-import { numeroRdo } from '@/lib/format'
+import { avisarAprovadores } from '@/lib/aprovacao-aviso'
 type Params = { params: Promise<{ id: string }> }
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
@@ -113,54 +111,25 @@ export async function POST(req: NextRequest, { params }: Params) {
         // assinatura foi criada antes e o "cargo no momento da assinatura"
         // continua intocado, só é tocado de novo no ato de assinar.
         update: { cargo: cargoAtual },
+        // Todo mundo assina explicitamente (botão Assinar), na ordem do projeto quando houver
         create: {
-          rdoId:               rdoId,
-          usuarioId:           apr.id,
-          assinaturaDigitalId: apr.assinaturaDigital?.id ?? undefined,
-          status:              apr.assinaturaDigital
-            ? AssinaturaStatus.ASSINADO   // já tem assinatura cadastrada → aplica automaticamente
-            : AssinaturaStatus.PENDENTE,
-          cargo:       cargoAtual,
-          assinadoEm: apr.assinaturaDigital ? new Date() : undefined,
-          ipAddress,
-          userAgent,
+          rdoId:  rdoId,
+          usuarioId: apr.id,
+          status: AssinaturaStatus.PENDENTE,
+          cargo:  cargoAtual,
         },
       })
     }
   })
 
-  // E-mail só pra quem realmente precisa agir — quem já tinha assinatura
-  // cadastrada e foi auto-assinado acima não tem nada pendente pra ver.
-  const pendentes = aprovadores.filter((a) => !a.assinaturaDigital)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  const linkAprovacao = `${appUrl}/aprovacao/${rdoId}`
-  const destinatarios = await filtrarEEnfileirar(pendentes, 'emailRdoEnviado', {
-    tipo:   'emailRdoEnviado',
-    titulo: `RDO #${numeroRdo(rdo.numero)} aguardando sua aprovação`,
-    resumo: `${rdo.projeto.nome} · emitido por ${rdo.emissor.nome}`,
-    link:   linkAprovacao,
+  // E-mail: com assinantes pré-definidos (até 3) a assinatura é em sequência — só o 1º é avisado
+  // agora; cada um dos próximos é avisado quando chega a vez dele (ver .../aprovar).
+  const emSequencia = rdo.projeto.assinaturaModo === 'DEFINIDA' && aprovadores.length > 1
+  await avisarAprovadores(emSequencia ? aprovadores.slice(0, 1) : aprovadores, {
+    id: rdoId, numero: rdo.numero, data: rdo.data,
+    projetoNome: rdo.projeto.nome, emissorNome: rdo.emissor.nome,
+    atividadeRegistros: rdo.atividadeRegistros, maoDeObra: rdo.maoDeObra,
   })
-  if (destinatarios.length > 0) {
-    const registros: Array<{ pctAtual: number }> = rdo.atividadeRegistros ?? []
-    const pctMedio  = registros.length
-      ? Math.round(registros.reduce((s, r) => s + r.pctAtual, 0) / registros.length)
-      : 0
-    const maoDeObra: Array<{ totalHH: number }> = rdo.maoDeObra ?? []
-    const totalHH = maoDeObra.reduce((s, m) => s + Number(m.totalHH), 0)
-
-    await enviarEmailSeguro(() => enviarRdoParaAprovacao({
-      aprovadores: destinatarios.map((a) => ({ email: a.email, nome: a.nome })),
-      rdo: {
-        numero:   rdo.numero,
-        data:     rdo.data.toISOString(),
-        projeto:  rdo.projeto.nome,
-        emissor:  rdo.emissor.nome,
-        pctMedio,
-        totalHH,
-        link:     linkAprovacao,
-      },
-    }))
-  }
 
   await registrarLog({
     tenantId,

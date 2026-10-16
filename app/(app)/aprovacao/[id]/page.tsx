@@ -15,6 +15,7 @@ import { RdoStatusBadge, Skeleton, Modal } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
+import { sequenciaDeAssinantes, vezDeAssinar, ordenarPorSequencia } from '@/lib/assinatura-ordem'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
   CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L,
@@ -202,7 +203,12 @@ export default function AprovacaoPage() {
     </div>
   )
 
-  const assinaturas: AssinaturaItem[] = rdo.assinaturas ?? []
+  // Assinantes pré-definidos assinam em sequência: mostra na ordem e libera cada um na sua vez
+  const sequencia = sequenciaDeAssinantes({
+    assinaturaModo: rdo.projeto.assinaturaModo,
+    assinante1Id: rdo.projeto.assinante1?.id, assinante2Id: rdo.projeto.assinante2?.id, assinante3Id: rdo.projeto.assinante3?.id,
+  })
+  const assinaturas: AssinaturaItem[] = ordenarPorSequencia(rdo.assinaturas ?? [], sequencia)
   const totalAssin  = assinaturas.length
   const assinadas   = assinaturas.filter(a => a.status === 'ASSINADO').length
   const todosAssina = totalAssin > 0 && assinadas === totalAssin
@@ -210,6 +216,9 @@ export default function AprovacaoPage() {
   // Já assinei? Então não mostra mais a decisão pra mim, mesmo que rdo.status
   // ainda não tenha virado APROVADO (ex.: outros aprovadores pendentes).
   const podeAprovar = pode('aprovar_rdo') && rdo.status === 'PENDENTE_APROVACAO' && minhaAssin?.status !== 'ASSINADO'
+
+  const vez = vezDeAssinar(sequencia, assinaturas.map(a => ({ usuarioId: a.usuario.id, status: a.status })), session?.usuario.id ?? '')
+  const quemAguarda = vez.aguardandoId ? assinaturas.find(a => a.usuario.id === vez.aguardandoId)?.usuario.nome : undefined
 
   const registros   = rdo.atividadeRegistros ?? []
 
@@ -781,7 +790,11 @@ export default function AprovacaoPage() {
                         onClick={handleRevisar}>
                         <i className="ti ti-x" /> Revisar
                       </button>
-                      {minhaSigCadastrada ? (
+                      {!vez.podeAssinar ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--tw)', background: 'color-mix(in srgb, var(--tw) 12%, transparent)', border: '.5px solid color-mix(in srgb, var(--tw) 35%, transparent)', borderRadius: 'var(--r)', padding: '5px 10px' }}>
+                          <i className="ti ti-clock" /> Aguardando a assinatura de {quemAguarda ?? 'quem assina antes de você'} para liberar a sua
+                        </span>
+                      ) : minhaSigCadastrada ? (
                         <button className="btn btn-sm btn-p"
                           style={{ background: 'var(--fsu)', borderColor: 'var(--fsu)' }}
                           disabled={aprovarRdo.isPending}
