@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeGerenciarEquipe, hashSenha, violacaoDeDelegacao } from '@/lib/auth'
 import { addDays } from 'date-fns'
+import { acessosDaEmpresa, concederAcessos, lerAcessos, restricaoNaoSeAplica } from '@/lib/acesso-convite'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
 // lib/prisma.ts) — anotados aqui localmente com a forma dos `select` abaixo.
@@ -18,6 +19,7 @@ type UsuarioListado = {
   permEmitirRdo: boolean; permAprovarRdo: boolean
   permGerenciarProjetos: boolean; permGerenciarEquipe: boolean; permVerRelatorios: boolean
   permGerenciarTarefas: boolean
+  restringirProjetos: boolean
   status: UsuarioStatus
   ultimoAcessoEm: Date | null; criadoEm: Date
   _count: { projetoAcessos: number }
@@ -28,6 +30,7 @@ type ConviteListado = {
   permEmitirRdo: boolean; permAprovarRdo: boolean
   permGerenciarProjetos: boolean; permGerenciarEquipe: boolean; permVerRelatorios: boolean
   permGerenciarTarefas: boolean
+  restringirProjetos: boolean; projetosAcesso: unknown
   criadoEm: Date; expiradoEm: Date
 }
 
@@ -54,6 +57,7 @@ export async function GET(req: NextRequest) {
         permEmitirRdo: true, permAprovarRdo: true,
         permGerenciarProjetos: true, permGerenciarEquipe: true, permVerRelatorios: true,
         permGerenciarTarefas: true,
+        restringirProjetos: true,
         status:        true,
         ultimoAcessoEm: true,
         criadoEm:      true,
@@ -75,6 +79,7 @@ export async function GET(req: NextRequest) {
         permEmitirRdo: true, permAprovarRdo: true,
         permGerenciarProjetos: true, permGerenciarEquipe: true, permVerRelatorios: true,
         permGerenciarTarefas: true,
+        restringirProjetos: true, projetosAcesso: true,
         criadoEm:    true,
         expiradoEm:  true,
       },
@@ -117,6 +122,8 @@ export async function POST(req: NextRequest) {
     permEmitirRdo?: boolean; permAprovarRdo?: boolean
     permGerenciarProjetos?: boolean; permGerenciarEquipe?: boolean; permVerRelatorios?: boolean
     permGerenciarTarefas?: boolean
+    // acesso a projetos já na criação: restringirProjetos = só os de projetosAcesso ([{ projetoId, nivel }])
+    restringirProjetos?: boolean; projetosAcesso?: unknown
   }
   try {
     body = await req.json()
@@ -168,6 +175,10 @@ export async function POST(req: NextRequest) {
     }),
   }
 
+  // Acesso a projetos escolhido na criação. Sem efeito para quem já vê todos (ADMIN / gerencia projetos).
+  const restringir = body.restringirProjetos === true && !restricaoNaoSeAplica(body.perfil, dadosPerfil.permGerenciarProjetos === true)
+  const acessosEscolhidos = restringir ? await acessosDaEmpresa(tenantId, lerAcessos(body.projetosAcesso)) : []
+
   // Verifica limite de usuários
   const tenant = await prisma.tenant.findUnique({
     where:  { id: tenantId },
@@ -213,16 +224,18 @@ export async function POST(req: NextRequest) {
         senha: senhaHash,
         funcao: body.funcao?.trim() || null,
         status: UsuarioStatus.ATIVO,
+        restringirProjetos: restringir,
         ...dadosPerfil,
       },
     })
+    await concederAcessos(usuario.id, acessosEscolhidos)
 
     await registrarLog({
       tenantId,
       usuarioId,
       categoria: LogCategoria.USUARIO,
       mensagem:  `Usuário "${usuario.nome}" cadastrado com senha inicial (${body.perfil})`,
-      detalhe:   { email: body.email, perfil: body.perfil },
+      detalhe:   { email: body.email, perfil: body.perfil, restringirProjetos: restringir, projetosLiberados: acessosEscolhidos.length },
       ipAddress,
       userAgent,
     })
@@ -257,10 +270,15 @@ export async function POST(req: NextRequest) {
   })
 
   const funcaoConvite = body.funcao?.trim() || null
+  // O acesso a projetos fica no convite e vale a partir do aceite. Um reenvio sem esses campos mantém o que já estava.
+  const dadosAcesso = { restringirProjetos: restringir, projetosAcesso: acessosEscolhidos }
   const convite = conviteExistente
     ? await prisma.convite.update({
         where: { id: conviteExistente.id },
-        data:  { ...dadosPerfil, funcao: funcaoConvite, expiradoEm: addDays(new Date(), 7) },
+        data:  {
+          ...dadosPerfil, funcao: funcaoConvite, expiradoEm: addDays(new Date(), 7),
+          ...(body.restringirProjetos !== undefined ? dadosAcesso : {}),
+        },
       })
     : await prisma.convite.create({
         data: {
@@ -268,6 +286,7 @@ export async function POST(req: NextRequest) {
           email: body.email.toLowerCase(),
           funcao: funcaoConvite,
           ...dadosPerfil,
+          ...dadosAcesso,
           expiradoEm: addDays(new Date(), 7),
         },
       })
@@ -292,7 +311,7 @@ export async function POST(req: NextRequest) {
     usuarioId,
     categoria: LogCategoria.USUARIO,
     mensagem:  `Convite enviado para ${body.email} (${body.perfil})`,
-    detalhe:   { email: body.email, perfil: body.perfil },
+    detalhe:   { email: body.email, perfil: body.perfil, restringirProjetos: restringir, projetosLiberados: acessosEscolhidos.length },
     ipAddress,
     userAgent,
   })
@@ -309,6 +328,7 @@ export async function POST(req: NextRequest) {
         permGerenciarProjetos: convite.permGerenciarProjetos,
         permGerenciarEquipe: convite.permGerenciarEquipe, permVerRelatorios: convite.permVerRelatorios,
         permGerenciarTarefas: convite.permGerenciarTarefas,
+        restringirProjetos: convite.restringirProjetos, projetosAcesso: convite.projetosAcesso,
         expiradoEm: convite.expiradoEm,
       },
       senhaDefinida: false,

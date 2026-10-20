@@ -61,7 +61,7 @@ function usuarioFake(
     id, tenantId: tenant.id, nome, email,
     senha: extra.senha ?? HASH_TESTE123,
     telefone: null, funcao: perfil === 'ADMIN' ? 'Administrador' : 'Colaborador', perfil, status: 'ATIVO', avatarUrl: null,
-    ...SEM_PERMISSOES, ...perms,
+    ...SEM_PERMISSOES, ...perms, restringirProjetos: false,
     ultimoAcessoEm: null, criadoEm: AGORA, atualizadoEm: AGORA, tenant,
   }
 }
@@ -90,9 +90,10 @@ const conviteFake = (token: string, email: string) => ({
   id: `conv-${token}`, token, email, tenantId: TENANT2_ID, tenant: TENANT2, funcao: null,
   perfil: 'PERSONALIZADO', permEmitirRdo: false, permAprovarRdo: false, permGerenciarProjetos: false,
   permGerenciarEquipe: false, permVerRelatorios: false, permGerenciarTarefas: false,
+  restringirProjetos: false, projetosAcesso: null as any,
   aceitoEm: null as Date | null, expiradoEm: new Date(Date.now() + 7 * 86_400_000),
 })
-const CONVITES = [conviteFake('conv-viajante', VIAJANTE_EMAIL), conviteFake('conv-novato', NOVATO_EMAIL)]
+const CONVITES: any[] = [conviteFake('conv-viajante', VIAJANTE_EMAIL), conviteFake('conv-novato', NOVATO_EMAIL)]
 
 // where de usuário usado pelas rotas de login/convite/perfil: e-mail, id, empresa e senha (preenchida ou não)
 const casaUsuario = (u: any, where: any = {}) =>
@@ -156,6 +157,11 @@ const PROJETO = {
   }],
   _count: { rdos: 0, etapas: 1 },
 }
+
+const ACESSOS: Array<{ projetoId: string; usuarioId: string; nivel: string }> = [
+  { projetoId: PROJETO_GRANDE_ID, usuarioId: 'admin1', nivel: 'GERENCIAMENTO' },
+  { projetoId: PROJETO_GRANDE_ID, usuarioId: 'leitor1', nivel: 'GERENCIAMENTO' },
+]
 
 const PROJETO_CONCLUIDO = { ...PROJETO, id: PROJETO_CONCLUIDO_ID, nome: PROJETO_CONCLUIDO_NOME, status: 'CONCLUIDO' }
 const PROJETO_GRANDE = { ...PROJETO, id: PROJETO_GRANDE_ID, nome: PROJETO_GRANDE_NOME, status: 'CONCLUIDO' }
@@ -265,6 +271,13 @@ const fakeDbBase = {
       for (const u of alvo) Object.assign(u, data)
       return { count: alvo.length }
     },
+    // cadastro direto com senha (POST /api/app/usuarios): o usuário passa a existir de verdade
+    create: async ({ data }: any) => {
+      const tenant = [TENANT, TENANT2].find(t => t.id === data.tenantId) ?? TENANT
+      const novo = { ...usuarioFake(`novo-${USUARIOS.length}`, data.nome, data.email, data.perfil, {}, { tenant, senha: data.senha }), ...data }
+      USUARIOS.push(novo)
+      return novo
+    },
     upsert: async ({ where, update, create }: any) => {
       const chave = where?.tenantId_email
       const existente = USUARIOS.find(u => u.tenantId === chave?.tenantId && u.email === chave?.email)
@@ -278,6 +291,15 @@ const fakeDbBase = {
 
   convite: modelo({
     findUnique: async ({ where }: any) => CONVITES.find(c => c.token === where?.token) ?? null,
+    findFirst: async ({ where }: any) =>
+      CONVITES.find(c => c.tenantId === where?.tenantId && c.email === where?.email && c.aceitoEm == null) ?? null,
+    create: async ({ data }: any) => {
+      const token = `conv-novo-${CONVITES.length}`
+      const tenant = [TENANT, TENANT2].find(t => t.id === data.tenantId) ?? TENANT
+      const novo = { ...conviteFake(token, data.email), tenantId: data.tenantId, tenant, ...data, id: `conv-${token}`, token, aceitoEm: null }
+      CONVITES.push(novo)
+      return novo
+    },
     update: async ({ where, data }: any) => {
       const c = CONVITES.find(x => x.id === where?.id)
       return c ? Object.assign(c, data) : data
@@ -293,7 +315,8 @@ const fakeDbBase = {
   projeto: modelo({
     findFirst: async ({ where }: any) =>
       where?.id === PROJETO_ID ? PROJETO : PROJETOS_CONCLUIDOS[where?.id] ?? null,
-    findMany: async () => [PROJETO],
+    findMany: async ({ where }: any = {}) =>
+      where?.id?.in ? [PROJETO, PROJETO_CONCLUIDO, PROJETO_GRANDE].filter(p => where.id.in.includes(p.id)) : [PROJETO],
     count: async () => 1,
     update: async ({ where, data }: any) => {
       if (where?.id === PROJETO_ID) Object.assign(PROJETO, data)
@@ -323,14 +346,22 @@ const fakeDbBase = {
   // Projeto grande (p3) tem acesso RESTRITO: só o admin está liberado — os
   // demais usuários do tenant não enxergam nem editam nada dele. Exceção: o LEITOR
   // (sem nenhuma permissão global) recebe GERENCIAMENTO explícito só nesse projeto.
+  // As linhas criadas durante os testes (acesso escolhido no convite) ficam em ACESSOS.
   projetoAcesso: modelo({
     findMany: async ({ where }: any) =>
-      where?.projetoId === PROJETO_GRANDE_ID
-        ? [
-            { projetoId: PROJETO_GRANDE_ID, usuarioId: ADMIN.id, nivel: 'GERENCIAMENTO' },
-            { projetoId: PROJETO_GRANDE_ID, usuarioId: LEITOR.id, nivel: 'GERENCIAMENTO' },
-          ]
-        : [],
+      ACESSOS
+        .filter(a => where?.projetoId == null || (typeof where.projetoId === 'object' ? where.projetoId.in?.includes(a.projetoId) : a.projetoId === where.projetoId))
+        .filter(a => where?.usuarioId == null || a.usuarioId === where.usuarioId)
+        .filter(a => where?.usuario?.restringirProjetos == null || !!USUARIOS.find(u => u.id === a.usuarioId)?.restringirProjetos === where.usuario.restringirProjetos)
+        .map(a => ({ ...a, usuario: { restringirProjetos: !!USUARIOS.find(u => u.id === a.usuarioId)?.restringirProjetos } })),
+    upsert: async ({ where, update, create }: any) => {
+      const { projetoId, usuarioId } = where.projetoId_usuarioId
+      const existente = ACESSOS.find(a => a.projetoId === projetoId && a.usuarioId === usuarioId)
+      if (existente) return Object.assign(existente, update)
+      const novo = { ...create }
+      ACESSOS.push(novo)
+      return novo
+    },
   }),
 
   // Mídia dos RDOs do histórico (busca por id, já com o RDO dono — status/projeto)

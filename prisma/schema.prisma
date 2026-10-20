@@ -264,6 +264,10 @@ model Usuario {
   permVerRelatorios     Boolean @default(false)
   permGerenciarTarefas  Boolean @default(false)
 
+  // true = só enxerga os projetos em que tem ProjetoAcesso (não herda os projetos "abertos
+  // a todo o time"). Não vale para quem gerencia projetos (ADMIN / permGerenciarProjetos).
+  restringirProjetos Boolean @default(false)
+
   ultimoAcessoEm DateTime?
   criadoEm       DateTime  @default(now())
   atualizadoEm   DateTime  @updatedAt
@@ -362,6 +366,11 @@ model Convite {
   permGerenciarEquipe   Boolean @default(false)
   permVerRelatorios     Boolean @default(false)
   permGerenciarTarefas  Boolean @default(false)
+
+  // Acesso a projetos escolhido já no convite — aplicado quando o convite é aceito.
+  // projetosAcesso: [{ projetoId, nivel }]
+  restringirProjetos Boolean @default(false)
+  projetosAcesso     Json?
 
   aceitoEm DateTime?
   criadoEm DateTime  @default(now())

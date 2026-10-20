@@ -64,6 +64,7 @@ export interface Usuario extends UsuarioResumo {
   ultimoAcessoEm?: string
   criadoEm:       string
   _count?:        { projetoAcessos: number }
+  restringirProjetos?: boolean // só vê os projetos liberados para ele (não herda os abertos a todo o time)
 }
 
 export interface Convite extends Partial<PermissoesUsuario> {
@@ -71,6 +72,8 @@ export interface Convite extends Partial<PermissoesUsuario> {
   email:       string
   funcao?:     string
   perfil:      UsuarioPerfil
+  restringirProjetos?: boolean
+  projetosAcesso?: Array<{ projetoId: string; nivel: ProjetoAcessoNivel }> | null // liberados no convite
   criadoEm:    string
   expiradoEm:  string
 }
@@ -129,7 +132,7 @@ export interface ProjetoAcessoItem {
   id:        string
   usuarioId: string
   nivel:     ProjetoAcessoNivel
-  usuario:   Pick<UsuarioResumo, 'id' | 'nome' | 'email' | 'perfil'> & { status: string }
+  usuario:   Pick<UsuarioResumo, 'id' | 'nome' | 'email' | 'perfil'> & { status: string; restringirProjetos?: boolean }
 }
 
 // Visão inversa da mesma ACL — a partir de um usuário, quais projetos ele

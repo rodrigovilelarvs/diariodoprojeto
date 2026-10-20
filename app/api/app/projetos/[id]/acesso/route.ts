@@ -30,7 +30,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const [acessos, usuarios] = await Promise.all([
     prisma.projetoAcesso.findMany({
       where:   { projetoId },
-      include: { usuario: { select: { id: true, nome: true, email: true, perfil: true, status: true } } },
+      include: { usuario: { select: { id: true, nome: true, email: true, perfil: true, status: true, restringirProjetos: true } } },
       orderBy: { criadoEm: 'asc' },
     }),
     prisma.usuario.findMany({

@@ -83,6 +83,8 @@ export interface AuthContext {
   tenantId:   string
   perfil:     UsuarioPerfil
   permissoes: Permissoes
+  // só vê os projetos liberados para ele (ver resolverAcessoProjeto)
+  restringirProjetos?: boolean
 }
 
 export async function requireAuth(
@@ -155,6 +157,7 @@ export async function requireAuth(
       permEmitirRdo: true, permAprovarRdo: true,
       permGerenciarProjetos: true, permGerenciarEquipe: true, permVerRelatorios: true,
       permGerenciarTarefas: true,
+      restringirProjetos: true,
     },
   })
 
@@ -172,6 +175,7 @@ export async function requireAuth(
       usuarioId: payload.usuarioId,
       tenantId:  payload.tenantId,
       perfil:    usuario.perfil,
+      restringirProjetos: usuario.restringirProjetos === true,
       permissoes: {
         emitirRdo:         usuario.permEmitirRdo,
         aprovarRdo:        usuario.permAprovarRdo,
@@ -270,25 +274,60 @@ export function violacaoDeDelegacao(
 // null = sem restrição configurada para o projeto (comportamento padrão,
 // visível/editável por todo o tenant) ou usuário que já gerencia todos os
 // projetos (ADMIN, ou PERSONALIZADO com permGerenciarProjetos — sempre bypassa).
+//
+// Usuário "restrito a projetos" (Usuario.restringirProjetos, marcado no convite ou na
+// tela de Usuários): só vê os projetos em que tem acesso concedido, mesmo os que estão
+// abertos a todo o time. O acesso dele NÃO fecha o projeto para os demais — só os acessos
+// de quem não é restrito é que transformam o projeto numa lista fechada.
 export type AcessoProjetoResultado = ProjetoAcessoNivel | 'SEM_ACESSO' | null
+
+type AcessoLinha = { projetoId: string; usuarioId: string; nivel: ProjetoAcessoNivel; usuario: { restringirProjetos: boolean | null } | null }
+type CtxAcesso = Pick<AuthContext, 'usuarioId' | 'perfil' | 'permissoes' | 'restringirProjetos'>
+
+// Um projeto é lista fechada quando alguém que NÃO é restrito está na lista de acesso dele
+function projetoFechado(acessos: AcessoLinha[]): boolean {
+  return acessos.some((a) => a.usuario?.restringirProjetos !== true)
+}
 
 export async function resolverAcessoProjeto(
   projetoId: string,
-  ctx: Pick<AuthContext, 'usuarioId' | 'perfil' | 'permissoes'>,
+  ctx: CtxAcesso,
 ): Promise<AcessoProjetoResultado> {
   if (podeGerenciarProjetos(ctx)) return null // gerencia todos os projetos — bypassa
 
   // `prisma` não carrega os tipos gerados do Prisma Client neste projeto —
   // anotado aqui localmente com a forma do `select` acima.
-  const acessos: Array<{ usuarioId: string; nivel: ProjetoAcessoNivel }> = await prisma.projetoAcesso.findMany({
+  const acessos: AcessoLinha[] = await prisma.projetoAcesso.findMany({
     where:  { projetoId },
-    select: { usuarioId: true, nivel: true },
+    select: { projetoId: true, usuarioId: true, nivel: true, usuario: { select: { restringirProjetos: true } } },
   })
 
-  if (acessos.length === 0) return null // projeto sem restrição configurada
-
   const meu = acessos.find((a) => a.usuarioId === ctx.usuarioId)
+  if (ctx.restringirProjetos) return meu ? meu.nivel : 'SEM_ACESSO'
+
+  if (!projetoFechado(acessos)) return null // projeto sem restrição configurada
   return meu ? meu.nivel : 'SEM_ACESSO'
+}
+
+// Ids dos projetos da empresa que este usuário NÃO pode ver (para filtrar listas e relatórios).
+export async function projetosSemAcesso(tenantId: string, ctx: CtxAcesso): Promise<string[]> {
+  if (podeGerenciarProjetos(ctx)) return []
+  const todos: Array<{ id: string }> = await prisma.projeto.findMany({ where: { tenantId }, select: { id: true } })
+  if (todos.length === 0) return []
+  const acessos: AcessoLinha[] = await prisma.projetoAcesso.findMany({
+    where:  { projetoId: { in: todos.map((p) => p.id) } },
+    select: { projetoId: true, usuarioId: true, nivel: true, usuario: { select: { restringirProjetos: true } } },
+  })
+  const porProjeto = new Map<string, AcessoLinha[]>()
+  for (const a of acessos) porProjeto.set(a.projetoId, [...(porProjeto.get(a.projetoId) ?? []), a])
+  return todos
+    .filter((p) => {
+      const lista = porProjeto.get(p.id) ?? []
+      const tenho = lista.some((a) => a.usuarioId === ctx.usuarioId)
+      if (ctx.restringirProjetos) return !tenho
+      return projetoFechado(lista) && !tenho
+    })
+    .map((p) => p.id)
 }
 
 export function podeVerProjeto(acesso: AcessoProjetoResultado): boolean {

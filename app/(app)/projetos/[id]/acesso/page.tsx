@@ -89,6 +89,8 @@ export default function ProjetoAcessoPage() {
   }
 
   const acessos = data?.acessos ?? []
+  // O projeto só vira lista fechada quando entra alguém que não é "só projetos liberados"
+  const fechado = acessos.some(a => !a.usuario.restringirProjetos)
   const usuariosDisponiveis = (data?.usuarios ?? []).filter(u => !acessos.some(a => a.usuarioId === u.id))
 
   return (
@@ -110,7 +112,9 @@ export default function ProjetoAcessoPage() {
           <span>
             {acessos.length === 0
               ? 'Nenhum acesso configurado — este projeto está visível para todo o time, como padrão. Assim que você adicionar a primeira pessoa aqui, o projeto passa a ser restrito só a quem estiver nesta lista.'
-              : 'Este projeto está restrito — só as pessoas listadas abaixo conseguem vê-lo ou acessá-lo.'}
+              : fechado
+                ? 'Este projeto está restrito — só as pessoas listadas abaixo conseguem vê-lo ou acessá-lo.'
+                : 'Este projeto continua visível para todo o time. As pessoas listadas abaixo foram marcadas como "só projetos liberados" e enxergam apenas os projetos em que estão numa lista — o acesso delas não restringe o projeto para os demais.'}
           </span>
         </div>
 
@@ -133,7 +137,12 @@ export default function ProjetoAcessoPage() {
                 {acessos.map(a => (
                   <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', border: '.5px solid var(--b)', borderRadius: 'var(--r)', background: 'var(--s1)' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.usuario.nome}</div>
+                      <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {a.usuario.nome}
+                        {a.usuario.restringirProjetos && (
+                          <span title="Só enxerga os projetos em que está numa lista de acesso" style={{ marginLeft: 6, fontSize: 9, fontWeight: 400, color: 'var(--ts)', background: 'var(--s2)', border: '.5px solid var(--b)', borderRadius: 20, padding: '1px 6px' }}>só projetos liberados</span>
+                        )}
+                      </div>
                       <div style={{ fontSize: 10, color: 'var(--tm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.usuario.email}</div>
                     </div>
                     <Select value={a.nivel} style={{ width: 190 }}

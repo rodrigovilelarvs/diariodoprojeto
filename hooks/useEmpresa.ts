@@ -529,6 +529,8 @@ export function useConvidarUsuario() {
       permEmitirRdo?: boolean; permAprovarRdo?: boolean
       permGerenciarProjetos?: boolean; permGerenciarEquipe?: boolean; permVerRelatorios?: boolean
       permGerenciarTarefas?: boolean
+      // acesso a projetos já na criação: só os de projetosAcesso (a pessoa não vê os demais)
+      restringirProjetos?: boolean; projetosAcesso?: Array<{ projetoId: string; nivel: ProjetoAcessoNivel }>
     }) => api.post('/api/app/usuarios', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.usuarios }),
   })
@@ -541,9 +543,12 @@ export function useAtualizarUsuario() {
       id: string; nome?: string; perfil?: string; status?: string; funcao?: string
       permEmitirRdo?: boolean; permAprovarRdo?: boolean
       permGerenciarProjetos?: boolean; permGerenciarEquipe?: boolean; permVerRelatorios?: boolean
-      permGerenciarTarefas?: boolean
+      permGerenciarTarefas?: boolean; restringirProjetos?: boolean
     }) => api.patch(`/api/app/usuarios/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: QK.usuarios }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: QK.usuarios })
+      qc.invalidateQueries({ queryKey: QK.usuarioAcessos(vars.id) })
+    },
   })
 }
 
@@ -551,7 +556,7 @@ export function useAtualizarUsuario() {
 export function useUsuarioAcessos(usuarioId: string | null) {
   return useQuery({
     queryKey: QK.usuarioAcessos(usuarioId ?? ''),
-    queryFn:  () => api.get<{ projetos: UsuarioAcessoProjeto[] }>(`/api/app/usuarios/${usuarioId}/acessos`),
+    queryFn:  () => api.get<{ projetos: UsuarioAcessoProjeto[]; restringirProjetos: boolean }>(`/api/app/usuarios/${usuarioId}/acessos`),
     enabled:  !!usuarioId,
   })
 }

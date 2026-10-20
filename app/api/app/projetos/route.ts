@@ -6,7 +6,7 @@ import { LogCategoria } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeGerenciarProjetos, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
+import { requireAuth, podeGerenciarProjetos, projetosSemAcesso, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 import type { Projeto } from '@/lib/types'
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
 
-  const { tenantId, usuarioId } = auth.ctx
+  const { tenantId } = auth.ctx
 
   // Visualizador: as contagens consideram só os RDOs enviados para aprovação ou aprovados
   const filtroStatusRdo = soVeRdosEnviados(auth.ctx)
@@ -39,14 +39,10 @@ export async function GET(req: NextRequest) {
 
   // Projetos com lista de acesso configurada só aparecem para quem está nela
   // (admin/gestor sempre veem tudo; projeto sem restrição continua aberto ao tenant)
+  // (quem foi marcado como "restrito a projetos" só vê aqueles em que tem acesso)
   if (!podeGerenciarProjetos(auth.ctx) && projetos.length > 0) {
-    const acessos: Array<{ projetoId: string; usuarioId: string }> = await prisma.projetoAcesso.findMany({
-      where:  { projetoId: { in: projetos.map((p) => p.id) } },
-      select: { projetoId: true, usuarioId: true },
-    })
-    const projetosRestritos = new Set(acessos.map((a) => a.projetoId))
-    const meusProjetos = new Set(acessos.filter((a) => a.usuarioId === usuarioId).map((a) => a.projetoId))
-    projetos = projetos.filter((p) => !projetosRestritos.has(p.id) || meusProjetos.has(p.id))
+    const ocultos = new Set(await projetosSemAcesso(tenantId, auth.ctx))
+    projetos = projetos.filter((p) => !ocultos.has(p.id))
   }
 
   // Calcula % real vs planejado e ocorrências abertas por projeto

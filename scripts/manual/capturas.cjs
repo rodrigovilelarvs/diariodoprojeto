@@ -153,6 +153,14 @@ async function main() {
   if (quer('usuarios')) { await go('/usuarios'); await shot('usuarios') }
   if (quer('cadastro-usuario')) {
     await go('/usuarios'); await page.getByRole('button', { name: /Convidar usuário/ }).click(); await page.waitForTimeout(800)
+    // mostra a escolha de projetos do convite: "somente os que eu escolher" com dois projetos marcados
+    const campo = page.getByTestId('acesso-projetos-convite')
+    await campo.getByRole('button', { name: 'Somente os projetos que eu escolher' }).click()
+    await campo.locator('input[type="checkbox"]').nth(0).check()
+    await campo.locator('input[type="checkbox"]').nth(1).check()
+    // rola até o fim do bloco de projetos para ele aparecer inteiro na captura
+    await campo.evaluate(el => el.scrollIntoView({ block: 'end' }))
+    await page.waitForTimeout(500)
     await shot('cadastro-usuario')
   }
   if (quer('perfil')) { await go('/perfil'); await shot('perfil') }

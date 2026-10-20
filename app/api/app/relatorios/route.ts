@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, podeVerRelatorios, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
+import { requireAuth, podeVerRelatorios, projetosSemAcesso, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
@@ -52,19 +52,25 @@ export async function GET(req: NextRequest) {
     ? { status: { in: STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } }
     : {}
 
+  // Projetos que este usuário não pode ver (acesso restrito) ficam fora dos números
+  const ocultos = await projetosSemAcesso(tenantId, auth.ctx)
+  const filtroId = projetoId
+    ? { id: ocultos.includes(projetoId) ? '__sem_acesso__' : projetoId }
+    : ocultos.length > 0 ? { id: { notIn: ocultos } } : {}
+
   // Filtro base — sempre scoped ao tenant
   const whereRdo = {
     ...filtroStatusRdo,
     projeto: {
       tenantId,
-      ...(projetoId ? { id: projetoId } : {}),
+      ...filtroId,
       ...(grupo ? { grupo } : {}),
     },
     criadoEm: { gte: dataInicio, lte: dataFim },
   }
   const whereProjeto = {
     tenantId,
-    ...(projetoId ? { id: projetoId } : {}),
+    ...filtroId,
     ...(grupo ? { grupo } : {}),
   }
   // Fotos/vídeos/anexos/armazenamento são acumulados — ignoram o período,

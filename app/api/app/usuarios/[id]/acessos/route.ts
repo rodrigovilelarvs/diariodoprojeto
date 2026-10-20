@@ -41,10 +41,11 @@ export async function GET(req: NextRequest, { params }: Params) {
       select:  { id: true, nome: true, cor: true, grupo: true, status: true },
       orderBy: { nome: 'asc' },
     }),
-    // Quais projetos têm ALGUMA restrição configurada (por qualquer pessoa) —
-    // um projeto sem nenhuma linha aqui é visível a todo o time por padrão.
+    // Quais projetos têm ALGUMA restrição configurada — um projeto sem nenhuma linha aqui
+    // é visível a todo o time por padrão. Acesso de quem é "restrito a projetos" não conta:
+    // ele só libera o projeto para aquela pessoa, sem fechá-lo para os demais.
     prisma.projetoAcesso.findMany({
-      where:  { projeto: { tenantId } },
+      where:  { projeto: { tenantId }, usuario: { restringirProjetos: false } },
       select: { projetoId: true },
     }),
     prisma.projetoAcesso.findMany({
@@ -57,6 +58,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const mapaMeu   = new Map(meusAcessos.map((a) => [a.projetoId, a.nivel]))
 
   return NextResponse.json({
+    restringirProjetos: alvo.restringirProjetos === true,
     projetos: projetos.map((p) => ({
       ...p,
       restrito: restritos.has(p.id),

@@ -31,6 +31,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     permEmitirRdo?: boolean; permAprovarRdo?: boolean
     permGerenciarProjetos?: boolean; permGerenciarEquipe?: boolean; permVerRelatorios?: boolean
     permGerenciarTarefas?: boolean
+    restringirProjetos?: boolean
   }
   try {
     body = await req.json()
@@ -81,12 +82,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       ...(permGerenciarEquipe != null && { permGerenciarEquipe }),
       ...(permVerRelatorios != null && { permVerRelatorios }),
       ...(permGerenciarTarefas != null && { permGerenciarTarefas }),
+      ...(body.restringirProjetos != null && { restringirProjetos: body.restringirProjetos === true }),
     },
     select: {
       id: true, nome: true, email: true, funcao: true, perfil: true,
       permEmitirRdo: true, permAprovarRdo: true,
       permGerenciarProjetos: true, permGerenciarEquipe: true, permVerRelatorios: true,
-      permGerenciarTarefas: true,
+      permGerenciarTarefas: true, restringirProjetos: true,
       status: true, ultimoAcessoEm: true, criadoEm: true,
     },
   })

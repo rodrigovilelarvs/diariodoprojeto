@@ -5,14 +5,14 @@ import { useState } from 'react'
 import {
   useUsuarios, useConvidarUsuario, useAtualizarUsuario, useCancelarConvite,
   useUsuarioAcessos, useDefinirAcessoUsuario, useRemoverAcessoUsuario,
-  useNotificacoesUsuario, useAtualizarNotificacoesUsuario,
+  useNotificacoesUsuario, useAtualizarNotificacoesUsuario, useProjetos,
 } from '@/hooks/useEmpresa'
 import { GRUPOS_NOTIFICACAO } from '@/lib/notificacao-eventos'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar } from '@/components/layout/Topbar'
 import { Badge, Modal, Field, Input, Select, Btn, Skeleton } from '@/components/ui'
 import { toast } from 'sonner'
-import type { Usuario, UsuarioPerfil, ProjetoAcessoNivel } from '@/lib/types'
+import type { Usuario, Convite, UsuarioPerfil, ProjetoAcessoNivel } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'
 
 const NIVEL_L: Record<ProjetoAcessoNivel, string> = {
@@ -104,18 +104,129 @@ function PerfilCampos({ perfil, setPerfil, perms, setPerms }: {
   )
 }
 
+// Escolha de projetos já no convite/cadastro: "todos os abertos" (padrão) ou "somente os
+// selecionados", cada um com o seu nível. Quem escolhe só alguns nunca enxerga os demais —
+// nem os que estão abertos a todo o time.
+interface EscolhaAcesso { restringir: boolean; niveis: Record<string, ProjetoAcessoNivel> }
+const ACESSO_VAZIO: EscolhaAcesso = { restringir: false, niveis: {} }
+
+function acessosDaEscolha(e: EscolhaAcesso) {
+  return Object.entries(e.niveis).map(([projetoId, nivel]) => ({ projetoId, nivel }))
+}
+
+function AcessoProjetosCampo({ valor, onChange }: { valor: EscolhaAcesso; onChange: (v: EscolhaAcesso) => void }) {
+  const { data: projetos = [], isLoading } = useProjetos()
+  const [busca, setBusca] = useState('')
+  const buscaNorm = busca.trim().toLowerCase()
+  const filtrados = buscaNorm
+    ? projetos.filter(p => p.nome.toLowerCase().includes(buscaNorm) || p.grupo?.toLowerCase().includes(buscaNorm))
+    : projetos
+  const marcados = Object.keys(valor.niveis).length
+
+  function alternar(id: string) {
+    const niveis = { ...valor.niveis }
+    if (niveis[id]) delete niveis[id]; else niveis[id] = 'VISUALIZAR'
+    onChange({ ...valor, niveis })
+  }
+  function marcarTodos() {
+    const todosMarcados = filtrados.every(p => valor.niveis[p.id])
+    const niveis = { ...valor.niveis }
+    filtrados.forEach(p => { if (todosMarcados) delete niveis[p.id]; else niveis[p.id] ??= 'VISUALIZAR' })
+    onChange({ ...valor, niveis })
+  }
+
+  return (
+    <div style={{ marginBottom: 14 }} data-testid="acesso-projetos-convite">
+      <label style={{ fontSize: 11, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Projetos que a pessoa vai acessar</label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        {([
+          { restringir: false, label: 'Todos os projetos abertos ao time' },
+          { restringir: true,  label: 'Somente os projetos que eu escolher' },
+        ]).map(op => (
+          <button key={String(op.restringir)} type="button" onClick={() => onChange({ ...valor, restringir: op.restringir })}
+            style={{
+              flex: 1, padding: '8px 10px', borderRadius: 'var(--r)', cursor: 'pointer', fontSize: 12, fontWeight: 500,
+              border: `.5px solid ${valor.restringir === op.restringir ? 'var(--ba)' : 'var(--b)'}`,
+              background: valor.restringir === op.restringir ? 'var(--bga)' : 'var(--s1)',
+              color: valor.restringir === op.restringir ? 'var(--ta)' : 'var(--tp)',
+              fontFamily: 'inherit',
+            }}
+          >
+            {op.label}
+          </button>
+        ))}
+      </div>
+      {!valor.restringir ? (
+        <div style={{ fontSize: 10.5, color: 'var(--ts)' }}>
+          A pessoa vê todos os projetos que não têm uma lista de acesso própria, além dos que já a incluem.
+        </div>
+      ) : (
+        <div style={{ background: 'var(--s1)', borderRadius: 'var(--r)', padding: '10px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <i className="ti ti-search" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'var(--tm)' }} />
+              <Input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar projeto pelo nome..." style={{ paddingLeft: 30 }} />
+            </div>
+            {filtrados.length > 0 && (
+              <button type="button" onClick={marcarTodos}
+                style={{ fontSize: 10.5, color: 'var(--ta)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                {filtrados.every(p => valor.niveis[p.id]) ? 'Limpar seleção' : 'Selecionar todos'}
+              </button>
+            )}
+          </div>
+          <div style={{ maxHeight: 200, overflowY: 'auto', border: '.5px solid var(--b)', borderRadius: 'var(--r)', background: 'var(--s0, var(--s1))' }}>
+            {isLoading ? <Skeleton h={80} /> : filtrados.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 14, color: 'var(--tm)', fontSize: 11 }}>
+                {projetos.length === 0 ? 'Nenhum projeto cadastrado ainda.' : `Nenhum projeto encontrado para "${busca}".`}
+              </div>
+            ) : filtrados.map(p => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderBottom: '.5px solid var(--b)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={!!valor.niveis[p.id]} onChange={() => alternar(p.id)} />
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: p.cor, flexShrink: 0 }} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>
+                    {p.grupo && <span style={{ color: 'var(--ts)' }}>{p.grupo} — </span>}
+                    {p.nome}
+                  </span>
+                </label>
+                {valor.niveis[p.id] && (
+                  <Select value={valor.niveis[p.id]} aria-label={`Nível de acesso em ${p.nome}`} style={{ width: 150 }}
+                    onChange={e => onChange({ ...valor, niveis: { ...valor.niveis, [p.id]: e.target.value as ProjetoAcessoNivel } })}>
+                    {(Object.keys(NIVEL_L) as ProjetoAcessoNivel[]).map(n => (
+                      <option key={n} value={n}>{NIVEL_L[n]}</option>
+                    ))}
+                  </Select>
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 10.5, marginTop: 6, color: marcados === 0 ? 'var(--tw)' : 'var(--ts)' }}>
+            {marcados === 0
+              ? 'Nenhum projeto marcado: a pessoa entra sem ver projeto algum até você liberar.'
+              : `${marcados} projeto${marcados !== 1 ? 's' : ''} liberado${marcados !== 1 ? 's' : ''}. Ela não vê nenhum outro, e os projetos continuam abertos para o resto do time.`}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Modal "Projetos" — visão inversa da tela de Acesso de cada projeto: aqui o
 // ponto de partida é a pessoa, não o projeto (pra vincular tudo de uma vez).
 function ProjetosUsuarioModal({ usuario, onClose }: { usuario: Usuario; onClose: () => void }) {
   const { data, isLoading } = useUsuarioAcessos(usuario.id)
   const definir = useDefinirAcessoUsuario()
   const remover = useRemoverAcessoUsuario()
+  const atualizar = useAtualizarUsuario()
   const [selecionados, setSelecionados] = useState<Record<string, boolean>>({})
   const [novoNivel, setNovoNivel] = useState<ProjetoAcessoNivel>('VISUALIZAR')
   const [aplicando, setAplicando] = useState(false)
   const [busca, setBusca] = useState('')
 
   const projetos = data?.projetos ?? []
+  // "Só projetos liberados": a pessoa não herda os projetos abertos ao time
+  const restrito = data?.restringirProjetos ?? !!usuario.restringirProjetos
+  const veTodos = usuario.perfil === 'ADMIN' || !!usuario.permGerenciarProjetos
   const comAcesso = projetos.filter(p => p.nivel != null)
   const semAcesso = projetos.filter(p => p.nivel == null)
   const buscaNorm = busca.trim().toLowerCase()
@@ -167,7 +278,16 @@ function ProjetosUsuarioModal({ usuario, onClose }: { usuario: Usuario; onClose:
     }
   }
 
-  const algumAbertoATodoTime = idsSelecionados.some(id => semAcesso.find(p => p.id === id)?.restrito === false)
+  async function alternarRestricao() {
+    try {
+      await atualizar.mutateAsync({ id: usuario.id, restringirProjetos: !restrito })
+      toast.success(!restrito ? 'Agora ele vê só os projetos liberados.' : 'Agora ele também vê os projetos abertos ao time.')
+    } catch (err) {
+      toast.error(mensagemErro(err, 'Erro ao alterar o acesso.'))
+    }
+  }
+
+  const algumAbertoATodoTime = !restrito && idsSelecionados.some(id => semAcesso.find(p => p.id === id)?.restrito === false)
 
   return (
     <Modal open onClose={onClose} titulo={`Projetos de ${usuario.nome}`} icon="ti-folder" width={480}
@@ -178,10 +298,23 @@ function ProjetosUsuarioModal({ usuario, onClose }: { usuario: Usuario; onClose:
           <div style={{ background: 'var(--bga)', border: '.5px solid var(--ba)', borderRadius: 'var(--r)', padding: '10px 12px', marginBottom: 12, fontSize: 10.5, color: 'var(--ta)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
             <i className="ti ti-info-circle" style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }} />
             <span>
-              Por padrão, sem nenhum acesso configurado aqui, este usuário vê todos os projetos sem restrição.
-              Ao conceder acesso a um projeto, ele passa a ficar restrito — só quem estiver na lista de acesso dele consegue vê-lo.
+              {veTodos
+                ? 'Esta pessoa é administradora ou gerencia projetos: enxerga todos os projetos, e a lista abaixo não limita o acesso dela.'
+                : restrito
+                  ? 'Esta pessoa só vê os projetos listados abaixo. Os projetos continuam abertos para o resto do time.'
+                  : 'Por padrão, sem nenhum acesso configurado aqui, este usuário vê todos os projetos sem restrição. Ao conceder acesso a um projeto, ele passa a ficar restrito — só quem estiver na lista de acesso dele consegue vê-lo.'}
             </span>
           </div>
+
+          {!veTodos && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', marginBottom: 12 }}>
+              <input type="checkbox" checked={restrito} disabled={atualizar.isPending} onChange={alternarRestricao} style={{ marginTop: 2 }} />
+              <span>
+                <div style={{ fontSize: 12, fontWeight: 500 }}>Ver somente os projetos liberados abaixo</div>
+                <div style={{ fontSize: 10.5, color: 'var(--ts)' }}>Sem isso, a pessoa também vê todos os projetos que não têm lista de acesso.</div>
+              </span>
+            </label>
+          )}
 
           {comAcesso.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 20, color: 'var(--tm)', fontSize: 11 }}>
@@ -258,7 +391,7 @@ function ProjetosUsuarioModal({ usuario, onClose }: { usuario: Usuario; onClose:
                         {p.grupo && <span style={{ color: 'var(--ts)' }}>{p.grupo} — </span>}
                         {p.nome}
                       </span>
-                      {p.restrito && <span style={{ fontSize: 9, color: 'var(--tm)', flexShrink: 0 }}>já restrito</span>}
+                      {!restrito && p.restrito && <span style={{ fontSize: 9, color: 'var(--tm)', flexShrink: 0 }}>já restrito</span>}
                     </label>
                   ))}
                 </div>
@@ -375,6 +508,7 @@ export default function UsuariosPage() {
   const [mostrarSenhaConv, setMostrarSenhaConv] = useState(false)
   const [convPerfil, setConvPerfil] = useState<UsuarioPerfil>('PERSONALIZADO')
   const [convPerms, setConvPerms]   = useState<PermissoesForm>(PERM_VAZIO)
+  const [convAcesso, setConvAcesso] = useState<EscolhaAcesso>(ACESSO_VAZIO)
 
   const [modalEdit, setModalEdit] = useState<Usuario | null>(null)
   const [modalProjetos, setModalProjetos] = useState<Usuario | null>(null)
@@ -391,7 +525,7 @@ export default function UsuariosPage() {
   function limparFormConvite() {
     setModalConv(false); setConvModo('convite')
     setConvNome(''); setConvEmail(''); setConvFuncao(''); setConvSenha(''); setMostrarSenhaConv(false)
-    setConvPerfil('PERSONALIZADO'); setConvPerms(PERM_VAZIO)
+    setConvPerfil('PERSONALIZADO'); setConvPerms(PERM_VAZIO); setConvAcesso(ACESSO_VAZIO)
   }
 
   async function handleConvidar(e: React.FormEvent) {
@@ -400,11 +534,17 @@ export default function UsuariosPage() {
       if (!convNome.trim()) { toast.error('Informe o nome.'); return }
       if (convSenha.length < 8) { toast.error('A senha deve ter pelo menos 8 caracteres.'); return }
     }
+    // Administrador e quem gerencia projetos já veem todos: a escolha de projetos não se aplica
+    const escolheProjetos = convPerfil === 'PERSONALIZADO' && !convPerms.permGerenciarProjetos
+    const restringir = escolheProjetos && convAcesso.restringir
+    if (restringir && Object.keys(convAcesso.niveis).length === 0
+      && !window.confirm('Nenhum projeto foi marcado: a pessoa vai entrar sem ver projeto algum até você liberar. Continuar mesmo assim?')) return
     try {
       await convidar.mutateAsync({
         email: convEmail, perfil: convPerfil, funcao: convFuncao.trim() || undefined,
         ...(convModo === 'cadastro' ? { nome: convNome, senha: convSenha } : {}),
         ...(convPerfil === 'PERSONALIZADO' ? convPerms : {}),
+        ...(restringir ? { restringirProjetos: true, projetosAcesso: acessosDaEscolha(convAcesso) } : { restringirProjetos: false }),
       })
       toast.success(convModo === 'cadastro'
         ? `"${convNome}" cadastrado! Já pode logar com a senha definida — enviamos um e-mail de aviso (sem a senha), então passe a senha a ele por outro meio.`
@@ -441,10 +581,20 @@ export default function UsuariosPage() {
     }
   }
 
-  async function reenviarConvite(c: { id: string; email: string; perfil: UsuarioPerfil }) {
+  async function reenviarConvite(c: Convite) {
     setReenviandoId(c.id)
     try {
-      await convidar.mutateAsync({ email: c.email, perfil: c.perfil })
+      // reenvia com as mesmas permissões e projetos do convite (sem isso, voltariam ao padrão)
+      await convidar.mutateAsync({
+        email: c.email, perfil: c.perfil, funcao: c.funcao || undefined,
+        ...(c.perfil === 'PERSONALIZADO' ? {
+          permEmitirRdo: !!c.permEmitirRdo, permAprovarRdo: !!c.permAprovarRdo,
+          permGerenciarProjetos: !!c.permGerenciarProjetos, permGerenciarEquipe: !!c.permGerenciarEquipe,
+          permVerRelatorios: !!c.permVerRelatorios, permGerenciarTarefas: !!c.permGerenciarTarefas,
+        } : {}),
+        restringirProjetos: !!c.restringirProjetos,
+        ...(c.restringirProjetos ? { projetosAcesso: c.projetosAcesso ?? [] } : {}),
+      })
       toast.success(`Convite reenviado para ${c.email}!`)
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao reenviar convite.'))
@@ -534,6 +684,10 @@ export default function UsuariosPage() {
                     <td style={{ textAlign: 'center', fontSize: 11, color: 'var(--ts)' }}>
                       {u.perfil === 'ADMIN' || u.permGerenciarProjetos ? (
                         <span title="Administrador/Gerenciar projetos: enxerga todos os projetos, sem restrição.">Todos</span>
+                      ) : u.restringirProjetos ? (
+                        <span title="Só enxerga os projetos liberados para ele — não vê os abertos ao time.">
+                          Só liberados ({u._count?.projetoAcessos ?? 0})
+                        </span>
                       ) : u._count?.projetoAcessos ? (
                         <span title="Quantidade de projetos com acesso especificamente configurado para este usuário.">
                           {u._count.projetoAcessos} configurado{u._count.projetoAcessos !== 1 ? 's' : ''}
@@ -626,6 +780,9 @@ export default function UsuariosPage() {
                     </div>
                   )}
                   <PerfilCampos perfil={convPerfil} setPerfil={setConvPerfil} perms={convPerms} setPerms={setConvPerms} />
+                  {convPerfil === 'PERSONALIZADO' && !convPerms.permGerenciarProjetos && (
+                    <AcessoProjetosCampo valor={convAcesso} onChange={setConvAcesso} />
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button type="submit" className="btn btn-p btn-sm" disabled={convidar.isPending}>
                       <i className={`ti ${convModo === 'cadastro' ? 'ti-user-plus' : 'ti-send'}`} />{' '}
@@ -652,7 +809,9 @@ export default function UsuariosPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={c.email}>{c.email}</div>
                       <div style={{ fontSize: 10, color: 'var(--ts)' }}>
-                        {PERFIL_L[c.perfil]} · Expira {new Date(c.expiradoEm).toLocaleDateString('pt-BR')}
+                        {PERFIL_L[c.perfil]}
+                        {c.restringirProjetos ? ` · Só ${c.projetosAcesso?.length ?? 0} projeto${(c.projetosAcesso?.length ?? 0) !== 1 ? 's' : ''} liberado${(c.projetosAcesso?.length ?? 0) !== 1 ? 's' : ''}` : ''}
+                        {' '}· Expira {new Date(c.expiradoEm).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
                     <button className="btn btn-sm" disabled={reenviandoId === c.id} onClick={() => reenviarConvite(c)}>

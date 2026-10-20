@@ -8,7 +8,7 @@ import { AtividadeStatus, LogCategoria, LogNivel, MaoDeObraCategoria, RdoStatus 
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeEmitirRdo, podeGerenciarProjetos, resolverAcessoProjeto, podeEditarProjetoConteudo, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
+import { requireAuth, podeEmitirRdo, projetosSemAcesso, resolverAcessoProjeto, podeEditarProjetoConteudo, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
 // lib/prisma.ts) — anotado aqui localmente com a forma do `include` usado
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   const auth = await requireAuth(req)
   if ('error' in auth) return auth.error
 
-  const { tenantId, usuarioId } = auth.ctx
+  const { tenantId } = auth.ctx
   const { searchParams } = new URL(req.url)
 
   const projetoId = searchParams.get('projetoId') ?? undefined
@@ -59,17 +59,7 @@ export async function GET(req: NextRequest) {
     [{ numero: sortDir }, { data: sortDir }]
 
   // Projetos com acesso restrito que este usuário não integra ficam de fora
-  let projetosExcluidos: string[] = []
-  if (!podeGerenciarProjetos(auth.ctx)) {
-    const todosProjetos: Array<{ id: string }> = await prisma.projeto.findMany({ where: { tenantId }, select: { id: true } })
-    const acessos: Array<{ projetoId: string; usuarioId: string }> = await prisma.projetoAcesso.findMany({
-      where:  { projetoId: { in: todosProjetos.map((p) => p.id) } },
-      select: { projetoId: true, usuarioId: true },
-    })
-    const restritos: Set<string> = new Set(acessos.map((a) => a.projetoId))
-    const meus: Set<string> = new Set(acessos.filter((a) => a.usuarioId === usuarioId).map((a) => a.projetoId))
-    projetosExcluidos = Array.from(restritos).filter((id: string) => !meus.has(id))
-  }
+  const projetosExcluidos: string[] = await projetosSemAcesso(tenantId, auth.ctx)
 
   if (projetoId && projetosExcluidos.includes(projetoId)) {
     return NextResponse.json({ rdos: [], total: 0, pagina, por })

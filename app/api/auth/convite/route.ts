@@ -7,6 +7,7 @@ import { LogCategoria, LogNivel, UsuarioStatus } from '@/lib/prisma-enums'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { hashSenha, verificarSenha } from '@/lib/auth'
+import { acessosDaEmpresa, concederAcessos, lerAcessos, restricaoNaoSeAplica } from '@/lib/acesso-convite'
 import { MAX_TENTATIVAS, falhasRecentesDoIp, respostaDeSessao } from '@/lib/contas'
 
 const PERFIL_L: Record<string, string> = {
@@ -143,7 +144,12 @@ export async function POST(req: NextRequest) {
     permGerenciarEquipe:   convite.permGerenciarEquipe,
     permVerRelatorios:     convite.permVerRelatorios,
     permGerenciarTarefas:  convite.permGerenciarTarefas,
+    // projetos escolhidos no convite: a pessoa já entra só com eles (nunca vê o que não foi liberado)
+    restringirProjetos:    convite.restringirProjetos && !restricaoNaoSeAplica(convite.perfil, convite.permGerenciarProjetos),
   }
+  const acessosDoConvite = flagsConvite.restringirProjetos
+    ? await acessosDaEmpresa(convite.tenantId, lerAcessos(convite.projetosAcesso))
+    : []
 
   const usuario = await prisma.usuario.upsert({
     where:  { tenantId_email: { tenantId: convite.tenantId, email: convite.email } },
@@ -157,6 +163,8 @@ export async function POST(req: NextRequest) {
       ...flagsConvite,
     },
   })
+
+  await concederAcessos(usuario.id, acessosDoConvite)
 
   // Marca convite como aceito
   await prisma.convite.update({
