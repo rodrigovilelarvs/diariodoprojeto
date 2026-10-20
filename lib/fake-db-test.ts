@@ -627,7 +627,12 @@ const rdoAnteriorFixture = {
   maoDeObra: [{ id: 'mo-fixture', funcaoNome: 'Mestre de obras', categoria: 'INDIRETA', quantidade: 3, horaEntrada: '07:00', horaSaida: '17:00', totalHH: 27 }],
   equipamentos: [{ id: 'eq-fixture', equipamentoNome: 'Betoneira', quantidade: 1, observacao: null }],
   // avulsa (sem atividadeId/etapa da EAP) — não depende do fixture de atividades
-  atividadeRegistros: [{ id: 'ra-fixture', atividadeId: null, pctAnterior: 20, pctAtual: 40, deltaHoje: 20, avulsa: true, avulsaEtapa: '1.0', avulsaNome: 'Serviço avulso', atividade: null }],
+  // + uma avulsa e uma atividade da lista já em 100%: não podem ir para o RDO novo
+  atividadeRegistros: [
+    { id: 'ra-fixture', atividadeId: null, pctAnterior: 20, pctAtual: 40, deltaHoje: 20, avulsa: true, avulsaEtapa: '1.0', avulsaNome: 'Serviço avulso', atividade: null },
+    { id: 'ra-fixture-avulsa-100', atividadeId: null, pctAnterior: 60, pctAtual: 100, deltaHoje: 40, avulsa: true, avulsaEtapa: '2.0', avulsaNome: 'Avulsa concluída', atividade: null },
+    { id: 'ra-fixture-lista-100', atividadeId: 'ativ-fixture-100', pctAnterior: 70, pctAtual: 100, deltaHoje: 30, avulsa: false, avulsaEtapa: null, avulsaNome: null, atividade: { id: 'ativ-fixture-100', status: 'EM_ANDAMENTO' } },
+  ],
 }
 rdosCriados.set(RDO_ANTERIOR_ID, rdoAnteriorFixture)
 

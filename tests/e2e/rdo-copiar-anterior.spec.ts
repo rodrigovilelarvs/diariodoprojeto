@@ -39,7 +39,9 @@ test('copiarAnterior=true copia horários, mão de obra, equipamento e atividade
   expect(rdo.equipamentos[0]).toMatchObject({ equipamentoNome: 'Betoneira', quantidade: 1 })
 
   // % anterior do novo RDO começa igual ao % atual do RDO copiado (delta = 0
-  // até o usuário registrar o avanço de hoje) — não repete o pctAnterior antigo
+  // até o usuário registrar o avanço de hoje) — não repete o pctAnterior antigo.
+  // O RDO copiado tem mais duas atividades já em 100% (uma avulsa e uma da lista):
+  // essas não vão para o novo — só a avulsa a 40% é copiada.
   expect(rdo.atividadeRegistros).toHaveLength(1)
   expect(rdo.atividadeRegistros[0]).toMatchObject({
     avulsa: true, avulsaNome: 'Serviço avulso', pctAnterior: 40, pctAtual: 40, deltaHoje: 0,

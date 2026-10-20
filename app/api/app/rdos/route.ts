@@ -248,13 +248,14 @@ export async function POST(req: NextRequest) {
     })
 
     if (rdoAnterior) {
-      // Copia atividades EM ANDAMENTO (não copia concluídas). Atividades
-      // avulsas não têm Atividade vinculada (atividade === null) — sem o
-      // "?." aqui, um RDO anterior com avulsa quebrava a cópia inteira com
-      // "Cannot read properties of null"; tratamos como "não concluída"
-      // (sempre copiada), já que avulsa não tem status de conclusão próprio.
+      // Copia só o que ainda está em andamento: atividade com 100% no RDO
+      // anterior não entra no novo — vale para as da lista de tarefas e para as
+      // avulsas. Bug real: o filtro olhava só o status da Atividade (CONCLUIDA),
+      // que a avulsa não tem (atividade === null) e que a da lista só recebe
+      // depois; então qualquer uma já em 100% no anterior era copiada.
+      // O "?." também evita "Cannot read properties of null" com avulsa.
       const atividadesParaCopiar = rdoAnterior.atividadeRegistros.filter(
-        (r) => r.atividade?.status !== AtividadeStatus.CONCLUIDA,
+        (r) => r.pctAtual < 100 && r.atividade?.status !== AtividadeStatus.CONCLUIDA,
       )
 
       for (const [posicao, reg] of atividadesParaCopiar.entries()) {
