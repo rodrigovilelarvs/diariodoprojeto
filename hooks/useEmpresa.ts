@@ -193,7 +193,7 @@ export function useAtualizarAssinaturasProjeto() {
 // ════════════════════════════════════════
 
 export function useRdos(
-  filtros?: { projetoId?: string; grupo?: string; status?: string; pagina?: number; por?: number; sortBy?: string; sortDir?: string; data?: string; busca?: string },
+  filtros?: { projetoId?: string; grupo?: string; status?: string; pagina?: number; por?: number; sortBy?: string; sortDir?: string; data?: string; busca?: string; contagens?: boolean },
   opcoes?: { enabled?: boolean },
 ) {
   const params = new URLSearchParams()
@@ -206,6 +206,7 @@ export function useRdos(
   if (filtros?.sortDir)   params.set('sortDir',   filtros.sortDir)
   if (filtros?.data)      params.set('data',      filtros.data)
   if (filtros?.busca)     params.set('busca',     filtros.busca)
+  if (filtros?.contagens) params.set('contagens', '1')
 
   const qs = params.toString()
   return useQuery({

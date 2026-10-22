@@ -389,6 +389,7 @@ export interface RdosResponse {
   total:  number
   pagina: number
   por:    number
+  porStatus?: Record<string, number> // só com ?contagens=1: RDOs de todas as páginas, por status
 }
 
 // ── Relatórios ───────────────────────────────────────────────

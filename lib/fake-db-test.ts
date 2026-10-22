@@ -575,6 +575,16 @@ const fakeDbBase = {
       return take ? lista.slice(0, take) : lista
     },
     count: async () => rdosCriados.size,
+    // contagem por status (cartões da lista de RDOs)
+    groupBy: async ({ where }: any) => {
+      const projetoId = typeof where?.projetoId === 'string' ? where.projetoId : undefined
+      const lista = [...rdosCriados.values(), ...rdosConcluido.values()]
+        .filter(r => !projetoId || r.projetoId === projetoId)
+        .filter(r => !where?.status?.in || where.status.in.includes(r.status))
+      const por: Record<string, number> = {}
+      for (const r of lista) por[r.status] = (por[r.status] ?? 0) + 1
+      return Object.entries(por).map(([status, _count]) => ({ status, _count }))
+    },
     findUnique: async ({ where }: any) => rdosCriados.get(where.id) ?? rdosConcluido.get(where.id) ?? null,
   }),
 

@@ -66,14 +66,17 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   const { data: projetos } = useProjetos()
   const grupos = Array.from(new Set((projetos ?? []).map(p => p.grupo).filter(Boolean) as string[])).sort()
 
-  const { data, isLoading } = useRdos({ status: status || undefined, projetoId: projetoId || undefined, grupo: grupo || undefined, busca: buscaAplicada || undefined, pagina, sortBy, sortDir })
+  const { data, isLoading } = useRdos({ status: status || undefined, projetoId: projetoId || undefined, grupo: grupo || undefined, busca: buscaAplicada || undefined, pagina, sortBy, sortDir, contagens: true })
   const nomeProjetoFiltrado = data?.rdos.find(r => r.projeto.id === projetoId)?.projeto.nome
 
   const rdos    = data?.rdos ?? []
-  const total   = data?.total ?? 0
-  const aprovados = rdos.filter(r => r.status === 'APROVADO').length
-  const pendentes = rdos.filter(r => r.status === 'PENDENTE_APROVACAO').length
-  const rascunhos = rdos.filter(r => r.status === 'RASCUNHO').length
+  // Cartões: somam os RDOs de todas as páginas (e ignoram o filtro de status, para continuarem
+  // mostrando o quadro completo do projeto/busca). Sem a contagem do servidor, cai para o total.
+  const porStatus = data?.porStatus
+  const total   = porStatus ? Object.values(porStatus).reduce((a, b) => a + b, 0) : (data?.total ?? 0)
+  const aprovados = porStatus ? (porStatus.APROVADO ?? 0) : rdos.filter(r => r.status === 'APROVADO').length
+  const pendentes = porStatus ? (porStatus.PENDENTE_APROVACAO ?? 0) : rdos.filter(r => r.status === 'PENDENTE_APROVACAO').length
+  const rascunhos = porStatus ? (porStatus.RASCUNHO ?? 0) : rdos.filter(r => r.status === 'RASCUNHO').length
 
   const filtrados = rdos
 

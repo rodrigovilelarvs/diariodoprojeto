@@ -71,13 +71,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ rdos: [], total: 0, pagina, por })
   }
 
-  const whereBase = {
+  // Tudo menos o filtro de status: serve também para as contagens dos cartões (ver porStatus)
+  const whereSemStatus = {
     projeto: { tenantId, ...(grupo ? { grupo } : {}) },
     ...(projetoId ? { projetoId } : projetosExcluidos.length > 0 ? { projetoId: { notIn: projetosExcluidos } } : {}),
-    ...(status    ? { status }    : soEnviados ? { status: { in: STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } } : {}),
     ...(dataParam ? { data: new Date(dataParam) } : {}),
     ...(busca     ? { OR: busca } : {}),
   }
+  const filtroVisualizador = soEnviados ? { status: { in: STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } } : {}
+  const whereBase = { ...whereSemStatus, ...(status ? { status } : filtroVisualizador) }
 
   const rdos = await prisma.rdo.findMany({
     where: whereBase,
@@ -94,7 +96,18 @@ export async function GET(req: NextRequest) {
 
   const total = await prisma.rdo.count({ where: whereBase })
 
-  return NextResponse.json({ rdos, total, pagina, por })
+  // Contagem por status de TODOS os RDOs do recorte (projeto, grupo, busca...), não só da página
+  // mostrada — alimenta os cartões da lista. Ignora o filtro de status para os cartões não zerarem
+  // quando a pessoa filtra por um status.
+  let porStatus: Record<string, number> | undefined
+  if (searchParams.get('contagens') === '1') {
+    const grupos: Array<{ status: string; _count: number }> = await prisma.rdo.groupBy({
+      by: ['status'], where: { ...whereSemStatus, ...filtroVisualizador }, _count: true,
+    })
+    porStatus = Object.fromEntries(grupos.map((g) => [g.status, g._count]))
+  }
+
+  return NextResponse.json({ rdos, total, pagina, por, ...(porStatus ? { porStatus } : {}) })
 }
 
 // ── POST — criar RDO ─────────────────────────────────────────
