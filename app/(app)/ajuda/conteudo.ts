@@ -167,7 +167,7 @@ export const SECOES: Secao[] = [
     blocos: [
       { t: 'p', x: 'Ao clicar em um projeto no painel você entra na **pasta do projeto**, que tem três abas: **Visão geral**, **Acesso** e **Assinaturas**.' },
       { t: 'h', x: 'Visão geral' },
-      { t: 'p', x: 'Mostra os números do projeto (RDOs, atividades, ocorrências, comentários, fotos e vídeos), os **RDOs recentes**, as **fotos recentes** e as informações do contrato: prazo, progresso planejado e real, desvio, H/H total e duração. Clique em qualquer indicador para ver o conteúdo por trás do número. Para alterar os dados, use o botão **Editar**.' },
+      { t: 'p', x: 'Mostra os números do projeto (RDOs, atividades, ocorrências, comentários, fotos e vídeos), os **RDOs recentes**, as **fotos recentes** e as informações do contrato: prazo, progresso planejado e real, desvio, H/H total e duração. Clique em qualquer indicador para ver o conteúdo por trás do número. O indicador **Atividades** abre a lista de todas as atividades registradas nos RDOs, as da lista de tarefas e as **avulsas** (marcadas com a etiqueta "Avulsa"), com o andamento em cada RDO. Para ver só a lista de tarefas, use o botão **Lista de tarefas** do alto da tela. Para alterar os dados, use o botão **Editar**.' },
       { t: 'p', x: 'No alto da tela fica o botão **Novo RDO**: dentro da pasta de um projeto, tudo que você cria é daquele projeto, então o RDO já abre com o **projeto selecionado** (você só escolhe a data). O botão **Lista de tarefas**, ao lado, também abre só as etapas e atividades deste projeto.' },
       { t: 'img', src: '/ajuda/projeto-visao-geral.webp', alt: 'Visão geral de um projeto', legenda: 'Visão geral do projeto.' },
       { t: 'h', x: 'Acesso: quem pode ver este projeto' },

@@ -19,7 +19,7 @@ type RdoResumo = {
   ocorrencias: Array<{ id: string; tipo: string; descricao: string; resolvida: boolean }>
   maoDeObra: Array<{ funcaoNome: string; quantidade: number; horaEntrada: string; horaSaida: string; totalHH: number }>
   equipamentos: Array<{ equipamentoNome: string; quantidade: number; observacao: string | null }>
-  atividadeRegistros: Array<{ id: string; pctAnterior: number; pctAtual: number; deltaHoje: number; atividade: { nome: string } | null }>
+  atividadeRegistros: Array<{ id: string; pctAnterior: number; pctAtual: number; deltaHoje: number; avulsa: boolean; avulsaEtapa: string | null; avulsaNome: string | null; atividade: { nome: string } | null }>
   comentarios: Array<{ id: string; texto: string; criadoEm: Date; autor: { nome: string }; _count: { respostas: number } }>
 }
 type ItemDoRdo = { rdoId: string; rdoNumero: number; rdoData: Date }
@@ -66,6 +66,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       atividadeRegistros: {
         select: {
           id: true, pctAnterior: true, pctAtual: true, deltaHoje: true,
+          avulsa: true, avulsaEtapa: true, avulsaNome: true,
           atividade: { select: { nome: true } },
         },
       },
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const fotos: Array<ItemDoRdo & { id: string; url: string; nomeArq: string; descricao: string | null }> = []
   const videos: typeof fotos = []
   const anexos: typeof fotos = []
-  const atividadesFeed: Array<ItemDoRdo & { id: string; nome: string; pctAnterior: number; pctAtual: number; deltaHoje: number }> = []
+  const atividadesFeed: Array<ItemDoRdo & { id: string; nome: string; avulsa: boolean; etapa: string | null; pctAnterior: number; pctAtual: number; deltaHoje: number }> = []
   const ocorrenciasFeed: Array<ItemDoRdo & { id: string; tipo: string; descricao: string; resolvida: boolean }> = []
   const comentariosFeed: Array<ItemDoRdo & { id: string; texto: string; criadoEm: Date; autorNome: string; totalRespostas: number }> = []
   const clima: Array<ItemDoRdo & { climaManha: string | null; climaTarde: string | null; climaNoite: string | null; precipitacaoMm: number | null; climaImpacto: string }> = []
@@ -106,7 +107,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
     for (const reg of r.atividadeRegistros) {
       atividadesFeed.push({
-        id: reg.id, nome: reg.atividade?.nome ?? '(atividade removida)',
+        // Atividade avulsa não tem Atividade vinculada: o nome vem do próprio registro
+        // (antes ela aparecia como "(atividade removida)")
+        id: reg.id, nome: reg.atividade?.nome ?? reg.avulsaNome ?? '(atividade removida)',
+        avulsa: reg.avulsa || !reg.atividade, etapa: reg.avulsaEtapa,
         pctAnterior: reg.pctAnterior, pctAtual: reg.pctAtual, deltaHoje: reg.deltaHoje,
         rdoId: r.id, rdoNumero: r.numero, rdoData: r.data,
       })

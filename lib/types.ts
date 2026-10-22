@@ -183,7 +183,7 @@ export interface Projeto {
 
 // ── Resumo do projeto ─────────────────────────────────────────
 export interface ResumoMidiaItem { id: string; url: string; nomeArq: string; descricao?: string; rdoId: string; rdoNumero: number; rdoData: string }
-export interface ResumoAtividadeItem { id: string; nome: string; pctAnterior: number; pctAtual: number; deltaHoje: number; rdoId: string; rdoNumero: number; rdoData: string }
+export interface ResumoAtividadeItem { id: string; nome: string; avulsa: boolean; etapa: string | null; pctAnterior: number; pctAtual: number; deltaHoje: number; rdoId: string; rdoNumero: number; rdoData: string }
 export interface ResumoOcorrenciaItem { id: string; tipo: string; descricao: string; resolvida: boolean; rdoId: string; rdoNumero: number; rdoData: string }
 export interface ResumoComentarioItem { id: string; texto: string; criadoEm: string; autorNome: string; totalRespostas: number; rdoId: string; rdoNumero: number; rdoData: string }
 export interface ResumoClimaItem { rdoId: string; rdoNumero: number; rdoData: string; climaManha?: ClimaCondicao; climaTarde?: ClimaCondicao; climaNoite?: ClimaCondicao; precipitacaoMm?: number; climaImpacto: ClimaImpacto }

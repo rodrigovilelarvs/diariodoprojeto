@@ -236,7 +236,7 @@ export default function ProjetoResumoPage() {
         {/* KPIs — cada um abre a categoria correspondente */}
         <div className="kgrid" style={{ gridTemplateColumns: 'repeat(6,1fr)', marginBottom: 0 }}>
           <KpiCard icon="ti-file-text"      valor={kpis.totalRdos}            label="RDOs"        onClick={() => setModalRdos(true)} />
-          <KpiCard icon="ti-list-check"     valor={data.atividades.length}    label="Atividades"  onClick={() => setModalTarefas(true)} />
+          <KpiCard icon="ti-list-check"     valor={data.atividades.length}    label="Atividades"  onClick={() => abrirConteudo('atividades')} />
           <KpiCard icon="ti-alert-triangle" valor={data.ocorrencias.length}   label="Ocorrências" cor={kpis.ocorrenciasAbertas > 0 ? 'var(--td)' : undefined} onClick={() => abrirConteudo('ocorrencias')} />
           <KpiCard icon="ti-message"        valor={data.comentarios.length}   label="Comentários" onClick={() => abrirConteudo('comentarios')} />
           <KpiCard icon="ti-photo"          valor={data.fotos.length}         label="Fotos"       cor="var(--tsu)" onClick={() => abrirConteudo('fotos')} />
@@ -610,7 +610,11 @@ function ConteudoCategoria({ categoria, data, onAbrirMidia }: {
         {data.atividades.map(a => (
           <div key={a.id} className="hbr">
             <div className="hbt">
-              <span>{a.nome}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                {a.avulsa && <Badge variant="gray">Avulsa</Badge>}
+                {a.etapa && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ta)' }}>{a.etapa}</span>}
+                <span>{a.nome}</span>
+              </span>
               <span style={{ fontSize: 10, color: 'var(--tm)' }}>RDO #{numeroRdo(a.rdoNumero)} · {fmtData(a.rdoData)}</span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--ts)' }}>

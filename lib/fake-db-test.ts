@@ -662,7 +662,7 @@ const rdoAnteriorFixture = {
   atividadeRegistros: [
     { id: 'ra-fixture', atividadeId: null, pctAnterior: 20, pctAtual: 40, deltaHoje: 20, avulsa: true, avulsaEtapa: '1.0', avulsaNome: 'Serviço avulso', atividade: null },
     { id: 'ra-fixture-avulsa-100', atividadeId: null, pctAnterior: 60, pctAtual: 100, deltaHoje: 40, avulsa: true, avulsaEtapa: '2.0', avulsaNome: 'Avulsa concluída', atividade: null },
-    { id: 'ra-fixture-lista-100', atividadeId: 'ativ-fixture-100', pctAnterior: 70, pctAtual: 100, deltaHoje: 30, avulsa: false, avulsaEtapa: null, avulsaNome: null, atividade: { id: 'ativ-fixture-100', status: 'EM_ANDAMENTO' } },
+    { id: 'ra-fixture-lista-100', atividadeId: 'ativ-fixture-100', pctAnterior: 70, pctAtual: 100, deltaHoje: 30, avulsa: false, avulsaEtapa: null, avulsaNome: null, atividade: { id: 'ativ-fixture-100', nome: 'Atividade da lista a 100%', status: 'EM_ANDAMENTO' } },
   ],
 }
 rdosCriados.set(RDO_ANTERIOR_ID, rdoAnteriorFixture)
