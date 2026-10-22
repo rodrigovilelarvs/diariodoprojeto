@@ -21,6 +21,7 @@ import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import { EmpresaCampo } from '@/components/projetos/EmpresaCampo'
 import { rotuloEmpresa } from '@/lib/rdo-display'
 import { baixarTodosRdosPdf, baixarMidiasProjeto } from '@/lib/download-projeto'
+import type { ResumoMidiaItem } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'
 
 const STATUS_L: Record<string, string> = { NAO_INICIADO: 'Não iniciado', ATIVO: 'Em andamento', PAUSADO: 'Paralisado', CONCLUIDO: 'Concluído', CANCELADO: 'Cancelado' }
@@ -75,6 +76,8 @@ export default function ProjetoResumoPage() {
   const [fotoEdit, setFotoEdit] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' })
   const [baixandoRdos, setBaixandoRdos] = useState<{ feito: number; total: number } | null>(null)
   const [baixandoMidias, setBaixandoMidias] = useState<{ feito: number; total: number } | null>(null)
+  // Fotos, vídeos e arquivos marcados na janela de conteúdo para baixar (ids; vale entre as abas)
+  const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set())
 
   function abrirConteudo(cat: Categoria) {
     setCategoria(cat)
@@ -155,12 +158,24 @@ export default function ProjetoResumoPage() {
     }
   }
 
-  async function handleBaixarMidias() {
+  function handleBaixarMidias() {
+    if (!data) return Promise.resolve()
+    return baixarMidias({ fotos: data.fotos, videos: data.videos, anexos: data.anexos })
+  }
+
+  // Só o que foi marcado na janela de conteúdo
+  function handleBaixarSelecionadas() {
+    if (!data) return Promise.resolve()
+    const marcada = (m: { id: string }) => selecionadas.has(m.id)
+    return baixarMidias({ fotos: data.fotos.filter(marcada), videos: data.videos.filter(marcada), anexos: data.anexos.filter(marcada) })
+  }
+
+  async function baixarMidias(midias: { fotos: ResumoMidiaItem[]; videos: ResumoMidiaItem[]; anexos: ResumoMidiaItem[] }) {
     if (!data) return
     setBaixandoMidias({ feito: 0, total: 0 })
     try {
       const r = await baixarMidiasProjeto(
-        { fotos: data.fotos, videos: data.videos, anexos: data.anexos },
+        midias,
         data.projeto.nome,
         (feito, total) => setBaixandoMidias({ feito, total }),
       )
@@ -366,7 +381,7 @@ export default function ProjetoResumoPage() {
       </Modal>
 
       {/* Modal conteúdo do projeto (fotos, vídeos, ocorrências, comentários, etc.) */}
-      <Modal open={modalConteudo} onClose={() => setModalConteudo(false)} titulo="Conteúdo do projeto" icon="ti-folder" width={760}>
+      <Modal open={modalConteudo} onClose={() => { setModalConteudo(false); setSelecionadas(new Set()) }} titulo="Conteúdo do projeto" icon="ti-folder" width={760}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
           {CATEGORIAS.map(c => (
             <button
@@ -385,7 +400,9 @@ export default function ProjetoResumoPage() {
             </button>
           ))}
         </div>
-        <ConteudoCategoria categoria={categoria} data={data} onAbrirMidia={(itens, index) => setLightbox({ itens, index })} />
+        <ConteudoCategoria categoria={categoria} data={data} onAbrirMidia={(itens, index) => setLightbox({ itens, index })}
+          selecionadas={selecionadas} onSelecionadas={setSelecionadas}
+          baixando={baixandoMidias} onBaixar={handleBaixarSelecionadas} />
       </Modal>
 
       {/* Modal editar projeto */}
@@ -563,17 +580,45 @@ function Vazio({ texto, altura }: { texto: string; altura?: number }) {
   )
 }
 
-function ConteudoCategoria({ categoria, data, onAbrirMidia }: {
+function ConteudoCategoria({ categoria, data, onAbrirMidia, selecionadas, onSelecionadas, baixando, onBaixar }: {
   categoria: Categoria; data: NonNullable<ReturnType<typeof useResumoProjeto>['data']>
   onAbrirMidia: (itens: MidiaLightboxItem[], index: number) => void
+  selecionadas: Set<string>; onSelecionadas: (s: Set<string>) => void
+  baixando: { feito: number; total: number } | null; onBaixar: () => void
 }) {
   if (categoria === 'fotos' || categoria === 'videos' || categoria === 'anexos') {
     const itens = data[categoria]
     if (itens.length === 0) return <Vazio texto="Nenhum registro nesta categoria." />
     const tipo = categoria === 'fotos' ? 'FOTO' : categoria === 'videos' ? 'VIDEO' : 'ARQUIVO'
+    const todasMarcadas = itens.every(m => selecionadas.has(m.id))
+    const alternar = (id: string) => {
+      const novo = new Set(selecionadas)
+      if (novo.has(id)) novo.delete(id); else novo.add(id)
+      onSelecionadas(novo)
+    }
+    const marcarTodas = () => {
+      const novo = new Set(selecionadas)
+      itens.forEach(m => { if (todasMarcadas) novo.delete(m.id); else novo.add(m.id) })
+      onSelecionadas(novo)
+    }
+    const n = selecionadas.size
     return (
+      <>
+      {/* Escolher o que baixar: marque uma a uma ou use "Selecionar tudo" */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10, padding: '8px 10px', background: 'var(--s1)', border: '.5px solid var(--b)', borderRadius: 'var(--r)' }}>
+        <button type="button" className="btn btn-sm" onClick={marcarTodas}>
+          <i className={`ti ${todasMarcadas ? 'ti-square' : 'ti-checks'}`} /> {todasMarcadas ? 'Limpar seleção' : `Selecionar tudo (${itens.length})`}
+        </button>
+        <span style={{ fontSize: 11, color: 'var(--ts)', flex: 1 }}>
+          {n === 0 ? 'Marque os itens que deseja baixar.' : (n === 1 ? '1 item selecionado' : `${n} itens selecionados`)}
+        </span>
+        <button type="button" className="btn btn-p btn-sm" onClick={onBaixar} disabled={n === 0 || !!baixando}>
+          <i className="ti ti-download" /> {baixando ? `Baixando... ${baixando.feito}/${baixando.total || '?'}` : `Baixar selecionados${n > 0 ? ` (${n})` : ''}`}
+        </button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
         {itens.map((m, i) => {
+          const marcada = selecionadas.has(m.id)
           const conteudoThumb = (
             <div style={{ aspectRatio: '1', borderRadius: 'var(--r)', overflow: 'hidden', background: 'var(--s1)', border: '.5px solid var(--b)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {categoria === 'fotos' ? (
@@ -591,15 +636,21 @@ function ConteudoCategoria({ categoria, data, onAbrirMidia }: {
             </div>
           )
           return (
-            <button key={m.id}
-              onClick={() => onAbrirMidia(itens.map(x => ({ id: x.id, url: x.url, nomeArq: x.nomeArq, descricao: x.descricao, tipo })), i)}
-              style={{ display: 'block', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
-              {conteudoThumb}
-              {legenda}
-            </button>
+            <div key={m.id} style={{ position: 'relative' }}>
+              <button
+                onClick={() => onAbrirMidia(itens.map(x => ({ id: x.id, url: x.url, nomeArq: x.nomeArq, descricao: x.descricao, tipo })), i)}
+                style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'inherit', font: 'inherit', outline: marcada ? '2px solid var(--ta)' : 'none', outlineOffset: 1, borderRadius: 'var(--r)' }}>
+                {conteudoThumb}
+                {legenda}
+              </button>
+              <input type="checkbox" checked={marcada} onChange={() => alternar(m.id)}
+                aria-label={`Selecionar ${m.nomeArq} (RDO #${numeroRdo(m.rdoNumero)})`}
+                style={{ position: 'absolute', top: 6, left: 6, width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--ta)' }} />
+            </div>
           )
         })}
       </div>
+      </>
     )
   }
 

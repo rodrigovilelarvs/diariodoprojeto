@@ -111,3 +111,49 @@ test('projeto com muitas mídias é dividido em partes .zip (a pasta do dia se r
   expect(partes[1].entradas).toEqual(['6', '7'].map(n => `2026-08-20/f${n}.png`))
   await expect(page.getByText(/Divididos em 2 arquivos .zip/)).toBeVisible()
 })
+
+// Na janela "Conteúdo do projeto" dá para escolher o que baixar (qualquer projeto, não só os
+// concluídos): marcar item a item ou "Selecionar tudo", e baixar só o marcado.
+async function abrirConteudo(page: Page, cartao: string) {
+  const card = page.getByText(cartao, { exact: true }).first()
+  await expect(async () => {
+    await card.click()
+    await expect(page.getByText('Conteúdo do projeto')).toBeVisible({ timeout: 1500 })
+  }).toPass({ timeout: 20_000 })
+}
+
+test('nas fotos, baixa só as marcadas ou tudo com "Selecionar tudo"', async ({ page }) => {
+  await login(page)
+  await simularStorage(page)
+  await page.goto(`/projetos/${PROJETO_CONCLUIDO_ID}`)
+  await abrirConteudo(page, 'Fotos')
+
+  const baixar = page.getByRole('button', { name: /Baixar selecionados/ })
+  await expect(baixar).toBeDisabled()
+
+  // só uma foto marcada
+  await page.getByLabel(/Selecionar foto.png \(RDO #0002\)/).check()
+  await expect(page.getByText('1 item selecionado')).toBeVisible()
+  let r = await baixarZip(page, /Baixar selecionados \(1\)/)
+  expect(r.entradas).toEqual(['2026-08-11/foto.png'])
+
+  // selecionar tudo: as duas fotos
+  await page.getByRole('button', { name: /Selecionar tudo \(2\)/ }).click()
+  await expect(page.getByText('2 itens selecionados')).toBeVisible()
+  r = await baixarZip(page, /Baixar selecionados \(2\)/)
+  expect(r.entradas).toEqual(['2026-08-10/foto.png', '2026-08-11/foto.png'])
+
+  // limpar seleção volta ao começo
+  await page.getByRole('button', { name: 'Limpar seleção' }).click()
+  await expect(baixar).toBeDisabled()
+})
+
+test('nos vídeos também dá para selecionar e baixar', async ({ page }) => {
+  await login(page)
+  await simularStorage(page)
+  await page.goto(`/projetos/${PROJETO_CONCLUIDO_ID}`)
+  await abrirConteudo(page, 'Vídeos')
+  await expect(page.getByRole('button', { name: /Selecionar tudo \(1\)/ })).toBeVisible()
+  await page.getByRole('button', { name: /Selecionar tudo \(1\)/ }).click()
+  await expect(page.getByRole('button', { name: /Baixar selecionados \(1\)/ })).toBeEnabled()
+})
