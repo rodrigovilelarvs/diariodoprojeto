@@ -6,12 +6,14 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { useRdos } from '@/hooks/useEmpresa'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
+import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 
-const NAV = [
+type ItemNav = { href: string; icon: string; label: string; modal?: boolean }
+const NAV: Array<{ group: string; items: ItemNav[] }> = [
   { group: 'Geral', items: [
     { href: '/painel',       icon: 'ti-layout-dashboard', label: 'Painel de Projetos' },
     { href: '/rdos',         icon: 'ti-list',             label: 'Lista de RDOs' },
-    { href: '/rdos/novo',    icon: 'ti-file-plus',        label: 'Novo RDO' },
+    { href: '/rdos/novo',    icon: 'ti-file-plus',        label: 'Novo RDO', modal: true }, // abre a janela de Novo RDO, não uma página
   ]},
   { group: 'Projeto', items: [
     { href: '/rdos?status=PENDENTE_APROVACAO', icon: 'ti-writing',    label: 'Aprovação' },
@@ -30,6 +32,7 @@ export function Sidebar() {
   const searchParams = useSearchParams()
   const { session, logout } = useAppAuth()
   const { data: pendentes } = useRdos({ status: 'PENDENTE_APROVACAO' })
+  const { abrirNovoRdo } = useNovoRdo()
 
   // Alguns itens compartilham o mesmo caminho mas com querys diferentes
   // (ex.: "Lista de RDOs" → /rdos, "Aprovação" → /rdos?status=...) — por isso
@@ -74,7 +77,12 @@ export function Sidebar() {
         {NAV.map(group => (
           <div key={group.group}>
             <span className="nl">{group.group}</span>
-            {group.items.map(item => (
+            {group.items.map(item => item.modal ? (
+              <button key={item.href} type="button" className="ni" onClick={() => { fecharMenuMobile(); abrirNovoRdo() }}>
+                <i className={`ti ${item.icon}`} />
+                {item.label}
+              </button>
+            ) : (
               <Link
                 key={item.href}
                 href={item.href}

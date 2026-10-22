@@ -48,3 +48,12 @@ export async function loginAdmin(page: Page) {
   await page.getByRole('button', { name: 'Entrar no painel' }).click()
   await page.waitForURL('**/admin/dashboard', { timeout: 15_000 })
 }
+
+// Clica num botão que abre a janela do Novo RDO. A página hidrata depois de carregar, então
+// um clique muito cedo não faz nada: repete até a janela aparecer.
+export async function abrirJanelaNovoRdo(page: Page, botao: ReturnType<Page['locator']>) {
+  await expect(async () => {
+    await botao.click()
+    await expect(page.locator('.modal').filter({ hasText: 'Novo RDO' })).toBeVisible({ timeout: 1500 })
+  }).toPass({ timeout: 20_000 })
+}

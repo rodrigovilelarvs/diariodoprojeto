@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { login } from './helpers'
+import { login, abrirJanelaNovoRdo } from './helpers'
 import { PROJETO_NOME } from '../../lib/fake-db-test'
 
 // Teste de regressão: criar um RDO e ser redirecionado pro detalhe não pode
@@ -10,16 +10,15 @@ import { PROJETO_NOME } from '../../lib/fake-db-test'
 test('criar RDO abre o formulário do RDO novo, sem tela em branco', async ({ page }) => {
   await login(page)
 
-  await page.goto('/rdos/novo')
-  // Os campos desta tela não têm <label for=...> associado ao <select>,
-  // então localizamos pelo próprio elemento (único select na página).
-  await page.locator('select').selectOption({ label: PROJETO_NOME })
+  // O Novo RDO é uma janela (modal) aberta pelo menu lateral
+  await page.goto('/painel')
+  await abrirJanelaNovoRdo(page, page.locator('.sb').getByRole('button', { name: 'Novo RDO' }))
+  await page.locator('.modal select').selectOption({ label: PROJETO_NOME })
   await page.getByRole('button', { name: 'Criar RDO' }).click()
 
-  // Cuidado: /\/rdos\/.+/ também bate com a própria "/rdos/novo" — usa um
-  // predicado que exige sair dela de fato, senão o teste segue adiante
+  // Exige um RDO de fato (id depois de /rdos/): senão o teste segue adiante
   // antes da navegação real acontecer.
-  await page.waitForURL((url) => /\/rdos\/[^/]+$/.test(url.pathname) && !url.pathname.endsWith('/novo'), { timeout: 15_000 })
+  await page.waitForURL((url) => /\/rdos\/[^/]+$/.test(url.pathname), { timeout: 15_000 })
 
   // O error boundary mostraria exatamente este texto se a tela tivesse quebrado
   await expect(page.getByText('Algo deu errado nesta tela')).toHaveCount(0)

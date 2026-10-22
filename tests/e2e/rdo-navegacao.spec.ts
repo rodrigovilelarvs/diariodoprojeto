@@ -53,7 +53,8 @@ test('na tela de aprovação a barra de ações fica fixa no rodapé (sem rolar 
   await login(page)
   await page.goto(`/aprovacao/${id}`)
   for (const nome of ['Voltar à lista', 'Novo RDO', 'Voltar para rascunho', 'Excluir RDO']) {
-    await expect(page.getByRole('button', { name: nome }), nome).toBeInViewport()
+    // (o item "Novo RDO" do menu lateral também tem esse nome: o da barra é o último)
+    await expect(page.getByRole('button', { name: nome }).last(), nome).toBeInViewport()
   }
   // continua visível mesmo com a página rolada
   await page.locator('.content').evaluate(e => { e.scrollTop = e.scrollHeight })

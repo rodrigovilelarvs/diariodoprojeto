@@ -25,6 +25,8 @@ test('enviar para aprovação mantém na página do RDO e oferece o botão Novo 
   expect(new URL(page.url()).pathname).toBe(`/rdos/${id}`)
 
   // e dá para abrir um novo RDO do mesmo projeto direto daqui
-  await page.getByRole('button', { name: 'Novo RDO' }).click()
-  await page.waitForURL(`**/rdos/novo?projetoId=${PROJETO_ID}`)
+  // (abre a janela de Novo RDO por cima do RDO atual, com o projeto já escolhido)
+  await page.getByRole('button', { name: 'Novo RDO' }).last().click()
+  await expect(page.locator('.modal select')).toHaveValue(PROJETO_ID)
+  expect(new URL(page.url()).pathname).toBe(`/rdos/${id}`)
 })

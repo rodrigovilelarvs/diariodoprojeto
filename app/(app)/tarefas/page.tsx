@@ -1,8 +1,9 @@
 'use client'
+import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 // src/app/tarefas/page.tsx — Lista de Tarefas (EAP)
 
 import { Suspense, useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import {
   useEap, useCriarEtapa, useCriarAtividade, useProjetos,
   useAtualizarEtapa, useAtualizarAtividade, useRemoverAtividade, useRemoverEtapa,
@@ -45,7 +46,7 @@ export default function TarefasPage() {
 // seletor de projeto — usado para embutir dentro do modal "Lista de tarefas" no
 // resumo do projeto.
 export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) {
-  const router = useRouter()
+  const { abrirNovoRdo } = useNovoRdo()
   const searchParams = useSearchParams()
   const { pode } = useAppAuth()
   const podeGerenciar = pode('gerenciar_tarefas')
@@ -263,7 +264,7 @@ export function TarefasContent({ projetoIdFixo }: { projetoIdFixo?: string } = {
                   const efetivo = calcStatusEfetivo(a)
                   const pctPlan = calcPctPlanejado([a])
                   return (
-                  <div key={a.id} className="eap-ativ" style={{ display: 'grid', gridTemplateColumns: EAP_COLS, gap: 0 }} onClick={() => router.push(`/rdos/novo?atividadeId=${a.id}`)}>
+                  <div key={a.id} className="eap-ativ" style={{ display: 'grid', gridTemplateColumns: EAP_COLS, gap: 0 }} onClick={() => abrirNovoRdo({ projetoId: projetoIdFixo })}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ta)' }}>{a.numero}</span>
                     <span style={{ fontSize: 12, fontWeight: 500 }}>{a.nome}</span>
                     <span style={{ fontSize: 10, color: 'var(--tm)' }}>

@@ -2,10 +2,12 @@
 import { Suspense } from 'react'
 import { AppProviders } from '@/components/Providers'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { NovoRdoProvider } from '@/components/rdos/NovoRdoModal'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AppProviders>
+      <NovoRdoProvider>
       <div className="shell">
         {/* Truque de checkbox — abre/fecha a gaveta do menu no celular sem
             precisar de estado em React (ver styles/globals.css). */}
@@ -16,6 +18,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </Suspense>
         <div className="main">{children}</div>
       </div>
+      </NovoRdoProvider>
     </AppProviders>
   )
 }

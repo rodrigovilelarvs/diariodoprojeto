@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 import { useProjetos, useCriarRdo, useCriarProjeto, useAtualizarProjeto, useExcluirProjeto, useDuplicarProjeto, useUsuarios } from '@/hooks/useEmpresa'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar }    from '@/components/layout/Topbar'
@@ -27,6 +28,7 @@ function lerPrefs() {
 
 export default function PainelPage() {
   const router  = useRouter()
+  const { abrirNovoRdo } = useNovoRdo()
   const { session } = useAppAuth()
   const { data: projetos = [], isLoading } = useProjetos()
   const { data: usuariosResp } = useUsuarios()
@@ -233,7 +235,7 @@ export default function PainelPage() {
             <button className="btn btn-sm" onClick={() => setModalProjeto(true)}>
               <i className="ti ti-folder-plus" /> Novo projeto
             </button>
-            <button className="btn btn-p btn-sm" onClick={() => router.push('/rdos/novo')}>
+            <button className="btn btn-p btn-sm" onClick={() => abrirNovoRdo()}>
               <i className="ti ti-plus" /> Novo RDO
             </button>
           </>

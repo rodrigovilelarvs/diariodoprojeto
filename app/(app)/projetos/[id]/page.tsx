@@ -1,4 +1,5 @@
 'use client'
+import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 // src/app/projetos/[id]/page.tsx — Resumo geral do projeto
 
 import { Suspense, useState, useEffect } from 'react'
@@ -56,6 +57,7 @@ function calcPrazo(ini?: string, fim?: string) {
 export default function ProjetoResumoPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const { abrirNovoRdo } = useNovoRdo()
   const { session, pode } = useAppAuth()
   const { data, isLoading } = useResumoProjeto(id)
   const { data: usuariosResp } = useUsuarios()
@@ -214,7 +216,7 @@ export default function ProjetoResumoPage() {
             )}
             {/* Dentro da pasta, tudo que se cria é do projeto: o RDO já nasce com ele selecionado */}
             {pode('emitir_rdo') && (
-              <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${id}`)}>
+              <button className="btn btn-p btn-sm" onClick={() => abrirNovoRdo({ projetoId: id })}>
                 <i className="ti ti-plus" /> Novo RDO
               </button>
             )}

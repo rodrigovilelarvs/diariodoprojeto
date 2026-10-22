@@ -19,6 +19,7 @@ import type {
 } from '@/lib/types'
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
+import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
   CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L, EQUIPAMENTO_TIPOS,
@@ -426,6 +427,7 @@ function SeletorEquipamentosModal({
 // ══════════════════════════════════════════════════════════
 export function FormularioRdo({ rdoId }: Props) {
   const router     = useRouter()
+  const { abrirNovoRdo } = useNovoRdo()
   const { pode, session } = useAppAuth()
   const { data: rdo, isLoading, isError } = useRdo(rdoId)
   const salvar     = useSalvarRdo()
@@ -653,7 +655,7 @@ export function FormularioRdo({ rdoId }: Props) {
   // Novo RDO do mesmo projeto, sem precisar sair para outra tela
   function handleNovoRdo() {
     if (dirty && !window.confirm('Há alterações não salvas neste RDO. Sair mesmo assim?')) return
-    router.push(`/rdos/novo?projetoId=${rdo?.projeto.id ?? ''}`)
+    abrirNovoRdo({ projetoId: rdo?.projeto.id })
   }
 
   async function handleVoltarRascunho() {

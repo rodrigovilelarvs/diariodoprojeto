@@ -82,7 +82,7 @@ export const SECOES: Secao[] = [
         linhas: [
           ['Geral', 'Painel de Projetos', 'Visão geral de todos os projetos e acesso à pasta de cada um.'],
           ['Geral', 'Lista de RDOs', 'Todos os relatórios diários, com busca e filtros.'],
-          ['Geral', 'Novo RDO', 'Cria um relatório diário de obra.'],
+          ['Geral', 'Novo RDO', 'Abre a janela para criar um relatório diário de obra.'],
           ['Projeto', 'Aprovação', 'Fila de RDOs esperando assinatura. O número vermelho mostra quantos estão pendentes.'],
           ['Projeto', 'Lista de tarefas', 'Etapas e atividades de cada projeto (EAP).'],
           ['Projeto', 'Relatórios', 'Indicadores e gráficos de desempenho, com exportação em PDF.'],
@@ -135,7 +135,7 @@ export const SECOES: Secao[] = [
         t: 'lista',
         x: [
           '**Editar**: altera nome, descrição, contrato, empresa contratada, grupo, status, gestor, foto e datas.',
-          '**Novo RDO**: já abre o novo RDO com este projeto selecionado.',
+          '**Novo RDO**: abre a janela de novo RDO com este projeto já selecionado.',
           '**Relatório**: abre os relatórios filtrados neste projeto.',
           '**Duplicar**: cria uma cópia do projeto. Você escolhe copiar só as configurações, ou também a estrutura de etapas e atividades (com o progresso zerado). RDOs, fotos e comentários nunca são copiados.',
           '**Excluir**: remove o projeto.',
@@ -242,13 +242,13 @@ export const SECOES: Secao[] = [
       {
         t: 'passos',
         x: [
-          'Clique em **Novo RDO** no menu (ou no botão do topo do painel). Se você estiver dentro da pasta de um projeto, use o botão **Novo RDO** que fica no alto da pasta: o projeto já vem selecionado, e no alto da tela aparece o botão **Voltar à pasta do projeto** (o **Cancelar** também leva de volta para a pasta).',
+          'Clique em **Novo RDO** no menu (ou no botão do topo do painel, da lista de RDOs ou de dentro de um RDO). O Novo RDO abre como uma **janela** por cima da tela em que você está. Se você estiver dentro da pasta de um projeto, use o botão **Novo RDO** que fica no alto da pasta: o projeto já vem selecionado.',
           'Escolha o **projeto** e a **data**.',
           'Deixe marcada a opção **Copiar dados do RDO anterior** se quiser aproveitar horários, mão de obra e equipamentos do último RDO do projeto. Isso economiza bastante tempo. As atividades que ainda estão em andamento também vêm junto (começando com o percentual em que pararam); as que já chegaram a **100%** no RDO anterior, da lista de tarefas ou avulsas, não são copiadas.',
-          'Clique em **Criar RDO**. O formulário abre para você preencher.',
+          'Clique em **Criar RDO**. O formulário abre para você preencher. Se desistir, clique em **Cancelar** (ou no **X**): a janela fecha e você continua na tela em que estava.',
         ],
       },
-      { t: 'img', src: '/ajuda/novo-rdo.webp', alt: 'Tela Novo RDO', legenda: 'Escolha de projeto e data.' },
+      { t: 'img', src: '/ajuda/novo-rdo.webp', alt: 'Janela Novo RDO', legenda: 'Janela Novo RDO: escolha de projeto e data.' },
       { t: 'dica', x: 'Se já existir um RDO do mesmo projeto naquela data, o sistema mostra um aviso com a lista dos RDOs existentes, para você conferir se não é uma duplicidade. Você ainda pode criar um novo.' },
       { t: 'aviso', x: 'O RDO é criado como **Rascunho**. Nada vai para aprovação até você clicar em **Enviar para aprovação**.' },
     ],
@@ -301,7 +301,7 @@ export const SECOES: Secao[] = [
       { t: 'h', x: '8. Comentários' },
       { t: 'p', x: 'Converse com a equipe dentro do próprio RDO. Escreva e envie (atalho **Ctrl+Enter**). É possível responder a um comentário e excluir os seus.' },
       { t: 'img', src: '/ajuda/rdo-comentarios.webp', alt: 'Seção Comentários' },
-      { t: 'p', x: 'No alto da tela do RDO ficam dois botões: **Voltar à pasta do projeto** e **Novo RDO**. Com o RDO aberto (inclusive depois de enviado para aprovação), o **Novo RDO** abre o próximo RDO do mesmo projeto, já com o projeto selecionado, sem precisar ir para outra tela.' },
+      { t: 'p', x: 'No alto da tela do RDO ficam dois botões: **Voltar à pasta do projeto** e **Novo RDO**. Com o RDO aberto (inclusive depois de enviado para aprovação), o **Novo RDO** abre a janela de novo RDO já com o projeto selecionado, sem precisar sair do RDO.' },
       { t: 'h', x: 'Barra de botões na parte de baixo' },
       { t: 'p', x: 'A barra fica sempre visível, no fim da tela, enquanto você preenche.' },
       { t: 'img', src: '/ajuda/rdo-barra-acoes.webp', alt: 'Barra inferior do RDO' },

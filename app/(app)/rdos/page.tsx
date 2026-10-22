@@ -4,6 +4,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useRdos, useProjetos } from '@/hooks/useEmpresa'
+import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar }  from '@/components/layout/Topbar'
 import { KpiCard, RdoStatusBadge, Skeleton, AutocompleteSearchInput } from '@/components/ui'
@@ -26,6 +27,7 @@ export default function RdosPage() {
 // usado para embutir a lista dentro do modal "RDOs do projeto" no resumo do projeto.
 export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) {
   const router  = useRouter()
+  const { abrirNovoRdo } = useNovoRdo()
   const searchParams = useSearchParams()
   const { session } = useAppAuth()
   // Os filtros podem vir na URL (ao voltar da tela de aprovação com a fila filtrada)
@@ -88,8 +90,8 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   }
 
   async function handleNovoRdo() {
-    // Sem projeto selecionado abre página de criação
-    router.push('/rdos/novo')
+    // Abre a janela de Novo RDO (com o projeto do filtro, se houver)
+    abrirNovoRdo({ projetoId: projetoId || undefined })
   }
 
   const [exportandoId, setExportandoId] = useState<string | null>(null)
@@ -140,7 +142,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
           {/* Só aqui dentro do modal "RDOs do projeto" (sem Topbar, ver abaixo)
               — na página normal esse botão duplicava o do Topbar. */}
           {projetoIdFixo && (
-            <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${projetoIdFixo}`)}>
+            <button className="btn btn-p btn-sm" onClick={() => abrirNovoRdo({ projetoId: projetoIdFixo })}>
               <i className="ti ti-plus" /> Novo RDO
             </button>
           )}

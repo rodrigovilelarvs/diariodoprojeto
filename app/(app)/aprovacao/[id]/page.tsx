@@ -15,6 +15,7 @@ import { RdoStatusBadge, Skeleton, Modal } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
+import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 import { sequenciaDeAssinantes, vezDeAssinar, ordenarPorSequencia } from '@/lib/assinatura-ordem'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
@@ -49,6 +50,7 @@ const COR_PERFIL: Record<string, { bg: string; cor: string }> = {
 export default function AprovacaoPage() {
   const { id }    = useParams<{ id: string }>()
   const router    = useRouter()
+  const { abrirNovoRdo } = useNovoRdo()
   const { session, pode } = useAppAuth()
   // Visualizador (nem emite nem aprova) só consulta: não comenta
   const podeComentar = pode('emitir_rdo') || pode('aprovar_rdo')
@@ -858,7 +860,7 @@ export default function AprovacaoPage() {
             <i className="ti ti-arrow-left" /> Voltar à lista
           </button>
           {pode('emitir_rdo') && (
-            <button className="btn btn-p btn-sm" onClick={() => router.push(`/rdos/novo?projetoId=${rdo.projeto.id}`)}>
+            <button className="btn btn-p btn-sm" onClick={() => abrirNovoRdo({ projetoId: rdo.projeto.id })}>
               <i className="ti ti-plus" /> Novo RDO
             </button>
           )}
