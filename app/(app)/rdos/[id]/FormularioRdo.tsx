@@ -1393,7 +1393,7 @@ export function FormularioRdo({ rdoId }: Props) {
             ))}
           </div>
           <div className="sec-body">
-            <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
+            <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap:8, marginBottom:10 }}>
               {form.maoDeObra.map((mo, i) => (
                 <div key={i} style={{ position:'relative', border:'.5px solid var(--b)', borderRadius:'var(--r)', padding:8, background:'var(--s1)' }}>
                   {podeSalvar && (
@@ -1434,13 +1434,13 @@ export function FormularioRdo({ rdoId }: Props) {
                         style={{ width:38, textAlign:'center' }} disabled={!podeSalvar}
                         onChange={e => updMO(i,'quantidade',Number(e.target.value))} />
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:3, flex:1 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:3, flex:1, minWidth:0 }}>
                       <label style={{ fontSize:10, color:'var(--tm)' }}>Ent.</label>
                       <input className="mf" type="time" value={mo.horaEntrada} disabled={!podeSalvar}
                         style={{ width:'100%' }}
                         onChange={e => updMO(i,'horaEntrada',e.target.value)} />
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:3, flex:1 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:3, flex:1, minWidth:0 }}>
                       <label style={{ fontSize:10, color:'var(--tm)' }}>Saí.</label>
                       <input className="mf" type="time" value={mo.horaSaida} disabled={!podeSalvar}
                         style={{ width:'100%' }}
@@ -1475,7 +1475,7 @@ export function FormularioRdo({ rdoId }: Props) {
             )}
           </div>
           <div className="sec-body">
-            <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
+            <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap:8, marginBottom:10 }}>
               {form.equipamentos.map((eq, i) => {
                 const equipamentoSel = equipamentosCadastro?.find(ec => ec.id === eq.equipamentoCadastroId)
                 return (
