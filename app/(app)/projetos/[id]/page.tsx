@@ -202,7 +202,7 @@ export default function ProjetoResumoPage() {
   }
 
   const { projeto, kpis, rdosRecentes } = data
-  const fotosRecentes = data.fotos.slice(0, 8)
+  const fotosRecentes = data.fotos.slice(0, 24)
   const prazo = calcPrazo(projeto.dataInicioContrato, projeto.dataFimContrato)
   const contagens: Record<Categoria, number> = {
     fotos: data.fotos.length, videos: data.videos.length, atividades: data.atividades.length,
@@ -249,7 +249,7 @@ export default function ProjetoResumoPage() {
         {projeto.podeGerenciar && <ProjetoTabs projetoId={id} ativo="geral" />}
 
         {/* KPIs — cada um abre a categoria correspondente */}
-        <div className="kgrid" style={{ gridTemplateColumns: 'repeat(6,1fr)', marginBottom: 0 }}>
+        <div className="kgrid" style={{ gridTemplateColumns: 'repeat(6,1fr)', marginBottom: 0, flexShrink: 0 }}>
           <KpiCard icon="ti-file-text"      valor={kpis.totalRdos}            label="RDOs"        onClick={() => setModalRdos(true)} />
           <KpiCard icon="ti-list-check"     valor={data.atividades.length}    label="Atividades"  onClick={() => abrirConteudo('atividades')} />
           <KpiCard icon="ti-alert-triangle" valor={data.ocorrencias.length}   label="Ocorrências" cor={kpis.ocorrenciasAbertas > 0 ? 'var(--td)' : undefined} onClick={() => abrirConteudo('ocorrencias')} />
@@ -259,15 +259,15 @@ export default function ProjetoResumoPage() {
         </div>
 
         {/* RDOs recentes + Fotos recentes */}
-        <div className="proj-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flex: 1, minHeight: 0 }}>
+        <div className="proj-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flex: '0 0 auto' }}>
           <div className="sec" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="sec-h">
               <span className="sec-title">RDOs recentes</span>
               <button className="proj-ab" onClick={() => setModalRdos(true)}>Ver tudo</button>
             </div>
-            <div className="sec-body" style={{ padding: 0, height: 264, overflowY: 'auto' }}>
+            <div className="sec-body" style={{ padding: 0, height: 560, overflowY: 'auto' }}>
               {rdosRecentes.length === 0 ? (
-                <Vazio texto="Nenhum RDO emitido ainda." altura={264} />
+                <Vazio texto="Nenhum RDO emitido ainda." altura={560} />
               ) : (
                 <table className="tbl">
                   <thead>
@@ -276,7 +276,7 @@ export default function ProjetoResumoPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rdosRecentes.slice(0, 6).map(r => (
+                    {rdosRecentes.map(r => (
                       <tr key={r.id} onClick={() => abrirRdo(r)}>
                         <td style={{ fontSize: 11, color: 'var(--ts)' }}>{fmtData(r.data)}</td>
                         <td style={{ fontSize: 11, fontWeight: 600, color: 'var(--ta)' }}>#{numeroRdo(r.numero)}</td>
@@ -297,9 +297,9 @@ export default function ProjetoResumoPage() {
               <span className="sec-title">Fotos recentes</span>
               <button className="proj-ab" onClick={() => abrirConteudo('fotos')}>Ver tudo</button>
             </div>
-            <div className="sec-body" style={{ height: 264, overflowY: 'auto' }}>
+            <div className="sec-body" style={{ height: 560, overflowY: 'auto' }}>
               {fotosRecentes.length === 0 ? (
-                <Vazio texto="Nenhuma foto enviada ainda." altura={264} />
+                <Vazio texto="Nenhuma foto enviada ainda." altura={560} />
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
                   {fotosRecentes.map((f, i) => (
@@ -314,8 +314,8 @@ export default function ProjetoResumoPage() {
           </div>
         </div>
 
-        {/* Informações do projeto */}
-        <div className="sec" style={{ marginBottom: 0 }}>
+        {/* Informações do projeto: fica abaixo dos quadros de cima e aparece rolando a página (flexShrink 0: sem isso a coluna a espremia) */}
+        <div className="sec" style={{ marginBottom: 0, flexShrink: 0 }}>
           <div className="sec-h">
             <span className="sec-title">Informações do projeto</span>
             <button className="proj-ab" onClick={abrirEdicao}><i className="ti ti-pencil" /> Editar</button>

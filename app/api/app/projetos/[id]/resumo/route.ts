@@ -139,7 +139,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   }
 
   // Prévia dos RDOs mais recentes para a visão geral (já vem ordenado desc por data)
-  const rdosRecentes = rdos.slice(0, 8).map(r => ({
+  const rdosRecentes = rdos.slice(0, 15).map(r => ({
     id: r.id, numero: r.numero, data: r.data, status: r.status,
     assinaturas: r.assinaturas,
     totalFotos: r.midias.filter((m) => m.tipo === 'FOTO').length,
