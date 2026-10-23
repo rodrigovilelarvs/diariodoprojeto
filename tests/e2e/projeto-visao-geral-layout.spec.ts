@@ -13,8 +13,8 @@ for (const altura of [500, 600]) {
     const corpoRdos = page.locator('.proj-two-col .sec-body').first()
     const corpoFotos = page.locator('.proj-two-col .sec-body').nth(1)
     await expect(corpoRdos).toBeVisible()
-    expect((await corpoRdos.boundingBox())!.height).toBeCloseTo(420, 0)
-    expect((await corpoFotos.boundingBox())!.height).toBeCloseTo(420, 0)
+    expect((await corpoRdos.boundingBox())!.height).toBeCloseTo(380, 0)
+    expect((await corpoFotos.boundingBox())!.height).toBeCloseTo(380, 0)
 
     // as informações do projeto ficam abaixo da dobra e aparecem ao rolar a página
     const info = page.getByText('Informações do projeto')

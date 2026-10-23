@@ -265,9 +265,9 @@ export default function ProjetoResumoPage() {
               <span className="sec-title">RDOs recentes</span>
               <button className="proj-ab" onClick={() => setModalRdos(true)}>Ver tudo</button>
             </div>
-            <div className="sec-body" style={{ padding: 0, height: 420, overflowY: 'auto' }}>
+            <div className="sec-body" style={{ padding: 0, height: 380, overflowY: 'auto' }}>
               {rdosRecentes.length === 0 ? (
-                <Vazio texto="Nenhum RDO emitido ainda." altura={420} />
+                <Vazio texto="Nenhum RDO emitido ainda." altura={380} />
               ) : (
                 <table className="tbl">
                   <thead>
@@ -297,9 +297,9 @@ export default function ProjetoResumoPage() {
               <span className="sec-title">Fotos recentes</span>
               <button className="proj-ab" onClick={() => abrirConteudo('fotos')}>Ver tudo</button>
             </div>
-            <div className="sec-body" style={{ height: 420, overflowY: 'auto' }}>
+            <div className="sec-body" style={{ height: 380, overflowY: 'auto' }}>
               {fotosRecentes.length === 0 ? (
-                <Vazio texto="Nenhuma foto enviada ainda." altura={420} />
+                <Vazio texto="Nenhuma foto enviada ainda." altura={380} />
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
                   {fotosRecentes.map((f, i) => (
