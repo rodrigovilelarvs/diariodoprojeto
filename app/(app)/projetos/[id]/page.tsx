@@ -657,46 +657,35 @@ function ConteudoCategoria({ categoria, data, onAbrirMidia, selecionadas, onSele
   if (categoria === 'atividades') {
     if (data.atividades.length === 0) return <Vazio texto="Nenhum registro de atividade." />
     return (
-      <div>
-        {data.atividades.map(a => (
-          <div key={a.id} className="hbr">
-            <div className="hbt">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                {a.avulsa && <Badge variant="gray">Avulsa</Badge>}
-                {a.etapa && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ta)' }}>{a.etapa}</span>}
-                <span>{a.nome}</span>
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--tm)' }}>RDO #{numeroRdo(a.rdoNumero)} · {fmtData(a.rdoData)}</span>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--ts)' }}>
-              {a.pctAnterior}% → <strong>{a.pctAtual}%</strong>{' '}
-              <span style={{ color: a.deltaHoje >= 0 ? 'var(--tsu)' : 'var(--td)' }}>
-                ({a.deltaHoje >= 0 ? '+' : ''}{a.deltaHoje}%)
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <PorRdo itens={data.atividades} linha={a => (
+        <Linha
+          esquerda={<>
+            {a.avulsa && <Badge variant="gray">Avulsa</Badge>}
+            {a.etapa && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ta)' }}>{a.etapa}</span>}
+            <span>{a.nome}</span>
+          </>}
+          direita={<>
+            {a.pctAnterior}% → <strong>{a.pctAtual}%</strong>{' '}
+            <span style={{ color: a.deltaHoje >= 0 ? 'var(--tsu)' : 'var(--td)' }}>
+              ({a.deltaHoje >= 0 ? '+' : ''}{a.deltaHoje}%)
+            </span>
+          </>}
+        />
+      )} />
     )
   }
 
   if (categoria === 'ocorrencias') {
     if (data.ocorrencias.length === 0) return <Vazio texto="Nenhuma ocorrência registrada." />
     return (
-      <div>
-        {data.ocorrencias.map(o => (
-          <div key={o.id} className="hbr">
-            <div className="hbt">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Badge variant="gray">{OC_TIPO_L[o.tipo] ?? o.tipo}</Badge>
-                {!o.resolvida && <Badge variant="danger">Aberta</Badge>}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--tm)' }}>RDO #{numeroRdo(o.rdoNumero)} · {fmtData(o.rdoData)}</span>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--ts)' }}>{o.descricao}</div>
-          </div>
-        ))}
-      </div>
+      <PorRdo itens={data.ocorrencias} linha={o => (
+        <Linha
+          esquerda={<>
+            <Badge variant="gray">{OC_TIPO_L[o.tipo] ?? o.tipo}</Badge>
+            <span style={{ color: 'var(--ts)' }}>{o.descricao}</span>
+          </>}
+        />
+      )} />
     )
   }
 
@@ -724,21 +713,20 @@ function ConteudoCategoria({ categoria, data, onAbrirMidia, selecionadas, onSele
 
   if (categoria === 'clima') {
     if (data.clima.length === 0) return <Vazio texto="Nenhum registro climático." />
+    // um registro por RDO: o dia vai na própria linha, sem cabeçalho de grupo
     return (
       <div>
         {data.clima.map(c => (
-          <div key={c.rdoId} className="hbr">
-            <div className="hbt">
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClimaEmoji condicao={c.climaManha} /> <ClimaEmoji condicao={c.climaTarde} /> {c.climaNoite && <ClimaEmoji condicao={c.climaNoite} noite />}
-                {c.precipitacaoMm != null && <span style={{ fontSize: 11, color: 'var(--ts)' }}>{c.precipitacaoMm}mm</span>}
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--tm)' }}>RDO #{numeroRdo(c.rdoNumero)} · {fmtData(c.rdoData)}</span>
-            </div>
-            {c.climaImpacto && c.climaImpacto !== 'NENHUM' && (
-              <div style={{ fontSize: 11, color: 'var(--tw)' }}>Impacto: {c.climaImpacto === 'PARCIAL' ? 'Parcial' : 'Total'}</div>
-            )}
-          </div>
+          <Linha key={c.rdoId}
+            esquerda={<span style={{ fontWeight: 600, color: 'var(--ta)' }}>RDO #{numeroRdo(c.rdoNumero)} <span style={{ fontWeight: 400, color: 'var(--tm)' }}>· {fmtData(c.rdoData)}</span></span>}
+            direita={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {c.climaImpacto && c.climaImpacto !== 'NENHUM' && (
+                <span style={{ fontSize: 11, color: 'var(--tw)' }}>Impacto {c.climaImpacto === 'PARCIAL' ? 'parcial' : 'total'}</span>
+              )}
+              {c.precipitacaoMm != null && <span style={{ fontSize: 11, color: 'var(--ts)' }}>{c.precipitacaoMm}mm</span>}
+              <ClimaEmoji condicao={c.climaManha} /> <ClimaEmoji condicao={c.climaTarde} /> {c.climaNoite && <ClimaEmoji condicao={c.climaNoite} noite />}
+            </span>}
+          />
         ))}
       </div>
     )
@@ -747,31 +735,56 @@ function ConteudoCategoria({ categoria, data, onAbrirMidia, selecionadas, onSele
   if (categoria === 'maoDeObra') {
     if (data.maoDeObra.length === 0) return <Vazio texto="Nenhum registro de mão de obra." />
     return (
-      <div>
-        {data.maoDeObra.map((m, i) => (
-          <div key={i} className="hbr">
-            <div className="hbt">
-              <span>{m.funcaoNome} · {m.quantidade} pessoa{m.quantidade !== 1 ? 's' : ''}</span>
-              <span style={{ fontSize: 10, color: 'var(--tm)' }}>RDO #{numeroRdo(m.rdoNumero)} · {fmtData(m.rdoData)}</span>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--ts)' }}>{m.horaEntrada}–{m.horaSaida} · {m.totalHH} H/H</div>
-          </div>
-        ))}
-      </div>
+      <PorRdo itens={data.maoDeObra} linha={m => (
+        <Linha
+          esquerda={<span>{m.funcaoNome} · {m.quantidade} pessoa{m.quantidade !== 1 ? 's' : ''}</span>}
+          direita={<>{m.horaEntrada}–{m.horaSaida} · {m.totalHH} H/H</>}
+        />
+      )} />
     )
   }
 
   // equipamentos
   if (data.equipamentos.length === 0) return <Vazio texto="Nenhum registro de equipamento." />
   return (
+    <PorRdo itens={data.equipamentos} linha={e => (
+      <Linha
+        esquerda={<span>{e.equipamentoNome} · {e.quantidade}</span>}
+        direita={e.observacao ?? undefined}
+      />
+    )} />
+  )
+}
+
+// ── Lista compacta do "Conteúdo do projeto" ──
+// Uma linha por registro (nome à esquerda, detalhe à direita), agrupada por RDO/dia: o cabeçalho
+// do grupo mostra o RDO e a data uma vez só, em vez de repeti-los em cada registro.
+function Linha({ esquerda, direita }: { esquerda: React.ReactNode; direita?: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '5px 4px', borderBottom: '.5px solid var(--b)', fontSize: 12 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>{esquerda}</span>
+      {direita != null && <span style={{ fontSize: 11, color: 'var(--ts)', whiteSpace: 'nowrap', flexShrink: 0 }}>{direita}</span>}
+    </div>
+  )
+}
+
+function PorRdo<T extends { rdoId: string; rdoNumero: number; rdoData: string }>({ itens, linha }: { itens: T[]; linha: (item: T) => React.ReactNode }) {
+  // os itens já chegam ordenados do RDO mais recente para o mais antigo
+  const grupos: Array<{ rdoId: string; rdoNumero: number; rdoData: string; itens: T[] }> = []
+  for (const it of itens) {
+    const ultimo = grupos[grupos.length - 1]
+    if (ultimo && ultimo.rdoId === it.rdoId) ultimo.itens.push(it)
+    else grupos.push({ rdoId: it.rdoId, rdoNumero: it.rdoNumero, rdoData: it.rdoData, itens: [it] })
+  }
+  return (
     <div>
-      {data.equipamentos.map((e, i) => (
-        <div key={i} className="hbr">
-          <div className="hbt">
-            <span>{e.equipamentoNome} · {e.quantidade}</span>
-            <span style={{ fontSize: 10, color: 'var(--tm)' }}>RDO #{numeroRdo(e.rdoNumero)} · {fmtData(e.rdoData)}</span>
+      {grupos.map(g => (
+        <div key={g.rdoId} style={{ marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: '5px 8px', background: 'var(--s1)', border: '.5px solid var(--b)', borderRadius: 'var(--r)', fontSize: 11, fontWeight: 600, color: 'var(--ta)' }}>
+            <span>RDO #{numeroRdo(g.rdoNumero)} <span style={{ fontWeight: 400, color: 'var(--ts)' }}>· {fmtData(g.rdoData)}</span></span>
+            <span style={{ fontWeight: 400, color: 'var(--tm)' }}>{g.itens.length} {g.itens.length === 1 ? 'registro' : 'registros'}</span>
           </div>
-          {e.observacao && <div style={{ fontSize: 11, color: 'var(--ts)' }}>{e.observacao}</div>}
+          {g.itens.map((it, i) => <div key={i}>{linha(it)}</div>)}
         </div>
       ))}
     </div>
