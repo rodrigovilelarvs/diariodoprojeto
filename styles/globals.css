@@ -99,6 +99,14 @@ html, body {
 .ni:hover { background: var(--s2); color: var(--tp); }
 .ni.on    { background: var(--s2); color: var(--ta); font-weight: 500; }
 .ni.on i  { opacity: 1; color: var(--ta); }
+/* submenu do projeto sob "Painel de Projetos" (recolhível) */
+.sb-sub        { margin: 0 0 4px 14px; padding-left: 8px; border-left: .5px solid var(--b); }
+.sb-sub .ni    { padding: 5px 8px; font-size: 11px; }
+.sb-sub .ni i  { font-size: 13px; }
+.sb-sub-nome   { font-size: 10px; color: var(--tm); padding: 2px 8px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-sub-toggle { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; border-radius: var(--r); color: var(--ts); cursor: pointer; padding: 0; }
+.sb-sub-toggle:hover { background: var(--s2); color: var(--tp); }
+.sb-sub-toggle i { font-size: 13px; }
 .nb       { margin-left: auto; background: var(--fd); color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 10px; font-weight: 600; }
 .sb-user  { padding: 9px 11px; border-top: .5px solid var(--b); display: flex; align-items: center; gap: 7px; }
 .av       { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }

@@ -10,7 +10,6 @@ import {
 } from '@/hooks/useEmpresa'
 import { Topbar } from '@/components/layout/Topbar'
 import { Skeleton, Select, Btn } from '@/components/ui'
-import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import type { ProjetoAssinaturaModo } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'
 
@@ -97,8 +96,6 @@ export default function ProjetoAssinaturasPage() {
         }
       />
       <div className="content">
-        <ProjetoTabs projetoId={id} ativo="assinaturas" />
-
         <div className="sec">
           <div className="sec-h"><span className="sec-title">Quem precisa assinar os RDOs deste projeto</span></div>
           <div className="sec-body">

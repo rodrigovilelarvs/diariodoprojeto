@@ -165,13 +165,13 @@ export const SECOES: Secao[] = [
     titulo: 'Dentro de um projeto',
     resumo: 'Visão geral, quem tem acesso e quem precisa assinar os RDOs.',
     blocos: [
-      { t: 'p', x: 'Ao clicar em um projeto no painel você entra na **pasta do projeto**, que tem três abas: **Visão geral**, **Acesso** e **Assinaturas**.' },
+      { t: 'p', x: 'Ao clicar em um projeto no painel você entra na **pasta do projeto**, que tem três telas: **Visão geral**, **Acesso** e **Assinaturas**. Elas ficam no **menu lateral esquerdo**, num submenu logo abaixo de **Painel de Projetos** (aparece quando você está dentro de um projeto). Clique na setinha ao lado de Painel de Projetos para **recolher** ou reabrir esse submenu. **Acesso** e **Assinaturas** só aparecem para quem pode gerenciar o projeto.' },
       { t: 'h', x: 'Visão geral' },
       { t: 'p', x: 'Mostra os números do projeto (RDOs, atividades, ocorrências, comentários, fotos e vídeos), os **RDOs recentes** e as **fotos recentes** (dois quadros grandes, de tamanho fixo, com rolagem própria: mostram os 15 RDOs e as 24 fotos mais recentes, e **Ver tudo** abre o restante) e, rolando a página para baixo, as informações do contrato: prazo, progresso planejado e real, desvio, H/H total e duração. Clique em qualquer indicador para ver o conteúdo por trás do número. O indicador **Atividades** abre a lista de todas as atividades registradas nos RDOs, as da lista de tarefas e as **avulsas** (marcadas com a etiqueta "Avulsa"), com o andamento em cada RDO (por exemplo, "80% → 85% (+5%)", na mesma linha da atividade). As listas de **Atividades**, **Ocorrências**, **Mão de obra** e **Equipamentos** vêm **separadas por RDO/dia**, com uma linha por registro; **Condições climáticas** traz uma linha por dia. Para ver só a lista de tarefas, use o botão **Lista de tarefas** do alto da tela. Nas abas **Fotos**, **Vídeos** e **Anexos** desse mesmo painel você pode **escolher o que baixar**: marque a caixinha no canto de cada item, ou clique em **Selecionar tudo**, e depois em **Baixar selecionados**. O download vem num arquivo .zip, em pastas por dia, e a seleção vale entre as abas (dá para levar fotos e vídeos juntos). Isso funciona em qualquer projeto, não só nos concluídos. Para alterar os dados, use o botão **Editar**.' },
       { t: 'p', x: 'No alto da tela fica o botão **Novo RDO**: dentro da pasta de um projeto, tudo que você cria é daquele projeto, então o RDO já abre com o **projeto selecionado** (você só escolhe a data). O botão **Lista de tarefas**, ao lado, também abre só as etapas e atividades deste projeto.' },
       { t: 'img', src: '/ajuda/projeto-visao-geral.webp', alt: 'Visão geral de um projeto', legenda: 'Visão geral do projeto.' },
       { t: 'h', x: 'Acesso: quem pode ver este projeto' },
-      { t: 'p', x: 'Por padrão, todo o time enxerga o projeto. Se você adicionar a primeira pessoa na aba **Acesso**, o projeto passa a ser **restrito**: só quem estiver na lista consegue vê-lo. Cada pessoa tem um nível:' },
+      { t: 'p', x: 'Por padrão, todo o time enxerga o projeto. Se você adicionar a primeira pessoa na tela **Acesso**, o projeto passa a ser **restrito**: só quem estiver na lista consegue vê-lo. Cada pessoa tem um nível:' },
       {
         t: 'tabela',
         cab: ['Nível', 'O que a pessoa pode fazer'],
@@ -181,11 +181,11 @@ export const SECOES: Secao[] = [
           ['Gerenciamento total', 'Além de editar, gerencia o acesso e as assinaturas do projeto.'],
         ],
       },
-      { t: 'img', src: '/ajuda/projeto-acesso.webp', alt: 'Aba Acesso do projeto', legenda: 'Aba Acesso com três pessoas e níveis diferentes.' },
+      { t: 'img', src: '/ajuda/projeto-acesso.webp', alt: 'Tela Acesso do projeto', legenda: 'Tela Acesso com três pessoas e níveis diferentes.' },
       {
         t: 'passos',
         x: [
-          'Na aba **Acesso**, escolha a pessoa em **Adicionar pessoa**.',
+          'Na tela **Acesso**, escolha a pessoa em **Adicionar pessoa**.',
           'Escolha o **nível** (Visualizar, Editar ou Gerenciamento total).',
           'Clique em **Adicionar**. Para mudar o nível, use a lista ao lado do nome; para tirar a pessoa, clique no **X** vermelho.',
         ],
@@ -201,7 +201,7 @@ export const SECOES: Secao[] = [
           '**Pré-definida**: você escolhe **até 3 pessoas** (Assinante 1, 2 e 3). Só elas assinam os RDOs deste projeto, e o RDO só fica totalmente aprovado quando todas assinarem. **As assinaturas seguem a ordem**: o Assinante 2 só consegue assinar depois do 1, e o 3 só depois do 2.',
         ],
       },
-      { t: 'img', src: '/ajuda/projeto-assinaturas.webp', alt: 'Aba Assinaturas do projeto', legenda: 'Modo "Pré-definida", com os três assinantes.' },
+      { t: 'img', src: '/ajuda/projeto-assinaturas.webp', alt: 'Tela Assinaturas do projeto', legenda: 'Modo "Pré-definida", com os três assinantes.' },
       { t: 'aviso', x: 'Na ordem de assinatura, quem ainda não está na vez vê a mensagem **"Aguardando a assinatura de ..."** no lugar do botão **Assinar** (o botão **Revisar** continua disponível para todos). Ao enviar o RDO, só o Assinante 1 recebe o aviso por e-mail; cada um dos próximos é avisado quando a vez dele chega. No modo **Aberta** não há ordem.' },
       { t: 'p', x: 'Depois de escolher, clique em **Salvar**.' },
     ],
@@ -556,7 +556,7 @@ export const SECOES: Secao[] = [
         t: 'faq',
         itens: [
           { q: 'Esqueci minha senha. O que faço?', a: 'Na tela de login, clique em **Esqueci minha senha**, informe o seu e-mail e siga o link que chegar por e-mail para criar uma nova senha.' },
-          { q: 'Não consigo ver um projeto que os colegas veem.', a: 'O projeto pode estar **restrito**. Peça a quem administra o projeto para incluir você na aba **Acesso** (ou peça ao administrador da empresa).' },
+          { q: 'Não consigo ver um projeto que os colegas veem.', a: 'O projeto pode estar **restrito**. Peça a quem administra o projeto para incluir você na tela **Acesso** do projeto (ou peça ao administrador da empresa).' },
           { q: 'O botão de criar RDO, aprovar ou ver relatórios não aparece, ou dá aviso de acesso.', a: 'Isso depende das suas **permissões**. Peça ao administrador da empresa para liberar a permissão em **Usuários > Editar**.' },
           { q: 'Preciso corrigir um RDO que já foi enviado.', a: 'Depois de enviado, o RDO fica bloqueado. Abra o RDO e clique em **Voltar para rascunho** (quem emitiu o RDO ou quem aprova pode fazer isso). Depois de corrigido, envie de novo para aprovação; as assinaturas anteriores são descartadas e refeitas.' },
           { q: 'Como aprovo um RDO?', a: 'Abra o RDO em **Aprovação** e clique em **Assinar** na seção Assinaturas. Antes, cadastre a sua assinatura digital em **Meu perfil**.' },

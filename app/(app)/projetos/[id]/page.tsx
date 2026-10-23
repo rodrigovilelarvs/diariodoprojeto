@@ -17,7 +17,6 @@ import { TarefasContent } from '@/app/(app)/tarefas/page'
 import { RdosContent } from '@/app/(app)/rdos/page'
 import { numeroRdo, fmtData } from '@/lib/format'
 import { toast } from 'sonner'
-import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import { EmpresaCampo } from '@/components/projetos/EmpresaCampo'
 import { rotuloEmpresa } from '@/lib/rdo-display'
 import { baixarTodosRdosPdf, baixarMidiasProjeto } from '@/lib/download-projeto'
@@ -246,8 +245,6 @@ export default function ProjetoResumoPage() {
       />
 
       <div className="content" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {projeto.podeGerenciar && <ProjetoTabs projetoId={id} ativo="geral" />}
-
         {/* KPIs — cada um abre a categoria correspondente */}
         <div className="kgrid" style={{ gridTemplateColumns: 'repeat(6,1fr)', marginBottom: 0, flexShrink: 0 }}>
           <KpiCard icon="ti-file-text"      valor={kpis.totalRdos}            label="RDOs"        onClick={() => setModalRdos(true)} />

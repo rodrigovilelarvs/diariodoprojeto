@@ -5,7 +5,7 @@ import { PROJETO_ID } from '../../lib/fake-db-test'
 // Visão geral do projeto: os quadros "RDOs recentes" e "Fotos recentes" têm altura grande e fixa,
 // qualquer que seja a tela, e "Informações do projeto" fica abaixo, vista rolando a página.
 
-for (const altura of [500, 600]) {
+for (const altura of [450, 500]) {
   test(`quadros de RDOs/fotos recentes mantêm a mesma altura em tela de ${altura}px e as informações ficam abaixo`, async ({ page }) => {
     await page.setViewportSize({ width: 1400, height: altura })
     await login(page)

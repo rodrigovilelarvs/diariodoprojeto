@@ -10,7 +10,6 @@ import {
 } from '@/hooks/useEmpresa'
 import { Topbar } from '@/components/layout/Topbar'
 import { Skeleton, Select, Btn } from '@/components/ui'
-import { ProjetoTabs } from '@/components/projetos/ProjetoTabs'
 import type { ProjetoAcessoNivel } from '@/lib/types'
 import { mensagemErro } from '@/lib/api'
 
@@ -105,8 +104,6 @@ export default function ProjetoAcessoPage() {
         }
       />
       <div className="content">
-        <ProjetoTabs projetoId={id} ativo="acesso" />
-
         <div style={{ background: 'var(--bga)', border: '.5px solid var(--ba)', borderRadius: 'var(--r)', padding: '10px 14px', marginBottom: 12, fontSize: 11, color: 'var(--ta)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
           <i className="ti ti-info-circle" style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }} />
           <span>

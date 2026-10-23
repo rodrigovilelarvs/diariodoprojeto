@@ -1,10 +1,11 @@
 'use client'
 // src/components/layout/Sidebar.tsx
 
+import { Fragment, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useAppAuth } from '@/contexts/AuthContext'
-import { useRdos } from '@/hooks/useEmpresa'
+import { useRdos, useResumoProjeto } from '@/hooks/useEmpresa'
 import { ThemeToggle } from '@/components/layout/ThemeToggle'
 import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
 
@@ -27,12 +28,53 @@ const NAV: Array<{ group: string; items: ItemNav[] }> = [
   ]},
 ]
 
+// Dentro da pasta de um projeto, o item "Painel de Projetos" ganha um submenu (que se recolhe)
+// com as telas do projeto: Visão geral, Acesso e Assinaturas. Acesso e Assinaturas só aparecem
+// para quem pode gerenciar o projeto.
+const SUBITENS_PROJETO = [
+  { path: '',             icon: 'ti-layout-dashboard', label: 'Visão geral',  soGerencia: false },
+  { path: '/acesso',      icon: 'ti-users',            label: 'Acesso',       soGerencia: true  },
+  { path: '/assinaturas', icon: 'ti-writing',          label: 'Assinaturas',  soGerencia: true  },
+]
+
+function SubmenuProjeto({ projetoId, aberto, onNavegar }: { projetoId: string; aberto: boolean; onNavegar: () => void }) {
+  const pathname = usePathname()
+  const { data: resumo } = useResumoProjeto(projetoId)
+  if (!aberto) return null
+  const base = `/projetos/${projetoId}`
+  const podeGerenciar = !!resumo?.projeto.podeGerenciar
+  return (
+    <div className="sb-sub" aria-label="Telas do projeto">
+      {resumo?.projeto.nome && <div className="sb-sub-nome" title={resumo.projeto.nome}>{resumo.projeto.nome}</div>}
+      {SUBITENS_PROJETO.filter(i => !i.soGerencia || podeGerenciar).map(i => (
+        <Link key={i.path} href={base + i.path} onClick={onNavegar} className={`ni ${pathname === base + i.path ? 'on' : ''}`}>
+          <i className={`ti ${i.icon}`} />
+          {i.label}
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { session, logout } = useAppAuth()
   const { data: pendentes } = useRdos({ status: 'PENDENTE_APROVACAO' })
   const { abrirNovoRdo } = useNovoRdo()
+
+  // Pasta de projeto aberta (/projetos/{id}, /projetos/{id}/acesso...) → submenu sob "Painel de Projetos"
+  const projetoAtualId = pathname.match(/^\/projetos\/([^/]+)/)?.[1]
+  const [submenuAberto, setSubmenuAberto] = useState(true)
+  useEffect(() => {
+    try { if (localStorage.getItem('sb-projeto-recolhido') === '1') setSubmenuAberto(false) } catch { /* sem storage: fica aberto */ }
+  }, [])
+  function alternarSubmenu() {
+    setSubmenuAberto(a => {
+      try { localStorage.setItem('sb-projeto-recolhido', a ? '1' : '0') } catch { /* ignora */ }
+      return !a
+    })
+  }
 
   // Alguns itens compartilham o mesmo caminho mas com querys diferentes
   // (ex.: "Lista de RDOs" → /rdos, "Aprovação" → /rdos?status=...) — por isso
@@ -83,18 +125,30 @@ export function Sidebar() {
                 {item.label}
               </button>
             ) : (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={fecharMenuMobile}
-                className={`ni ${isActive(item.href) ? 'on' : ''}`}
-              >
-                <i className={`ti ${item.icon}`} />
-                {item.label}
-                {item.label === 'Aprovação' && !!pendentes?.total && (
-                  <span className="nb">{pendentes.total}</span>
+              <Fragment key={item.href}>
+                <div style={{ position: 'relative' }}>
+                  <Link
+                    href={item.href}
+                    onClick={fecharMenuMobile}
+                    className={`ni ${isActive(item.href) ? 'on' : ''}`}
+                  >
+                    <i className={`ti ${item.icon}`} />
+                    {item.label}
+                    {item.label === 'Aprovação' && !!pendentes?.total && (
+                      <span className="nb">{pendentes.total}</span>
+                    )}
+                  </Link>
+                  {item.href === '/painel' && projetoAtualId && (
+                    <button type="button" className="sb-sub-toggle" onClick={alternarSubmenu}
+                      aria-expanded={submenuAberto} aria-label={submenuAberto ? 'Recolher telas do projeto' : 'Mostrar telas do projeto'}>
+                      <i className={`ti ${submenuAberto ? 'ti-chevron-down' : 'ti-chevron-right'}`} />
+                    </button>
+                  )}
+                </div>
+                {item.href === '/painel' && projetoAtualId && (
+                  <SubmenuProjeto projetoId={projetoAtualId} aberto={submenuAberto} onNavegar={fecharMenuMobile} />
                 )}
-              </Link>
+              </Fragment>
             ))}
           </div>
         ))}
