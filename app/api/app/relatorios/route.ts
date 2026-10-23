@@ -160,13 +160,12 @@ export async function GET(req: NextRequest) {
       },
     }),
 
-    // H/H por função
+    // H/H por função — todas as funções (a tela rola quando são muitas)
     prisma.maoDeObra.groupBy({
       by:    ['funcaoNome'],
       where: { rdo: whereRdo },
       _sum:  { totalHH: true },
       orderBy: { _sum: { totalHH: 'desc' } },
-      take:  10,
     }),
 
     // H/H e pessoas por categoria (direta/indireta/terceirizado)

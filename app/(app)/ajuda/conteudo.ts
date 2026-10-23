@@ -432,7 +432,7 @@ export const SECOES: Secao[] = [
           ['Status dos RDOs', 'Proporção de rascunhos, pendentes, aprovados e a revisar.'],
           ['Ocorrências por tipo', 'Quais tipos de ocorrência mais aparecem.'],
           ['Horas impactadas por ocorrências', 'Quanto tempo de trabalho cada tipo de ocorrência tomou.'],
-          ['H/H por função', 'Quais funções mais consumiram horas.'],
+          ['H/H por função', 'Quais funções mais consumiram horas. Mostra **todas** as funções, da que mais consumiu para a que menos consumiu; quando são muitas, o quadro ganha uma **barra de rolagem** (o mesmo vale para Ocorrências por tipo e Horas impactadas por ocorrências). No PDF a lista continua na página seguinte.'],
           ['Tempo médio de aprovação', 'Quanto tempo os RDOs levam entre o envio e a decisão.'],
           ['RDOs ao longo do tempo', 'Quantos RDOs foram registrados por dia, semana ou mês.'],
         ],

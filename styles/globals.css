@@ -99,6 +99,8 @@ html, body {
 .ni:hover { background: var(--s2); color: var(--tp); }
 .ni.on    { background: var(--s2); color: var(--ta); font-weight: 500; }
 .ni.on i  { opacity: 1; color: var(--ta); }
+/* Gráficos de lista dos Relatórios (H/H por função, ocorrências...): mostram todos os itens, com rolagem quando são muitos */
+.rel-rola { max-height: 320px; overflow-y: auto; padding-right: 6px; }
 /* submenu do projeto sob "Painel de Projetos" (recolhível) */
 .sb-sub        { margin: 0 0 4px 14px; padding-left: 8px; border-left: .5px solid var(--b); }
 .sb-sub .ni    { padding: 5px 8px; font-size: 11px; }

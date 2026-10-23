@@ -1119,27 +1119,40 @@ export async function gerarPdfRelatorio(
     const max = Math.max(1, ...dados.map(d => d.valor))
     const n = dados.length
     const chartW = 50, rowH = 6.2
-    const topo = y
-    dados.forEach((d, i) => {
-      const topPct = d.valor/max
-      const botPct = (i < n-1 ? dados[i+1].valor : d.valor)/max
-      const topHalf = (topPct*chartW)/2
-      const botHalf = (botPct*chartW)/2
-      const y1 = topo + i*rowH
-      const y2 = y1 + rowH - 0.6
-      const cx = M + chartW/2
-      const opac = n > 1 ? 1 - (i/(n-1))*0.55 : 1
-      fillPolygon([[cx-topHalf,y1],[cx+topHalf,y1],[cx+botHalf,y2],[cx-botHalf,y2]], blend(corBase, opac))
-    })
-    const labX = M + chartW + 6
-    dados.forEach((d, i) => {
-      const meio = topo + i*rowH + rowH/2
-      doc.setFontSize(6.5)
-      const labelLines = doc.splitTextToSize(d.label, M+CW-labX-20)
-      txt(labelLines[0] ?? d.label, labX, meio-0.3, { size:6.5, cor:COR.ts })
-      txt(`${d.valor}${d.sufixo ?? ''}`, M+CW, meio-0.3, { size:6.5, bold:true, cor:COR.tp, align:'right' })
-    })
-    y = topo + n*rowH + 3
+    // Listas longas (todas as funções, todos os tipos) continuam na página seguinte
+    let inicio = 0
+    while (inicio < n) {
+      let cabem = Math.floor((PAGE_BREAK_Y - y - 3) / rowH)
+      if (cabem < Math.min(5, n - inicio)) {
+        novaPaginaSeNecessario(Infinity)
+        cabem = Math.floor((PAGE_BREAK_Y - y - 3) / rowH)
+      }
+      const fim = Math.min(n, inicio + Math.max(1, cabem))
+      const topo = y
+      for (let i = inicio; i < fim; i++) {
+        const d = dados[i]
+        const topPct = d.valor/max
+        const botPct = (i < n-1 ? dados[i+1].valor : d.valor)/max
+        const topHalf = (topPct*chartW)/2
+        const botHalf = (botPct*chartW)/2
+        const y1 = topo + (i-inicio)*rowH
+        const y2 = y1 + rowH - 0.6
+        const cx = M + chartW/2
+        const opac = n > 1 ? 1 - (i/(n-1))*0.55 : 1
+        fillPolygon([[cx-topHalf,y1],[cx+topHalf,y1],[cx+botHalf,y2],[cx-botHalf,y2]], blend(corBase, opac))
+      }
+      const labX = M + chartW + 6
+      for (let i = inicio; i < fim; i++) {
+        const d = dados[i]
+        const meio = topo + (i-inicio)*rowH + rowH/2
+        doc.setFontSize(6.5)
+        const labelLines = doc.splitTextToSize(d.label, M+CW-labX-20)
+        txt(labelLines[0] ?? d.label, labX, meio-0.3, { size:6.5, cor:COR.ts })
+        txt(`${d.valor}${d.sufixo ?? ''}`, M+CW, meio-0.3, { size:6.5, bold:true, cor:COR.tp, align:'right' })
+      }
+      y = topo + (fim-inicio)*rowH + 3
+      inicio = fim
+    }
   }
   // Barra empilhada + legenda — réplica do bloco "H/H por categoria"
   function stackedBarSection(itens: Array<{label:string; valor:number; sub:string; cor:[number,number,number]}>) {
@@ -1302,7 +1315,7 @@ export async function gerarPdfRelatorio(
   // ════════════════════════════════════════════════════
   // OCORRÊNCIAS POR TIPO — funil
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(10 + data.ocorrenciasPorTipo.length*6.2)
+  novaPaginaSeNecessario(Math.min(10 + data.ocorrenciasPorTipo.length*6.2, 40))
   secHeader('Ocorrências por tipo')
   if (data.ocorrenciasPorTipo.length === 0) {
     vazio('Nenhuma ocorrência no período.')
@@ -1314,7 +1327,7 @@ export async function gerarPdfRelatorio(
   // HORAS IMPACTADAS POR OCORRÊNCIAS — funil
   // ════════════════════════════════════════════════════
   const horasOrdenadas = [...data.ocorrenciasPorTipo].sort((a,b) => b.horas - a.horas).filter(o => o.horas > 0)
-  novaPaginaSeNecessario(10 + horasOrdenadas.length*6.2)
+  novaPaginaSeNecessario(Math.min(10 + horasOrdenadas.length*6.2, 40))
   secHeader('Horas impactadas por ocorrências')
   if (horasOrdenadas.length === 0) {
     vazio('Nenhuma ocorrência com duração registrada no período.')
@@ -1325,7 +1338,7 @@ export async function gerarPdfRelatorio(
   // ════════════════════════════════════════════════════
   // H/H POR FUNÇÃO — funil
   // ════════════════════════════════════════════════════
-  novaPaginaSeNecessario(10 + data.hhPorFuncao.length*6.2)
+  novaPaginaSeNecessario(Math.min(10 + data.hhPorFuncao.length*6.2, 40))
   secHeader('H/H por função')
   if (data.hhPorFuncao.length === 0) {
     vazio('Sem registros de mão de obra no período.')

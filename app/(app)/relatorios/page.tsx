@@ -400,7 +400,7 @@ export default function RelatoriosPage() {
                 {(data?.ocorrenciasPorTipo.length ?? 0) === 0 ? (
                   <div style={{ fontSize: 11, color: 'var(--tm)' }}>Nenhuma ocorrência no período.</div>
                 ) : (
-                  <FunnelChart cor="var(--td)" dados={data!.ocorrenciasPorTipo.map(o => ({ label: OC_L[o.tipo] ?? o.tipo, valor: o.total }))} />
+                  <div className="rel-rola"><FunnelChart cor="var(--td)" dados={data!.ocorrenciasPorTipo.map(o => ({ label: OC_L[o.tipo] ?? o.tipo, valor: o.total }))} /></div>
                 )}
               </div>
             </div>
@@ -412,7 +412,7 @@ export default function RelatoriosPage() {
                 {horasOcorrenciaOrdenadas.filter(o => o.horas > 0).length === 0 ? (
                   <div style={{ fontSize: 11, color: 'var(--tm)' }}>Nenhuma ocorrência com duração registrada no período.</div>
                 ) : (
-                  <FunnelChart cor="var(--tw)" dados={horasOcorrenciaOrdenadas.filter(o => o.horas > 0).map(o => ({ label: OC_L[o.tipo] ?? o.tipo, valor: o.horas, sufixo: 'h' }))} />
+                  <div className="rel-rola"><FunnelChart cor="var(--tw)" dados={horasOcorrenciaOrdenadas.filter(o => o.horas > 0).map(o => ({ label: OC_L[o.tipo] ?? o.tipo, valor: o.horas, sufixo: 'h' }))} /></div>
                 )}
               </div>
             </div>
@@ -424,7 +424,7 @@ export default function RelatoriosPage() {
                 {(data?.hhPorFuncao.length ?? 0) === 0 ? (
                   <div style={{ fontSize: 11, color: 'var(--tm)' }}>Sem registros de mão de obra no período.</div>
                 ) : (
-                  <FunnelChart cor="var(--tsu)" dados={data!.hhPorFuncao.map(h => ({ label: h.funcao, valor: h.totalHH, sufixo: ' H/H' }))} />
+                  <div className="rel-rola"><FunnelChart cor="var(--tsu)" dados={data!.hhPorFuncao.map(h => ({ label: h.funcao, valor: h.totalHH, sufixo: ' H/H' }))} /></div>
                 )}
               </div>
             </div>
