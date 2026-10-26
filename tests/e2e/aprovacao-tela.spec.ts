@@ -48,3 +48,23 @@ test('a Lista de RDOs continua com o filtro de status', async ({ page }) => {
   await page.goto('/rdos')
   await expect(page.locator('select.fsel option', { hasText: 'Todos os status' })).toHaveCount(1)
 })
+
+// A paginação (setas no pé da lista) conta só o que a lista mostra. Bug: depois de os cartões
+// passarem a somar todos os status, a tela de Aprovação mostrava setas de página mesmo com poucos
+// RDOs pendentes, porque usava o total de todos os status.
+for (const caminho of ['/aprovacao', '/rdos?status=x']) {
+  test(`sem setas de paginação quando a lista tem poucos RDOs, mesmo com muitos em outros status (${caminho})`, async ({ page }) => {
+    await page.route('**/api/app/rdos?**', async (route) => {
+      const resposta = await route.fetch()
+      const dados = await resposta.json()
+      dados.total = 3 // o que a lista mostra
+      dados.porStatus = { PENDENTE_APROVACAO: 3, APROVADO: 40, RASCUNHO: 5 } // todos os status (cartões)
+      return route.fulfill({ response: resposta, json: dados })
+    })
+    await login(page)
+    await page.goto(caminho === '/rdos?status=x' ? '/rdos' : caminho)
+    await expect(page.locator('.kgrid')).toBeVisible()
+    await expect(page.locator('tbody')).toBeVisible()
+    await expect(page.locator('.content i.ti-chevron-right')).toHaveCount(0)
+  })
+}

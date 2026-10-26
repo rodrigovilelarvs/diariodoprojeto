@@ -81,6 +81,8 @@ export function RdosContent({ projetoIdFixo, modoAprovacao }: { projetoIdFixo?: 
   // mostrando o quadro completo do projeto/busca). Sem a contagem do servidor, cai para o total.
   const porStatus = data?.porStatus
   const total   = porStatus ? Object.values(porStatus).reduce((a, b) => a + b, 0) : (data?.total ?? 0)
+  // Paginação: conta só os RDOs que a lista está mostrando (com o filtro de status), não o total dos cartões
+  const totalLista = data?.total ?? 0
   const aprovados = porStatus ? (porStatus.APROVADO ?? 0) : rdos.filter(r => r.status === 'APROVADO').length
   const pendentes = porStatus ? (porStatus.PENDENTE_APROVACAO ?? 0) : rdos.filter(r => r.status === 'PENDENTE_APROVACAO').length
   const rascunhos = porStatus ? (porStatus.RASCUNHO ?? 0) : rdos.filter(r => r.status === 'RASCUNHO').length
@@ -211,15 +213,15 @@ export function RdosContent({ projetoIdFixo, modoAprovacao }: { projetoIdFixo?: 
         </div>
 
         {/* Paginação */}
-        {total > 20 && (
+        {totalLista > 20 && (
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8 }}>
             <button className="btn btn-sm" disabled={pagina <= 1} onClick={() => setPagina(p => p - 1)}>
               <i className="ti ti-chevron-left" />
             </button>
             <span style={{ fontSize: 11, color: 'var(--ts)', padding: '3px 8px' }}>
-              {pagina} / {Math.ceil(total / 20)}
+              {pagina} / {Math.ceil(totalLista / 20)}
             </span>
-            <button className="btn btn-sm" disabled={pagina >= Math.ceil(total / 20)} onClick={() => setPagina(p => p + 1)}>
+            <button className="btn btn-sm" disabled={pagina >= Math.ceil(totalLista / 20)} onClick={() => setPagina(p => p + 1)}>
               <i className="ti ti-chevron-right" />
             </button>
           </div>
