@@ -91,9 +91,11 @@ async function main() {
       } else if (p === '/api/app/rdos') {
         const j = JSON.parse(body)
         let rows = rdosVar()
+        // contagem por status dos cartões da lista (de todas as páginas, sem o filtro de status)
+        const porStatus = {}; for (const r of rows) porStatus[r.status] = (porStatus[r.status] ?? 0) + 1
         const st = url.searchParams.get('status'); if (st) rows = rows.filter(r => r.status === st)
         if (url.searchParams.get('data')) rows = []
-        body = JSON.stringify({ ...j, rdos: rows, total: rows.length })
+        body = JSON.stringify({ ...j, rdos: rows, total: rows.length, ...(url.searchParams.get('contagens') === '1' ? { porStatus } : {}) })
       } else if (p === '/api/app/relatorios') {
         const j = JSON.parse(body)
         j.kpis = { ...j.kpis, totalRdos: 148, totalHH: 9312, aprovados: 112, pendentes: 9, rascunhos: 21, rejeitados: 6, desvioMedio: -3, taxaAprovacao: 76, ocorrenciasAbertas: 4, totalProjetos: 5, totalUsuarios: 12, totalFotos: 816, totalVideos: 30, totalAnexos: 22, armazenamentoBytes: 1.4 * 1024 ** 3 }
@@ -147,7 +149,7 @@ async function main() {
   if (quer('acesso')) { await go('/projetos/p1/acesso'); await shot('projeto-acesso') }
   if (quer('assinaturas')) { await go('/projetos/p1/assinaturas'); await page.getByText('Pré-definida').click(); await shot('projeto-assinaturas', { wait: 700 }) }
   if (quer('lista-rdos')) { await go('/rdos'); await shot('lista-rdos') }
-  if (quer('aprovacao-lista')) { await go('/rdos?status=PENDENTE_APROVACAO'); await shot('aprovacao-lista') }
+  if (quer('aprovacao-lista')) { await go('/aprovacao'); await shot('aprovacao-lista') }
   if (quer('relatorios')) { await go('/relatorios', 2500); await shot('relatorios') }
   if (quer('tarefas')) { await go('/tarefas'); await shot('tarefas') }
   if (quer('usuarios')) { await go('/usuarios'); await shot('usuarios') }

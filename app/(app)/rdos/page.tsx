@@ -25,7 +25,9 @@ export default function RdosPage() {
 
 // projetoIdFixo: quando informado, trava o filtro nesse projeto e omite o Topbar —
 // usado para embutir a lista dentro do modal "RDOs do projeto" no resumo do projeto.
-export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) {
+// modoAprovacao: tela dedicada do item "Aprovação" do menu — só os RDOs pendentes de aprovação, sem o
+// filtro de status e sem o botão de novo RDO (ver app/(app)/aprovacao/page.tsx).
+export function RdosContent({ projetoIdFixo, modoAprovacao }: { projetoIdFixo?: string; modoAprovacao?: boolean } = {}) {
   const router  = useRouter()
   const { abrirNovoRdo } = useNovoRdo()
   const searchParams = useSearchParams()
@@ -33,7 +35,9 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   // Os filtros podem vir na URL (ao voltar da tela de aprovação com a fila filtrada)
   const [busca, setBusca] = useState(() => searchParams.get('busca') ?? '')
   const [buscaAplicada, setBuscaAplicada] = useState(() => (searchParams.get('busca') ?? '').trim())
-  const [status, setStatus] = useState(() => searchParams.get('status') ?? '')
+  const [statusLista, setStatus] = useState(() => searchParams.get('status') ?? '')
+  // Na tela de Aprovação o status é sempre "pendente de aprovação" (só o que está liberado para aprovar)
+  const status = modoAprovacao ? 'PENDENTE_APROVACAO' : statusLista
   const [grupo, setGrupo] = useState(() => searchParams.get('grupo') ?? '')
   const [projetoId, setProjetoId] = useState(() => projetoIdFixo ?? searchParams.get('projetoId') ?? '')
   const [pagina, setPagina] = useState(1)
@@ -50,12 +54,15 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
     setPagina(1)
   }
 
-  // Ao navegar pelo menu entre "Lista de RDOs" e "Aprovação" (mesma página,
-  // só a query muda), o componente não remonta — sem isso o filtro ficava
-  // travado no status da navegação anterior até clicar em outro lugar.
+  // Links antigos (/rdos?status=PENDENTE_APROVACAO) vão para a tela de Aprovação
   useEffect(() => {
-    setStatus(searchParams.get('status') ?? '')
-  }, [searchParams])
+    if (modoAprovacao || projetoIdFixo) return
+    if (searchParams.get('status') === 'PENDENTE_APROVACAO') {
+      const q = new URLSearchParams(searchParams.toString())
+      q.delete('status')
+      router.replace(`/aprovacao${q.toString() ? `?${q.toString()}` : ''}`)
+    }
+  }, [modoAprovacao, projetoIdFixo, searchParams, router])
 
   // A busca é feita no servidor (todas as páginas): espera a pessoa parar de digitar
   useEffect(() => {
@@ -114,12 +121,18 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
 
   const conteudo = (
     <>
-        <div className="kgrid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-          <KpiCard icon="ti-file-text"  valor={total}     label="Total de RDOs" />
-          <KpiCard icon="ti-check"      valor={aprovados} label="Aprovados"    cor="var(--tsu)" />
-          <KpiCard icon="ti-clock"      valor={pendentes} label="Pendentes"    cor="var(--tw)" />
-          <KpiCard icon="ti-pencil"     valor={rascunhos} label="Rascunhos"    cor="var(--tm)" />
-        </div>
+        {modoAprovacao ? (
+          <div className="kgrid" style={{ gridTemplateColumns: 'minmax(0, 260px)' }}>
+            <KpiCard icon="ti-clock" valor={pendentes} label="Aguardando aprovação" cor="var(--tw)" />
+          </div>
+        ) : (
+          <div className="kgrid" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+            <KpiCard icon="ti-file-text"  valor={total}     label="Total de RDOs" />
+            <KpiCard icon="ti-check"      valor={aprovados} label="Aprovados"    cor="var(--tsu)" />
+            <KpiCard icon="ti-clock"      valor={pendentes} label="Pendentes"    cor="var(--tw)" />
+            <KpiCard icon="ti-pencil"     valor={rascunhos} label="Rascunhos"    cor="var(--tm)" />
+          </div>
+        )}
 
         <div className="fr-row">
           <AutocompleteSearchInput placeholder="Buscar por projeto, número, data ou gestor..." value={busca} onChange={setBusca}
@@ -136,12 +149,14 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
               {grupos.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           )}
-          <select className="fsel" value={status} onChange={e => setStatus(e.target.value)}>
-            <option value="">Todos os status</option>
-            <option value="APROVADO">Aprovado</option>
-            <option value="PENDENTE_APROVACAO">Pendente</option>
-            <option value="RASCUNHO">Rascunho</option>
-          </select>
+          {!modoAprovacao && (
+            <select className="fsel" value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="">Todos os status</option>
+              <option value="APROVADO">Aprovado</option>
+              <option value="PENDENTE_APROVACAO">Pendente</option>
+              <option value="RASCUNHO">Rascunho</option>
+            </select>
+          )}
           {/* Só aqui dentro do modal "RDOs do projeto" (sem Topbar, ver abaixo)
               — na página normal esse botão duplicava o do Topbar. */}
           {projetoIdFixo && (
@@ -168,7 +183,7 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
               {isLoading ? (
                 <tr><td colSpan={projetoIdFixo ? 6 : 7}><Skeleton h={200} /></td></tr>
               ) : filtrados.length === 0 ? (
-                <tr><td colSpan={projetoIdFixo ? 6 : 7} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>Nenhum RDO encontrado.</td></tr>
+                <tr><td colSpan={projetoIdFixo ? 6 : 7} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>{modoAprovacao ? 'Nenhum RDO aguardando aprovação.' : 'Nenhum RDO encontrado.'}</td></tr>
               ) : filtrados.map(r => (
                 <tr key={r.id} onClick={() => router.push(abrirRdo(r))}>
                   <td style={{ fontSize: 11, fontWeight: 600, color: 'var(--ta)' }}>#{numeroRdo(r.numero)}</td>
@@ -219,18 +234,22 @@ export function RdosContent({ projetoIdFixo }: { projetoIdFixo?: string } = {}) 
   return (
     <div className="main">
       <Topbar
-        titulo="Lista de RDOs"
-        subtitulo={projetoId ? `Filtrado por: ${nomeProjetoFiltrado ?? 'projeto selecionado'}` : 'Todos os registros diários de obra'}
+        titulo={modoAprovacao ? 'Aprovação' : 'Lista de RDOs'}
+        subtitulo={projetoId
+          ? `Filtrado por: ${nomeProjetoFiltrado ?? 'projeto selecionado'}`
+          : modoAprovacao ? 'RDOs enviados que aguardam aprovação' : 'Todos os registros diários de obra'}
         acoes={
           <>
             {projetoId && (
-              <button className="btn btn-sm" onClick={() => router.push('/rdos')}>
+              <button className="btn btn-sm" onClick={() => router.push(modoAprovacao ? '/aprovacao' : '/rdos')}>
                 <i className="ti ti-x" /> Limpar filtro de projeto
               </button>
             )}
-            <button className="btn btn-p btn-sm" onClick={handleNovoRdo}>
-              <i className="ti ti-plus" /> Novo RDO
-            </button>
+            {!modoAprovacao && (
+              <button className="btn btn-p btn-sm" onClick={handleNovoRdo}>
+                <i className="ti ti-plus" /> Novo RDO
+              </button>
+            )}
           </>
         }
       />

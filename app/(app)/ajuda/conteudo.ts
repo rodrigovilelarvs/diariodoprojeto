@@ -83,7 +83,7 @@ export const SECOES: Secao[] = [
           ['Geral', 'Painel de Projetos', 'Visão geral de todos os projetos e acesso à pasta de cada um.'],
           ['Geral', 'Lista de RDOs', 'Todos os relatórios diários, com busca e filtros.'],
           ['Geral', 'Novo RDO', 'Abre a janela para criar um relatório diário de obra.'],
-          ['Projeto', 'Aprovação', 'Fila de RDOs esperando assinatura. O número vermelho mostra quantos estão pendentes.'],
+          ['Projeto', 'Aprovação', 'Tela dedicada aos RDOs que aguardam aprovação (só os pendentes). O número vermelho mostra quantos estão pendentes.'],
           ['Projeto', 'Lista de tarefas', 'Etapas e atividades de cada projeto (EAP).'],
           ['Projeto', 'Relatórios', 'Indicadores e gráficos de desempenho, com exportação em PDF.'],
           ['Config.', 'Notificações', 'Escolha quais avisos por e-mail você quer receber.'],
@@ -354,7 +354,7 @@ export const SECOES: Secao[] = [
     titulo: 'Aprovação e assinatura',
     resumo: 'Como revisar, assinar ou devolver um RDO para correção.',
     blocos: [
-      { t: 'p', x: 'Depois que o RDO é enviado, quem deve assinar recebe um aviso por e-mail. No menu, o item **Aprovação** mostra um número vermelho com a quantidade de RDOs aguardando.' },
+      { t: 'p', x: 'Depois que o RDO é enviado, quem deve assinar recebe um aviso por e-mail. No menu, o item **Aprovação** mostra um número vermelho com a quantidade de RDOs aguardando. Ele abre uma **tela só de aprovação**: lista apenas os RDOs pendentes, por isso **não tem o filtro de status** nem o botão de novo RDO. Os filtros de **projeto**, **grupo** e a **busca** (por projeto, número, data ou gestor) continuam disponíveis.' },
       { t: 'img', src: '/ajuda/aprovacao-lista.webp', alt: 'Fila de RDOs pendentes de aprovação', legenda: 'Fila de RDOs pendentes de aprovação.' },
       { t: 'h', x: 'Estados de um RDO' },
       {
@@ -377,7 +377,7 @@ export const SECOES: Secao[] = [
           'Para devolver, escreva o **motivo** no campo de texto e clique em **Revisar**. O emissor recebe o aviso para ajustar.',
         ],
       },
-      { t: 'dica', x: 'Aprovando vários RDOs em sequência: quando você abre o RDO pelo item **Aprovação** do menu, as setas **‹ ›** do rodapé passam a andar **somente pelos RDOs pendentes de assinatura**, de todos os projetos, do mais antigo para o mais novo (o rodapé mostra "pendente 2 de 5"). Se a lista estiver **filtrada** (por projeto, grupo ou busca), as setas andam só pelos pendentes daquele recorte: filtrou um projeto, passa apenas pelos RDOs pendentes dele. Assine, clique em **›** e siga para o próximo. **Voltar à lista** leva de volta à lista dos pendentes, com os mesmos filtros. Abrindo o RDO pela **Lista de RDOs**, as setas andam por todos os RDOs do projeto.' },
+      { t: 'dica', x: 'Aprovando vários RDOs em sequência: quando você abre o RDO pelo item **Aprovação** do menu, as setas **‹ ›** do rodapé passam a andar **somente pelos RDOs pendentes de assinatura**, de todos os projetos, do mais antigo para o mais novo (o rodapé mostra "pendente 2 de 5"). Se a lista estiver **filtrada** (por projeto, grupo ou busca), as setas andam só pelos pendentes daquele recorte: filtrou um projeto, passa apenas pelos RDOs pendentes dele. Assine, clique em **›** e siga para o próximo. **Voltar à lista** leva de volta à tela de Aprovação, com os mesmos filtros. Abrindo o RDO pela **Lista de RDOs**, as setas andam por todos os RDOs do projeto.' },
       { t: 'img', src: '/ajuda/aprovacao-topo.webp', alt: 'RDO aberto para aprovação' },
       { t: 'img', src: '/ajuda/aprovacao-assinaturas.webp', alt: 'Seção Assinaturas do RDO', legenda: 'Seção Assinaturas: quem já assinou, quem falta, campo de motivo e botões Revisar e Assinar.' },
       { t: 'aviso', x: 'Para assinar, você precisa ter **cadastrado a sua assinatura digital** em **Meu perfil**. Se ainda não cadastrou, o botão vira **Cadastrar assinatura pra assinar** e leva você até lá.' },

@@ -91,17 +91,17 @@ test('aberto pela fila de aprovação, as setas andam só pelos RDOs pendentes',
   await page.waitForURL(u => u.pathname.endsWith(`/aprovacao/${b}`) && u.search.includes('fila=pendentes'))
 })
 
-test('abrir um RDO pela lista filtrada em "pendentes" (item Aprovação do menu) entra no modo fila', async ({ page }) => {
+test('abrir um RDO pela tela de Aprovação (item do menu) entra no modo fila', async ({ page }) => {
   await login(page)
-  await page.goto('/rdos?status=PENDENTE_APROVACAO')
+  await page.goto('/aprovacao')
   const linha = page.locator('tbody tr').first()
   await expect(linha).toBeVisible()
   await linha.click()
   await page.waitForURL(u => u.pathname.startsWith('/aprovacao/') && u.search.includes('fila=pendentes'))
 
-  // "Voltar à lista" volta para a lista dos pendentes
+  // "Voltar à lista" volta para a tela de Aprovação
   await page.getByRole('button', { name: 'Voltar à lista' }).click()
-  await page.waitForURL(u => u.pathname === '/rdos' && u.search.includes('status=PENDENTE_APROVACAO'))
+  await page.waitForURL(u => u.pathname === '/aprovacao')
 })
 
 test('aberto pela Lista de RDOs normal, as setas continuam andando por todos os RDOs do projeto', async ({ page }) => {
@@ -119,7 +119,7 @@ test('na fila de aprovação filtrada por projeto, as setas só consideram os pe
   await api.dispose()
 
   await login(page)
-  await page.goto('/rdos?status=PENDENTE_APROVACAO')
+  await page.goto('/aprovacao')
   // filtra por projeto na lista
   const selecao = page.locator('select.fsel').filter({ has: page.locator('option', { hasText: 'Todos os projetos' }) })
   await selecao.selectOption(PROJETO_ID)
@@ -131,14 +131,17 @@ test('na fila de aprovação filtrada por projeto, as setas só consideram os pe
     return u.pathname === '/api/app/rdos' && u.searchParams.get('status') === 'PENDENTE_APROVACAO'
       && u.searchParams.get('projetoId') === PROJETO_ID && u.searchParams.get('sortBy') === 'data'
   })
-  await page.locator('tbody tr').first().click()
-  await page.waitForURL(u => u.pathname.startsWith('/aprovacao/')
-    && u.searchParams.get('fila') === 'pendentes' && u.searchParams.get('projetoId') === PROJETO_ID)
+  // (a página hidrata depois de carregar: repete o clique até a navegação acontecer)
+  await expect(async () => {
+    await page.locator('tbody tr').first().click()
+    await page.waitForURL(u => u.pathname.startsWith('/aprovacao/')
+      && u.searchParams.get('fila') === 'pendentes' && u.searchParams.get('projetoId') === PROJETO_ID, { timeout: 3000 })
+  }).toPass({ timeout: 20_000 })
   await pedido
 
   // "Voltar à lista" recupera o filtro de projeto
   await page.getByRole('button', { name: 'Voltar à lista' }).click()
-  await page.waitForURL(u => u.pathname === '/rdos' && u.searchParams.get('projetoId') === PROJETO_ID
-    && u.searchParams.get('status') === 'PENDENTE_APROVACAO')
+  await page.waitForURL(u => u.pathname === '/aprovacao' && u.searchParams.get('projetoId') === PROJETO_ID
+    && !u.searchParams.has('status'))
   await expect(page.locator('select.fsel').filter({ has: page.locator('option', { hasText: 'Todos os projetos' }) })).toHaveValue(PROJETO_ID)
 })

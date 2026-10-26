@@ -17,7 +17,7 @@ const NAV: Array<{ group: string; items: ItemNav[] }> = [
     { href: '/rdos/novo',    icon: 'ti-file-plus',        label: 'Novo RDO', modal: true }, // abre a janela de Novo RDO, não uma página
   ]},
   { group: 'Projeto', items: [
-    { href: '/rdos?status=PENDENTE_APROVACAO', icon: 'ti-writing',    label: 'Aprovação' },
+    { href: '/aprovacao', icon: 'ti-writing', label: 'Aprovação' },
     { href: '/tarefas',      icon: 'ti-list-check',       label: 'Lista de tarefas' },
     { href: '/relatorios',   icon: 'ti-chart-bar',        label: 'Relatórios' },
   ]},
