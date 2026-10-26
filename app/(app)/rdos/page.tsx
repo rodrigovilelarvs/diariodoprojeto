@@ -2,6 +2,7 @@
 // src/app/rdos/page.tsx — Lista de RDOs
 
 import { Suspense, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useRdos, useProjetos } from '@/hooks/useEmpresa'
 import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
@@ -188,7 +189,8 @@ export function RdosContent({ projetoIdFixo, modoAprovacao }: { projetoIdFixo?: 
                 <tr><td colSpan={projetoIdFixo ? 6 : 7} style={{ textAlign: 'center', padding: 32, color: 'var(--tm)' }}>{modoAprovacao ? 'Nenhum RDO aguardando aprovação.' : 'Nenhum RDO encontrado.'}</td></tr>
               ) : filtrados.map(r => (
                 <tr key={r.id} onClick={() => router.push(abrirRdo(r))}>
-                  <td style={{ fontSize: 11, fontWeight: 600, color: 'var(--ta)' }}>#{numeroRdo(r.numero)}</td>
+                  {/* número e "Abrir" são links de verdade: abrem o RDO mesmo que o clique na linha não responda, e aceitam abrir em nova aba */}
+                  <td style={{ fontSize: 11, fontWeight: 600 }}><Link href={abrirRdo(r)} onClick={e => e.stopPropagation()} style={{ color: 'var(--ta)', textDecoration: 'none' }}>#{numeroRdo(r.numero)}</Link></td>
                   <td style={{ fontSize: 12, fontWeight: 500 }}>{r.projeto.nome}</td>
                   {!projetoIdFixo && <td className="col-sec" style={{ fontSize: 11, color: 'var(--ts)' }}>{r.projeto.grupo ?? '—'}</td>}
                   <td style={{ fontSize: 11, color: 'var(--ts)' }}>
@@ -198,9 +200,9 @@ export function RdosContent({ projetoIdFixo, modoAprovacao }: { projetoIdFixo?: 
                   <td><RdoStatusBadge status={r.status} assinaturas={r.assinaturas} /></td>
                   <td>
                     <div className="proj-ac" style={{ justifyContent: 'flex-end' }}>
-                      <button className="proj-ab" onClick={e => { e.stopPropagation(); router.push(abrirRdo(r)) }} title="Abrir">
+                      <Link href={abrirRdo(r)} className="proj-ab" onClick={e => e.stopPropagation()} title="Abrir" style={{ textDecoration: 'none' }}>
                         <i className="ti ti-eye" /> Abrir
-                      </button>
+                      </Link>
                       <button className="proj-ab" disabled={exportandoId === r.id} onClick={e => { e.stopPropagation(); handleExportarPdf(r.id) }} title="Exportar PDF">
                         <i className={`ti ${exportandoId === r.id ? 'ti-loader' : 'ti-file-export'}`} /> PDF
                       </button>

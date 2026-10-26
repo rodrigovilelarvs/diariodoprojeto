@@ -68,3 +68,21 @@ for (const caminho of ['/aprovacao', '/rdos?status=x']) {
     await expect(page.locator('.content i.ti-chevron-right')).toHaveCount(0)
   })
 }
+
+// Número e "Abrir" são links de verdade (abrem o RDO mesmo que o clique na linha não responda,
+// e aceitam "abrir em nova aba"); na Aprovação o link já leva para a fila de aprovação.
+test('o botão Abrir da Aprovação é um link para o RDO, no modo fila', async ({ page, playwright }) => {
+  const api = await apiComo(playwright)
+  const r = await api.post('/api/app/rdos', { data: { projetoId: PROJETO_ID, data: '2027-08-01', copiarAnterior: false } })
+  const { id } = await r.json()
+  expect((await api.post(`/api/app/rdos/${id}/enviar`, { data: {} })).status()).toBe(200)
+  await api.dispose()
+
+  await login(page)
+  await page.goto('/aprovacao')
+  const abrir = page.locator('tbody').getByRole('link', { name: 'Abrir' }).first()
+  await expect(abrir).toBeVisible()
+  await expect(abrir).toHaveAttribute('href', /\/aprovacao\/[^?]+\?fila=pendentes/)
+  await abrir.click()
+  await page.waitForURL(u => u.pathname.startsWith('/aprovacao/') && u.searchParams.get('fila') === 'pendentes')
+})
