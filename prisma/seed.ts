@@ -31,9 +31,9 @@ async function main() {
   const planos = [
     {
       tipo: 'STARTER' as const,
-      precoMensal:     50,
-      precoAnual:      450,
-      limiteUsuarios:  3,
+      precoMensal:     70,
+      precoAnual:      672,
+      limiteUsuarios:  6,
       limiteRdosMes:   50,
       limiteProjetos:  2,
       temRelatorios:   false,
@@ -46,7 +46,7 @@ async function main() {
       tipo: 'PRO' as const,
       precoMensal:     100,
       precoAnual:      960,
-      limiteUsuarios:  10,
+      limiteUsuarios:  22,
       limiteRdosMes:   0,   // 0 = ilimitado
       limiteProjetos:  10,
       temRelatorios:   true,

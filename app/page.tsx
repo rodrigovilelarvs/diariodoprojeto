@@ -71,11 +71,11 @@ const PLANOS: Array<{
 }> = [
   {
     tipo: 'Starter', resumo: 'Para começar a organizar seus RDOs.',
-    itens: ['Até 4 usuários', 'Até 2 projetos', '50 RDOs por mês', 'Exportação em PDF'],
+    itens: ['Até 6 usuários', 'Até 2 projetos', '50 RDOs por mês', 'Exportação em PDF'],
   },
   {
     tipo: 'Pro', resumo: 'Pra equipes que precisam de mais recursos.', destaque: true,
-    itens: ['Até 10 usuários', 'Até 10 projetos', 'RDOs ilimitados', 'Relatórios e dashboards completos', 'Exportação em PDF'],
+    itens: ['Até 22 usuários', 'Até 10 projetos', 'RDOs ilimitados', 'Relatórios e dashboards completos', 'Exportação em PDF'],
   },
   {
     tipo: 'Enterprise', resumo: 'Pra grandes empresas com necessidades específicas.',
