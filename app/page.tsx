@@ -65,6 +65,11 @@ const PASSOS: Array<{ n: string; titulo: string; desc: string }> = [
   { n: '4', titulo: 'Acompanhe em relatórios', desc: 'Desvio, progresso e indicadores sempre atualizados, prontos pra exportar.' },
 ]
 
+// WhatsApp de atendimento (formato internacional, só dígitos: 55 + DDD + número)
+const WHATSAPP_NUMERO = '5527998490713'
+const WHATSAPP_MENSAGEM = 'Olá! Vim pelo site do Diário do Projeto e gostaria de saber mais.'
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(WHATSAPP_MENSAGEM)}`
+
 const PLANOS: Array<{
   tipo: string; resumo: string; destaque?: boolean
   itens: string[]
@@ -518,18 +523,17 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Contato via WhatsApp — ícone já no ar, mas sem link/ação até
-          definirmos o número oficial de atendimento (pedido explícito:
-          deixar visível e sem funcionamento até segunda ordem). */}
-      <button
-        type="button"
+      {/* Contato via WhatsApp: abre a conversa com o número de atendimento, com a mensagem já escrita */}
+      <a
         className="ldg-whatsapp-fab"
-        aria-label="WhatsApp (em breve)"
-        title="Em breve"
-        onClick={e => e.preventDefault()}
+        href={WHATSAPP_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Fale conosco no WhatsApp"
+        title="Fale conosco no WhatsApp"
       >
         <i className="ti ti-brand-whatsapp" />
-      </button>
+      </a>
     </div>
   )
 }
