@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { AppProviders } from '@/components/Providers'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { NovoRdoProvider } from '@/components/rdos/NovoRdoModal'
+import { AvisoPlano } from '@/components/layout/AvisoPlano'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,7 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Suspense fallback={<div className="sb" />}>
           <Sidebar />
         </Suspense>
-        <div className="main">{children}</div>
+        <div className="main"><AvisoPlano />{children}</div>
       </div>
       </NovoRdoProvider>
     </AppProviders>
