@@ -57,6 +57,17 @@ async function apiFetch<T>(
     throw new ApiError(401, undefined, 'Sessão expirada.')
   }
 
+  // Plano da empresa vencido: encerra a sessão e volta ao login com o aviso
+  if (res.status === 403 && !admin) {
+    const corpo = await res.clone().json().catch(() => ({}))
+    if (corpo.codigo === 'PLANO_VENCIDO') {
+      localStorage.removeItem('app_token')
+      localStorage.removeItem('app_session')
+      window.location.href = '/login?aviso=plano-vencido'
+      throw new ApiError(403, 'PLANO_VENCIDO', corpo.erro ?? 'Plano vencido.')
+    }
+  }
+
   // Plano insuficiente
   if (res.status === 402) {
     const body = await res.json().catch(() => ({}))

@@ -25,7 +25,7 @@ import {
 type ContaDestino = ContaSessao & {
   senha: string | null
   status: UsuarioStatus
-  tenant: { id: string; nome: string; status: TenantStatus }
+  tenant: { id: string; nome: string; status: TenantStatus; dataVencimentoPlano: Date | null }
 }
 
 export async function POST(req: NextRequest) {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   const alvo: ContaDestino | null = await prisma.usuario.findFirst({
     where:   { email: atual.email, tenantId: body.tenantId },
-    include: { tenant: { select: { id: true, nome: true, status: true } } },
+    include: { tenant: { select: { id: true, nome: true, status: true, dataVencimentoPlano: true } } },
   })
   // Sem conta com esse e-mail na empresa, ou convite ainda não aceito (sem senha)
   if (!alvo || !alvo.senha) {

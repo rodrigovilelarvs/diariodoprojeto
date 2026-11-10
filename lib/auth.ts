@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from './prisma'
+import { CODIGO_PLANO_VENCIDO, mensagemPlanoVencido, planoVencido } from './plano-vencimento'
 const JWT_SECRET = process.env.JWT_SECRET!
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? '7d'
 
@@ -116,7 +117,7 @@ export async function requireAuth(
   // Verifica se o tenant ainda está ativo
   const tenant = await prisma.tenant.findUnique({
     where:  { id: payload.tenantId },
-    select: { status: true, limiteRdosMes: true },
+    select: { status: true, limiteRdosMes: true, dataVencimentoPlano: true },
   })
 
   if (!tenant) {
@@ -141,6 +142,16 @@ export async function requireAuth(
     return {
       error: NextResponse.json(
         { erro: 'Empresa aguardando ativação pelo administrador.' },
+        { status: 403 },
+      ),
+    }
+  }
+
+  // Plano vencido: bloqueia também quem já estava com a sessão aberta
+  if (tenant.dataVencimentoPlano && planoVencido(tenant.dataVencimentoPlano)) {
+    return {
+      error: NextResponse.json(
+        { erro: mensagemPlanoVencido(tenant.dataVencimentoPlano), codigo: CODIGO_PLANO_VENCIDO },
         { status: 403 },
       ),
     }

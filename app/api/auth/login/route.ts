@@ -23,7 +23,7 @@ import {
 type ContaLogin = ContaSessao & {
   senha: string | null
   status: UsuarioStatus
-  tenant: { id: string; nome: string; status: TenantStatus }
+  tenant: { id: string; nome: string; status: TenantStatus; dataVencimentoPlano: Date | null }
 }
 
 export async function POST(req: NextRequest) {
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   // Todas as contas deste e-mail (uma por empresa)
   const contas: ContaLogin[] = await prisma.usuario.findMany({
     where:   { email: email.toLowerCase().trim() },
-    include: { tenant: { select: { id: true, nome: true, status: true } } },
+    include: { tenant: { select: { id: true, nome: true, status: true, dataVencimentoPlano: true } } },
     orderBy: { criadoEm: 'asc' },
   })
 
@@ -132,6 +132,10 @@ export async function POST(req: NextRequest) {
 
   let usuario = disponiveis[0]
   if (tenantId) {
+    // empresa escolhida que está bloqueada (plano vencido, suspensa...): mostra o motivo, não "empresa inválida"
+    const alvo = corretas.find((c) => c.tenantId === tenantId)
+    const bloqueioAlvo = alvo && motivoDeBloqueio(alvo)
+    if (bloqueioAlvo) return NextResponse.json({ erro: bloqueioAlvo.erro }, { status: bloqueioAlvo.status })
     const escolhida = disponiveis.find((c) => c.tenantId === tenantId)
     if (!escolhida) {
       return NextResponse.json({ erro: 'Empresa inválida.' }, { status: 400 })

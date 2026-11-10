@@ -1,7 +1,7 @@
 'use client'
 // app/login/page.tsx
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { salvarSessaoApp } from '@/lib/sessao'
@@ -14,6 +14,12 @@ export default function LoginPage() {
   const [erro, setErro]     = useState('')
   const [loading, setLoading] = useState(false)
   const [mostrarSenha, setMostrarSenha] = useState(false)
+  // Sessão encerrada porque o plano da empresa venceu (ver apiFetch em lib/api.ts)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('aviso') === 'plano-vencido') {
+      setErro('O plano da sua empresa venceu. Entre em contato com o suporte para renovar o acesso.')
+    }
+  }, [])
   // E-mail com conta em mais de uma empresa: depois de conferir a senha, a
   // tela pede em qual delas entrar
   const [escolha, setEscolha] = useState<EscolherEmpresaResponse['empresas'] | null>(null)

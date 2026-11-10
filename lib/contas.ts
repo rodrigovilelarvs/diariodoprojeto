@@ -19,6 +19,7 @@
 import { LogCategoria, LogNivel, TenantStatus, UsuarioPerfil, UsuarioStatus } from '@/lib/prisma-enums'
 import { prisma } from '@/lib/prisma'
 import { signToken } from '@/lib/auth'
+import { mensagemPlanoVencido, planoVencido } from '@/lib/plano-vencimento'
 
 export const MAX_TENTATIVAS = 5   // falhas de senha por IP antes do bloqueio temporário
 export const BLOQUEIO_MINUTOS = 30
@@ -68,13 +69,17 @@ export function respostaDeSessao(conta: ContaSessao, tenant: { id: string; nome:
 // Por que uma conta (já com a senha confirmada) não pode entrar agora; null = pode.
 export function motivoDeBloqueio(conta: {
   status: UsuarioStatus
-  tenant: { status: TenantStatus }
+  tenant: { status: TenantStatus; dataVencimentoPlano?: Date | string | null }
 }): { erro: string; status: number } | null {
   if (conta.tenant.status === TenantStatus.SUSPENSO) {
     return { erro: 'Acesso suspenso. Entre em contato com o suporte.', status: 403 }
   }
   if (conta.tenant.status === TenantStatus.AGUARDANDO) {
     return { erro: 'Empresa aguardando ativação. Em breve você receberá um e-mail.', status: 403 }
+  }
+  // Plano vencido: ninguém da empresa entra até o super-admin renovar (alterar a data de vencimento)
+  if (conta.tenant.dataVencimentoPlano && planoVencido(conta.tenant.dataVencimentoPlano)) {
+    return { erro: mensagemPlanoVencido(conta.tenant.dataVencimentoPlano), status: 403 }
   }
   if (conta.status !== UsuarioStatus.ATIVO) {
     return { erro: 'Usuário inativo. Contate o administrador da sua empresa.', status: 403 }

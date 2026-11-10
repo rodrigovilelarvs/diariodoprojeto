@@ -509,6 +509,7 @@ export const SECOES: Secao[] = [
     blocos: [
       { t: 'h', x: 'Dados da empresa' },
       { t: 'p', x: 'Mostra o cadastro da empresa (nome, CNPJ, setor, cidade e contato), a configuração dos projetos, o **plano contratado** com o próximo vencimento e o **uso do plano**: usuários ativos, projetos e RDOs no mês, comparados com os limites. Para mudar de plano ou os dados de cobrança, fale com o suporte.' },
+      { t: 'aviso', x: '**Plano vencido:** o acesso vale até o **fim do dia** do vencimento. A partir do dia seguinte, **ninguém da empresa** consegue entrar (administradores incluídos), e quem estava com o sistema aberto é desconectado. A tela de login mostra "O plano da sua empresa venceu". Para voltar a usar, fale com o suporte para **renovar**: assim que o vencimento é atualizado, o acesso é liberado de novo, sem perder nenhum dado. Empresas sem data de vencimento cadastrada não são bloqueadas.' },
       { t: 'h', x: 'Para quem a sua empresa cria projetos' },
       { t: 'p', x: 'O Diário do Projeto atende tanto quem **executa** a obra quanto quem **contrata** a obra. Por isso, em **Dados da empresa**, o administrador escolhe uma das duas opções em **Os projetos desta empresa são criados para**:' },
       { t: 'lista', x: [
@@ -560,6 +561,7 @@ export const SECOES: Secao[] = [
           { q: 'O botão de criar RDO, aprovar ou ver relatórios não aparece, ou dá aviso de acesso.', a: 'Isso depende das suas **permissões**. Peça ao administrador da empresa para liberar a permissão em **Usuários > Editar**.' },
           { q: 'Preciso corrigir um RDO que já foi enviado.', a: 'Depois de enviado, o RDO fica bloqueado. Abra o RDO e clique em **Voltar para rascunho** (quem emitiu o RDO ou quem aprova pode fazer isso). Depois de corrigido, envie de novo para aprovação; as assinaturas anteriores são descartadas e refeitas.' },
           { q: 'Como aprovo um RDO?', a: 'Abra o RDO em **Aprovação** e clique em **Assinar** na seção Assinaturas. Antes, cadastre a sua assinatura digital em **Meu perfil**.' },
+          { q: 'Aparece "O plano da sua empresa venceu" e não consigo entrar.', a: 'A data de vencimento do plano passou. Fale com o suporte para renovar: assim que a data for atualizada, todos da empresa voltam a entrar normalmente. Seus RDOs e demais dados continuam guardados.' },
           { q: 'A mensagem diz que atingi o limite do plano.', a: 'Cada plano tem limites de usuários, projetos e RDOs por mês. Veja o uso em **Dados da empresa** e fale com o suporte para ampliar o plano.' },
           { q: 'As assinaturas têm validade jurídica?', a: 'Sim. O sistema usa assinatura eletrônica conforme a **Lei nº 14.063/2020**, com registro de quem assinou, quando e quais alterações foram feitas.' },
           { q: 'Como baixo tudo de um projeto encerrado?', a: 'Marque o projeto como **Concluído**. Na pasta dele aparecem os botões **Baixar RDOs (PDF)** e **Baixar fotos, vídeos e arquivos**. Para baixar só parte das fotos e vídeos (em qualquer projeto), abra o indicador **Fotos** ou **Vídeos**, marque o que quiser e clique em **Baixar selecionados**.' },
