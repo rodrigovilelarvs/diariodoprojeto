@@ -41,8 +41,8 @@ export const PROJETO_GRANDE_NOME = 'Obra Grande E2E'
 // Host fictício das mídias — o teste intercepta as requisições a ele (page.route)
 export const STORAGE_FAKE = 'https://storage-fake.teste/rdos'
 
-const TENANT2 = { id: 't2', nome: 'Empresa Dois', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0, tipoEmpresaProjeto: 'CONTRATADA' }
-const TENANT = { id: TENANT_ID, nome: 'Empresa Teste', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0, tipoEmpresaProjeto: 'CONTRATADA' }
+const TENANT2: any = { id: 't2', nome: 'Empresa Dois', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0, tipoEmpresaProjeto: 'CONTRATADA', dataVencimentoPlano: null }
+const TENANT: any = { id: TENANT_ID, nome: 'Empresa Teste', status: 'ATIVO', limiteRdosMes: 0, limiteUsuarios: 0, limiteProjetos: 0, tipoEmpresaProjeto: 'CONTRATADA', dataVencimentoPlano: null }
 
 const SEM_PERMISSOES = {
   permEmitirRdo: false, permAprovarRdo: false, permGerenciarProjetos: false,
@@ -172,6 +172,13 @@ const PROJETOS_CONCLUIDOS: Record<string, typeof PROJETO> = {
 // RDOs criados durante os testes ficam guardados aqui (id → objeto completo),
 // pra o GET /api/app/rdos/[id] devolver o mesmo RDO que o POST acabou de criar.
 const rdosCriados = new Map<string, any>()
+// Um RDO guarda uma cópia do projeto de quando foi criado; ao ler, a configuração de assinatura do projeto
+// (modo e assinantes) é a atual, como num join de verdade.
+function comProjetoAtual(rdo: any) {
+  if (!rdo || rdo.projetoId !== PROJETO_ID) return rdo
+  const { assinaturaModo, assinante1Id, assinante2Id, assinante3Id } = PROJETO as any
+  return { ...rdo, projeto: { ...rdo.projeto, assinaturaModo, assinante1Id, assinante2Id, assinante3Id } }
+}
 let proximoNumero = 1
 const rdosConcluido = new Map<string, any>()
 const FUNCOES_CADASTRO: any[] = []
@@ -411,6 +418,15 @@ const fakeDbBase = {
       return item
     },
     findMany: async ({ where }: any) => (rdosCriados.get(where?.rdoId) ?? rdosConcluido.get(where?.rdoId))?.assinaturas ?? [],
+    // remove os slots de quem não está na lista (usuarioId: { notIn })
+    deleteMany: async ({ where }: any) => {
+      const rdo = rdosCriados.get(where?.rdoId) ?? rdosConcluido.get(where?.rdoId)
+      if (!rdo) return { count: 0 }
+      const manter: string[] = where?.usuarioId?.notIn ?? []
+      const antes = rdo.assinaturas.length
+      rdo.assinaturas = rdo.assinaturas.filter((a: any) => manter.includes(a.usuarioId))
+      return { count: antes - rdo.assinaturas.length }
+    },
     update: async ({ where, data }: any) => {
       for (const rdo of [...rdosCriados.values(), ...rdosConcluido.values()]) {
         const item = rdo.assinaturas.find((a: any) => a.id === where.id)
@@ -537,7 +553,8 @@ const fakeDbBase = {
   rdo: modelo({
     findFirst: async ({ where, orderBy }: any) => {
       // GET /api/app/rdos/[id] — resposta completa de um RDO já criado
-      if (where?.id && rdosCriados.has(where.id)) return rdosCriados.get(where.id)
+      // (o projeto vem com a configuração de assinatura de AGORA, como o join do banco real faria)
+      if (where?.id && rdosCriados.has(where.id)) return comProjetoAtual(rdosCriados.get(where.id))
       if (where?.id && rdosConcluido.has(where.id)) return rdosConcluido.get(where.id)
       // "próximo número" e "RDO anterior pra copiar" (POST /api/app/rdos) —
       // ambos buscam sem id: { where: { projetoId }, orderBy: { numero: 'desc' } }.

@@ -96,6 +96,14 @@ export async function POST(req: NextRequest, { params }: Params) {
       data:  { status: RdoStatus.PENDENTE_APROVACAO, enviadoEm: new Date() },
     })
 
+    // Descarta slots de assinatura que sobraram de um envio anterior com outra configuração do projeto
+    // (ex.: o RDO foi enviado com assinatura aberta — todos os aprovadores —, voltou para rascunho e,
+    // depois, o projeto passou a ter 2 assinantes definidos). "Voltar para rascunho" só zera as
+    // assinaturas, não apaga as linhas; sem esta limpeza o RDO continuava pedindo quem não é mais exigido.
+    await tx.assinatura.deleteMany({
+      where: { rdoId, usuarioId: { notIn: aprovadores.map((a) => a.id) } },
+    })
+
     // Cria slots de assinatura para cada aprovador
     for (const apr of aprovadores) {
       // Função cadastrada no perfil da pessoa; sem uma definida, cai pra
