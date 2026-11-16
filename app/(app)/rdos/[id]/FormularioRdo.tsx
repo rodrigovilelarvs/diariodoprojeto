@@ -1487,23 +1487,24 @@ export function FormularioRdo({ rdoId }: Props) {
                   </div>
                   {ehHH && (
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
-                      {/* Tipo de hora: normal, extra 50%, extra 100% (domingo/feriado) ou outro percentual */}
+                      {/* Tipo de hora: normal, extra 50%, 75%, 100% (domingo/feriado) ou outro percentual */}
                       <select className="mf" aria-label="Tipo de hora" disabled={!podeSalvar} style={{ flex:1, minWidth:0 }}
-                        value={mo.tipoHora !== 'EXTRA' ? 'NORMAL' : mo.percentualExtra === 50 ? '50' : mo.percentualExtra === 100 ? '100' : 'OUTRO'}
+                        value={mo.tipoHora !== 'EXTRA' ? 'NORMAL' : mo.percentualExtra === 50 ? '50' : mo.percentualExtra === 75 ? '75' : mo.percentualExtra === 100 ? '100' : 'OUTRO'}
                         onChange={e => {
                           const v = e.target.value
                           if (v === 'NORMAL') setHoraMO(i, 'NORMAL')
-                          else if (v === 'OUTRO') setHoraMO(i, 'EXTRA', mo.percentualExtra && mo.percentualExtra !== 50 && mo.percentualExtra !== 100 ? mo.percentualExtra : 75)
+                          else if (v === 'OUTRO') setHoraMO(i, 'EXTRA', mo.percentualExtra && ![50, 75, 100].includes(mo.percentualExtra) ? mo.percentualExtra : 150)
                           else setHoraMO(i, 'EXTRA', Number(v))
                         }}>
                         <option value="NORMAL">Hora normal</option>
                         <option value="50">Hora extra 50%</option>
+                        <option value="75">Hora extra 75%</option>
                         <option value="100">Hora extra 100% (domingo/feriado)</option>
                         <option value="OUTRO">Hora extra, outro %</option>
                       </select>
-                      {mo.tipoHora === 'EXTRA' && mo.percentualExtra !== 50 && mo.percentualExtra !== 100 && (
+                      {mo.tipoHora === 'EXTRA' && ![50, 75, 100].includes(mo.percentualExtra ?? 0) && (
                         <>
-                          <input className="mf" type="number" min={1} max={300} aria-label="Percentual da hora extra" value={mo.percentualExtra ?? 75}
+                          <input className="mf" type="number" min={1} max={300} aria-label="Percentual da hora extra" value={mo.percentualExtra ?? 150}
                             disabled={!podeSalvar} style={{ width:58, textAlign:'center', flexShrink:0 }}
                             onChange={e => setHoraMO(i, 'EXTRA', Number(e.target.value))} />
                           <span style={{ fontSize:10, color:'var(--tm)' }}>%</span>

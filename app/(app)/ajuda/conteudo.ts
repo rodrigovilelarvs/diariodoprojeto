@@ -343,7 +343,7 @@ export const SECOES: Secao[] = [
         t: 'lista',
         x: [
           'A seção 3 passa a se chamar **Horários e atividades executadas**: não há percentual por atividade. Use o campo **Atividades executadas (observações)** para descrever o que foi feito no H/H (serviço, local, equipe).',
-          'Na seção de **Mão de obra**, cada linha (função, quantidade, entrada e saída) tem o campo **Tipo de hora**: **Hora normal**, **Hora extra 50%**, **Hora extra 100% (domingo/feriado)** ou **Hora extra, outro %** (então você digita o percentual).',
+          'Na seção de **Mão de obra**, cada linha (função, quantidade, entrada e saída) tem o campo **Tipo de hora**: **Hora normal**, **Hora extra 50%**, **Hora extra 75%**, **Hora extra 100% (domingo/feriado)** ou **Hora extra, outro %** (então você digita o percentual).',
           'O cabeçalho da seção mostra as horas **normais** e **extras** do dia. Se uma pessoa trabalhou parte do dia em hora normal e parte em extra, use duas linhas da mesma função.',
           'Em RDO de **sábado** as linhas novas já entram como hora extra de 50%, e de **domingo**, de 100%: um aviso na seção avisa disso, e você pode trocar em cada linha. Em **feriado** (dia de semana), marque você mesmo a **hora extra 100%**: o sistema não tem cadastro de feriados.',
           'Ao **copiar o RDO anterior**, o tipo de hora das linhas segue o dia do novo RDO (e não o do anterior).',

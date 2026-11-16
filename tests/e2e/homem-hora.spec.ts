@@ -198,6 +198,9 @@ test('RDO de projeto por homem-hora: tipo de hora por linha, sem % de atividades
     // trocar para hora normal / outro percentual
     await tipo.selectOption('NORMAL')
     await expect(tipo).toHaveValue('NORMAL')
+    await tipo.selectOption('75')
+    await expect(tipo).toHaveValue('75')
+    await expect(page.getByLabel('Percentual da hora extra')).toHaveCount(0)
     await tipo.selectOption('OUTRO')
     await expect(page.getByLabel('Percentual da hora extra')).toBeVisible()
   } finally {
