@@ -235,7 +235,7 @@ export async function POST(req: NextRequest) {
     : null
 
   // Projeto por homem-hora: não há % de atividades a copiar, e o tipo da hora (normal/extra) segue o DIA
-  // do novo RDO — domingo 100%, sábado 50%, dia útil normal — e não o do RDO anterior. (Feriado em dia de
+  // do novo RDO — domingo 100%, sábado 75%, dia útil normal — e não o do RDO anterior. (Feriado em dia de
   // semana: quem preenche marca a hora extra de 100%.)
   const porHoraHomem = projeto.modalidade === 'HOMEM_HORA'
   const horaDoDia = porHoraHomem && rdoAnterior

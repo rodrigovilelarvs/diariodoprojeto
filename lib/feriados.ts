@@ -79,10 +79,14 @@ export function infoDoDia(dia: string | Date): InfoDia {
   return { tipo: diaSemana === 0 ? 'DOMINGO' : diaSemana === 6 ? 'SABADO' : 'UTIL', diaSemana }
 }
 
-// Hora extra sugerida para as linhas novas (o usuário troca em cada linha): domingo 100%, sábado 50%,
+// Hora extra sugerida para as linhas novas (o usuário troca em cada linha): domingo 100%, sábado 75%,
 // dia útil hora normal. Feriado em dia de semana: marcar "hora extra 100%" na linha.
+// Sexta-feira: o que passa das 16h é hora extra de 75% (a linha é dividida em duas: normal e extra).
+export const SEXTA_CORTE_EXTRA = '16:00'
+export const SEXTA_PERCENTUAL_EXTRA = 75
+
 export function extraSugerida(info: InfoDia): { tipoHora: 'NORMAL' | 'EXTRA'; percentualExtra: number | null } {
   if (info.tipo === 'DOMINGO') return { tipoHora: 'EXTRA', percentualExtra: 100 }
-  if (info.tipo === 'SABADO') return { tipoHora: 'EXTRA', percentualExtra: 50 }
+  if (info.tipo === 'SABADO') return { tipoHora: 'EXTRA', percentualExtra: 75 }
   return { tipoHora: 'NORMAL', percentualExtra: null }
 }

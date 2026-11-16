@@ -3,10 +3,11 @@ import { apiComo, login } from './helpers'
 import { PROJETO_ID, RDO_ANTERIOR_ID, LEITOR_EMAIL } from '../../lib/fake-db-test'
 import { custoDaLinha, normalizarTipoHora } from '../../lib/homem-hora'
 import { extraSugerida, infoDoDia } from '../../lib/feriados'
+import { calcMoHH } from '../../lib/rdo-display'
 
 // Modalidade "por homem-hora" (H/H): o projeto é medido por horas trabalhadas, e não por % das atividades.
 // Cada linha de mão de obra tem hora normal ou extra (com o % de acréscimo: domingo/feriado 100%, sábado
-// 50%...), a função pode ter valor da hora, o projeto pode ter um saldo de horas contratadas (abatido pelos
+// 75%...), a função pode ter valor da hora, o projeto pode ter um saldo de horas contratadas (abatido pelos
 // RDOs APROVADOS; sem saldo, só soma) e o relatório "Horas por dia" mostra sábados, domingos e feriados.
 // Não há cadastro de feriados: um dia de semana com hora extra de 100% é tratado como feriado.
 // Ver lib/homem-hora.ts, lib/feriados.ts, o resumo do projeto e app/api/app/relatorios/horas/route.ts.
@@ -24,6 +25,13 @@ test.describe('regras de hora normal/extra e custo (funções puras)', () => {
     expect(normalizarTipoHora('EXTRA', 900)).toEqual({ tipoHora: 'EXTRA', percentualExtra: 50 })
   })
 
+  test('intervalo só é descontado da linha que atravessa o meio-dia (sexta dividida às 16h)', () => {
+    expect(calcMoHH('07:00', '17:00', 1, 1, true)).toBe(9)   // dia inteiro, como sempre
+    expect(calcMoHH('07:00', '16:00', 1, 1, true)).toBe(8)   // parte normal da sexta
+    expect(calcMoHH('16:00', '17:00', 1, 2, true)).toBe(2)   // parte extra: 1h × 2 pessoas, sem intervalo
+    expect(calcMoHH('16:00', '17:00', 1, 1)).toBe(0)  // regra antiga (avanço) não muda: sempre desconta
+  })
+
   test('custo = horas × valor da hora × (1 + acréscimo da extra); sem valor da hora, não há custo', () => {
     expect(custoDaLinha(8, 50, 'NORMAL', null)).toBe(400)
     expect(custoDaLinha(8, 50, 'EXTRA', 100)).toBe(800)
@@ -31,9 +39,9 @@ test.describe('regras de hora normal/extra e custo (funções puras)', () => {
     expect(custoDaLinha(8, null, 'NORMAL', null)).toBeNull()
   })
 
-  test('sugestão pelo dia: domingo 100%, sábado 50%, dia útil normal', () => {
+  test('sugestão pelo dia: domingo 100%, sábado 75%, dia útil normal', () => {
     expect(extraSugerida(infoDoDia('2027-10-17'))).toEqual({ tipoHora: 'EXTRA', percentualExtra: 100 }) // domingo
-    expect(extraSugerida(infoDoDia('2027-10-16'))).toEqual({ tipoHora: 'EXTRA', percentualExtra: 50 })  // sábado
+    expect(extraSugerida(infoDoDia('2027-10-16'))).toEqual({ tipoHora: 'EXTRA', percentualExtra: 75 })  // sábado
     expect(extraSugerida(infoDoDia('2027-10-19'))).toEqual({ tipoHora: 'NORMAL', percentualExtra: null }) // terça
   })
 })
@@ -210,6 +218,29 @@ test('RDO de projeto por homem-hora: tipo de hora por linha, sem % de atividades
     await livre.fill('120')
     await expect(livre).toHaveValue('120')
     await expect(tipo).toHaveValue('OUTRO')
+  } finally {
+    await voltarParaAvanco(admin)
+    await admin.dispose()
+  }
+})
+
+test('sexta-feira em H/H: "Dividir às 16:00" separa a hora normal da extra de 75%', async ({ page, playwright }) => {
+  const admin = await apiComo(playwright)
+  try {
+    await configurarProjeto(admin, { modalidade: 'HOMEM_HORA' })
+    const sexta = await criarRdo(admin, '2027-10-22', [linha(9)]) // sexta, 07:00 às 17:00
+
+    await login(page)
+    await page.goto(`/rdos/${sexta}`)
+    await expect(page.getByTestId('aviso-sexta-hh')).toBeVisible()
+    await expect(page.getByLabel('Tipo de hora')).toHaveCount(1)
+    await page.getByTestId('dividir-sexta').click()
+    const tipos = page.getByLabel('Tipo de hora')
+    await expect(tipos).toHaveCount(2)
+    await expect(tipos.nth(0)).toHaveValue('NORMAL')
+    await expect(tipos.nth(1)).toHaveValue('75')
+    await expect(page.getByTestId('dividir-sexta')).toHaveCount(0)
+    await expect(page.getByText('Normais: 8 · Extras: 1 H/H')).toBeVisible()
   } finally {
     await voltarParaAvanco(admin)
     await admin.dispose()

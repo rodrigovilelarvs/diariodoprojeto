@@ -49,10 +49,15 @@ export function calcHH(ini: string, fim: string, intervalo: number): string {
 }
 
 // H/H = horas efetivamente trabalhadas (descontado o intervalo) × quantidade de pessoas
-export function calcMoHH(horaEntrada: string, horaSaida: string, intervaloHoras: number, quantidade: number) {
+// `soSeAtravessaMeioDia` (projetos por homem-hora): o intervalo só é descontado da linha que atravessa o
+// meio-dia. Assim a sexta dividida em duas linhas (normal até 16h + extra depois das 16h) não desconta o
+// intervalo duas vezes, e uma linha só da tarde (ex.: 16:00 às 17:00) não vira negativa.
+export function calcMoHH(horaEntrada: string, horaSaida: string, intervaloHoras: number, quantidade: number, soSeAtravessaMeioDia = false) {
   const [ih,im] = (horaEntrada||'07:00').split(':').map(Number)
   const [fh,fm] = (horaSaida  ||'17:00').split(':').map(Number)
-  let mins = (fh*60+fm) - (ih*60+im) - intervaloHoras*60; if (mins<0) mins+=1440
+  const ent = ih*60+im, sai = fh*60+fm
+  const desconta = !soSeAtravessaMeioDia || (ent < 720 && sai > 720)
+  let mins = sai - ent - (desconta ? intervaloHoras*60 : 0); if (mins<0) mins+=1440
   return Math.round((mins/60) * quantidade * 10) / 10
 }
 
