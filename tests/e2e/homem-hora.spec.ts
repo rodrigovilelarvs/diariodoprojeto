@@ -202,7 +202,14 @@ test('RDO de projeto por homem-hora: tipo de hora por linha, sem % de atividades
     await expect(tipo).toHaveValue('75')
     await expect(page.getByLabel('Percentual da hora extra')).toHaveCount(0)
     await tipo.selectOption('OUTRO')
-    await expect(page.getByLabel('Percentual da hora extra')).toBeVisible()
+    const livre = page.getByLabel('Percentual da hora extra')
+    await expect(livre).toBeVisible()
+    // qualquer valor, inclusive os que coincidem com as opções prontas: o campo não some ao digitar
+    await livre.fill('75')
+    await expect(livre).toBeVisible()
+    await livre.fill('120')
+    await expect(livre).toHaveValue('120')
+    await expect(tipo).toHaveValue('OUTRO')
   } finally {
     await voltarParaAvanco(admin)
     await admin.dispose()

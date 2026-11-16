@@ -745,11 +745,16 @@ export function FormularioRdo({ rdoId }: Props) {
     setDirty(true)
   }
   // Hora normal ou extra (e o % de acréscimo) de uma linha de mão de obra — projetos por homem-hora
-  function setHoraMO(idx: number, tipoHora: 'NORMAL' | 'EXTRA', percentualExtra?: number | null) {
+  // `livre`: a linha está em "outro %" (qualquer valor); percentualExtra null explícito = campo apagado
+  // enquanto se digita (se ficar vazio ao salvar, o servidor assume 50%)
+  function setHoraMO(idx: number, tipoHora: 'NORMAL' | 'EXTRA', percentualExtra?: number | null, livre = false) {
     setForm(f => {
       if (!f) return f
       const mo = [...f.maoDeObra]
-      mo[idx] = { ...mo[idx], tipoHora, percentualExtra: tipoHora === 'EXTRA' ? (percentualExtra ?? sugestaoHora.percentualExtra ?? 50) : null }
+      mo[idx] = {
+        ...mo[idx], tipoHora, percentualLivre: tipoHora === 'EXTRA' && livre,
+        percentualExtra: tipoHora === 'EXTRA' ? (percentualExtra === undefined ? (sugestaoHora.percentualExtra ?? 50) : percentualExtra) : null,
+      }
       return { ...f, maoDeObra: mo }
     })
     setDirty(true)
@@ -1489,11 +1494,11 @@ export function FormularioRdo({ rdoId }: Props) {
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
                       {/* Tipo de hora: normal, extra 50%, 75%, 100% (domingo/feriado) ou outro percentual */}
                       <select className="mf" aria-label="Tipo de hora" disabled={!podeSalvar} style={{ flex:1, minWidth:0 }}
-                        value={mo.tipoHora !== 'EXTRA' ? 'NORMAL' : mo.percentualExtra === 50 ? '50' : mo.percentualExtra === 75 ? '75' : mo.percentualExtra === 100 ? '100' : 'OUTRO'}
+                        value={mo.tipoHora !== 'EXTRA' ? 'NORMAL' : mo.percentualLivre || ![50, 75, 100].includes(mo.percentualExtra ?? 0) ? 'OUTRO' : String(mo.percentualExtra)}
                         onChange={e => {
                           const v = e.target.value
                           if (v === 'NORMAL') setHoraMO(i, 'NORMAL')
-                          else if (v === 'OUTRO') setHoraMO(i, 'EXTRA', mo.percentualExtra && ![50, 75, 100].includes(mo.percentualExtra) ? mo.percentualExtra : 150)
+                          else if (v === 'OUTRO') setHoraMO(i, 'EXTRA', mo.percentualExtra ?? 50, true)
                           else setHoraMO(i, 'EXTRA', Number(v))
                         }}>
                         <option value="NORMAL">Hora normal</option>
@@ -1502,11 +1507,11 @@ export function FormularioRdo({ rdoId }: Props) {
                         <option value="100">Hora extra 100% (domingo/feriado)</option>
                         <option value="OUTRO">Hora extra, outro %</option>
                       </select>
-                      {mo.tipoHora === 'EXTRA' && ![50, 75, 100].includes(mo.percentualExtra ?? 0) && (
+                      {mo.tipoHora === 'EXTRA' && (mo.percentualLivre || ![50, 75, 100].includes(mo.percentualExtra ?? 0)) && (
                         <>
-                          <input className="mf" type="number" min={1} max={300} aria-label="Percentual da hora extra" value={mo.percentualExtra ?? 150}
+                          <input className="mf" type="number" min={1} max={300} aria-label="Percentual da hora extra" placeholder="%" value={mo.percentualExtra ?? ''} onFocus={e => e.target.select()}
                             disabled={!podeSalvar} style={{ width:58, textAlign:'center', flexShrink:0 }}
-                            onChange={e => setHoraMO(i, 'EXTRA', Number(e.target.value))} />
+                            onChange={e => setHoraMO(i, 'EXTRA', e.target.value === '' ? null : Number(e.target.value), true)} />
                           <span style={{ fontSize:10, color:'var(--tm)' }}>%</span>
                         </>
                       )}

@@ -287,6 +287,7 @@ export interface MaoDeObraItem {
   totalHH:          number
   tipoHora?:        TipoHora   // só nos projetos por homem-hora
   percentualExtra?: number | null // % de acréscimo da hora extra (50, 100...)
+  percentualLivre?: boolean       // só na tela: linha em "outro %" (não é salvo)
 }
 
 export interface FuncaoCadastro {
