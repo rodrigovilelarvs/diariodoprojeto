@@ -20,6 +20,7 @@ import type {
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
 import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
+import { extraSugerida, infoDoDia, NOME_DIA_SEMANA } from '@/lib/feriados'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
   CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L, EQUIPAMENTO_TIPOS,
@@ -89,8 +90,11 @@ function estadoInicial(rdo: NonNullable<ReturnType<typeof useRdo>['data']>): For
 // vez, uma de cada vez, pra cada pessoa do dia) e também gerencia o próprio
 // catálogo (editar/excluir função cadastrada) sem precisar sair daqui.
 function SeletorFuncoesModal({
-  funcoes, onFechar, onAdicionar, criarFuncao, editarFuncao, excluirFuncao,
+  funcoes, onFechar, onAdicionar, criarFuncao, editarFuncao, excluirFuncao, valorHoraEditavel, valorHoraVisivel,
 }: {
+  // valor da hora por função (projetos por homem-hora): só quem gerencia projetos edita; quem vê relatórios enxerga
+  valorHoraEditavel: boolean
+  valorHoraVisivel:  boolean
   funcoes:       FuncaoCadastro[]
   onFechar:      () => void
   onAdicionar:   (escolhidas: FuncaoCadastro[]) => void
@@ -105,6 +109,8 @@ function SeletorFuncoesModal({
   const [editCategoria, setEditCategoria] = useState<MaoDeObraCategoria>('DIRETA')
   const [novoNome, setNovoNome]           = useState('')
   const [novaCategoria, setNovaCategoria] = useState<MaoDeObraCategoria>('DIRETA')
+  const [editValor, setEditValor]         = useState('')
+  const [novoValor, setNovoValor]         = useState('')
 
   const buscaNorm = busca.trim().toLowerCase()
   const filtradas  = buscaNorm ? funcoes.filter(f => f.nome.toLowerCase().includes(buscaNorm)) : funcoes
@@ -115,12 +121,16 @@ function SeletorFuncoesModal({
   }
   function iniciarEdicao(f: FuncaoCadastro) {
     setEditandoId(f.id); setEditNome(f.nome); setEditCategoria(f.categoria)
+    setEditValor(f.valorHora != null ? String(f.valorHora) : '')
   }
   async function salvarEdicao() {
     const nome = editNome.trim()
     if (!nome) { toast.error('Informe o nome da função.'); return }
     try {
-      await editarFuncao.mutateAsync({ id: editandoId!, nome, categoria: editCategoria })
+      await editarFuncao.mutateAsync({
+        id: editandoId!, nome, categoria: editCategoria,
+        ...(valorHoraEditavel ? { valorHora: editValor.trim() === '' ? null : Number(editValor.replace(',', '.')) } : {}),
+      })
       setEditandoId(null)
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao editar função.'))
@@ -139,9 +149,12 @@ function SeletorFuncoesModal({
     const nome = novoNome.trim()
     if (!nome) { toast.error('Informe o nome da função.'); return }
     try {
-      const funcao = await criarFuncao.mutateAsync({ nome, categoria: novaCategoria })
+      const funcao = await criarFuncao.mutateAsync({
+        nome, categoria: novaCategoria,
+        ...(valorHoraEditavel && novoValor.trim() !== '' ? { valorHora: Number(novoValor.replace(',', '.')) } : {}),
+      })
       setSelecionados(s => ({ ...s, [funcao.id]: true }))
-      setNovoNome('')
+      setNovoNome(''); setNovoValor('')
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao criar função.'))
     }
@@ -200,6 +213,10 @@ function SeletorFuncoesModal({
                         onChange={e => setEditCategoria(e.target.value as MaoDeObraCategoria)}>
                         {CATEGORIAS.map(c => <option key={c} value={c}>{CATEGORIA_L[c]}</option>)}
                       </select>
+                      {valorHoraEditavel && (
+                        <input className="fi" type="number" min={0} step="0.01" value={editValor} onChange={e => setEditValor(e.target.value)}
+                          placeholder="R$/h" title="Valor da hora normal (opcional)" aria-label="Valor da hora" style={{ width:78, flexShrink:0 }} />
+                      )}
                       <button title="Salvar" onClick={salvarEdicao} disabled={editarFuncao.isPending}
                         style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tsu)', fontSize:14, flexShrink:0 }}>
                         <i className="ti ti-check" />
@@ -216,6 +233,11 @@ function SeletorFuncoesModal({
                       <span style={{ flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>
                         {f.nome}
                       </span>
+                      {valorHoraVisivel && f.valorHora != null && (
+                        <span title="Valor da hora normal" style={{ fontSize:10, color:'var(--ts)', flexShrink:0 }}>
+                          {f.valorHora.toLocaleString('pt-BR', { style:'currency', currency:'BRL' })}/h
+                        </span>
+                      )}
                       <button type="button" title="Editar" onClick={e => { e.preventDefault(); iniciarEdicao(f) }}
                         style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:12, flexShrink:0 }}>
                         <i className="ti ti-pencil" />
@@ -238,6 +260,10 @@ function SeletorFuncoesModal({
               onChange={e => setNovaCategoria(e.target.value as MaoDeObraCategoria)}>
               {CATEGORIAS.map(c => <option key={c} value={c}>{CATEGORIA_L[c]}</option>)}
             </select>
+            {valorHoraEditavel && (
+              <input className="fi" type="number" min={0} step="0.01" value={novoValor} onChange={e => setNovoValor(e.target.value)}
+                placeholder="R$/h" title="Valor da hora normal (opcional)" aria-label="Valor da hora da nova função" style={{ width:78, flexShrink:0 }} />
+            )}
             <button className="btn" type="button" onClick={criar} disabled={criarFuncao.isPending} style={{ flexShrink:0 }}>
               <i className="ti ti-plus" />
             </button>
@@ -439,6 +465,12 @@ export function FormularioRdo({ rdoId }: Props) {
   const excluirComentario = useExcluirComentario()
   const { data: eap } = useEap(rdo?.projeto.id ?? '')
   const { data: funcoes } = useFuncoes()
+  // Projeto por homem-hora: o RDO registra horas (normais/extras) em vez de % das atividades
+  const ehHH = rdo?.projeto.modalidade === 'HOMEM_HORA'
+  // Dia do RDO (útil, sábado ou domingo) → hora extra sugerida para as linhas novas. Feriado em dia de
+  // semana: quem preenche marca "hora extra 100%" na linha.
+  const infoDia = rdo ? infoDoDia(String(rdo.data).slice(0, 10)) : null
+  const sugestaoHora = infoDia ? extraSugerida(infoDia) : { tipoHora: 'NORMAL' as const, percentualExtra: null }
   const criarFuncao = useCriarFuncao()
   const editarFuncao = useEditarFuncao()
   const excluirFuncao = useExcluirFuncao()
@@ -695,6 +727,7 @@ export function FormularioRdo({ rdoId }: Props) {
         funcaoCadastroId: fn.id, funcaoNome: fn.nome, categoria: fn.categoria,
         quantidade: 1, horaEntrada, horaSaida,
         totalHH: calcMoHH(horaEntrada, horaSaida, f.intervaloHoras, 1),
+        ...(ehHH ? { tipoHora: sugestaoHora.tipoHora, percentualExtra: sugestaoHora.percentualExtra } : {}),
       }))
       return { ...f, maoDeObra: [...f.maoDeObra, ...novas] }
     })
@@ -707,6 +740,16 @@ export function FormularioRdo({ rdoId }: Props) {
       const mo = [...f.maoDeObra]
       mo[idx] = { ...mo[idx], [campo]: val }
       mo[idx].totalHH = calcMoHH(mo[idx].horaEntrada, mo[idx].horaSaida, f.intervaloHoras, mo[idx].quantidade)
+      return { ...f, maoDeObra: mo }
+    })
+    setDirty(true)
+  }
+  // Hora normal ou extra (e o % de acréscimo) de uma linha de mão de obra — projetos por homem-hora
+  function setHoraMO(idx: number, tipoHora: 'NORMAL' | 'EXTRA', percentualExtra?: number | null) {
+    setForm(f => {
+      if (!f) return f
+      const mo = [...f.maoDeObra]
+      mo[idx] = { ...mo[idx], tipoHora, percentualExtra: tipoHora === 'EXTRA' ? (percentualExtra ?? sugestaoHora.percentualExtra ?? 50) : null }
       return { ...f, maoDeObra: mo }
     })
     setDirty(true)
@@ -753,6 +796,7 @@ export function FormularioRdo({ rdoId }: Props) {
     setDirty(true)
   }
   const totalHH = (form?.maoDeObra ?? []).reduce((s,m) => s + Number(m.totalHH), 0)
+  const totalHHExtra = (form?.maoDeObra ?? []).filter(m => m.tipoHora === 'EXTRA').reduce((s,m) => s + Number(m.totalHH), 0)
   const hhPorCategoriaMO = CATEGORIAS.map(cat => ({
     categoria: cat,
     totalHH:   (form?.maoDeObra ?? []).filter(m => (m.categoria ?? 'DIRETA') === cat).reduce((s,m) => s + Number(m.totalHH), 0),
@@ -1176,8 +1220,8 @@ export function FormularioRdo({ rdoId }: Props) {
         <div className="sec">
           <div className="sec-h">
             <span className="sec-num">3</span>
-            <span className="sec-title">Atividade, horários e progresso</span>
-            {form.atividadeRegistros.length > 0 && (
+            <span className="sec-title">{ehHH ? 'Horários e atividades executadas' : 'Atividade, horários e progresso'}</span>
+            {!ehHH && form.atividadeRegistros.length > 0 && (
               <span style={{ fontSize:10, color:'var(--ts)', background:'var(--s2)', border:'.5px solid var(--b)', borderRadius:20, padding:'2px 7px' }}>
                 {form.atividadeRegistros.length} atividade{form.atividadeRegistros.length !== 1 ? 's' : ''}
               </span>
@@ -1210,7 +1254,7 @@ export function FormularioRdo({ rdoId }: Props) {
             </div>
 
             {/* % Acumulado por atividade */}
-            {form.atividadeRegistros.map((reg, ri) => {
+            {!ehHH && form.atividadeRegistros.map((reg, ri) => {
               const ativ = reg.atividade
               const pct  = reg.pctAtual
               const cor  = pct >= 90 ? 'var(--fsu)' : pct >= 60 ? 'var(--fa)' : pct > 0 ? 'var(--fw)' : 'var(--tm)'
@@ -1363,16 +1407,16 @@ export function FormularioRdo({ rdoId }: Props) {
               )
             })}
 
-            {podeSalvar && (
+            {podeSalvar && !ehHH && (
               <button type="button" className="btn btn-sm" style={{ marginBottom:12 }} onClick={abrirModalAtividade}>
                 <i className="ti ti-plus" /> Adicionar atividade
               </button>
             )}
 
             <div className="fr">
-              <label className="fl">Observações</label>
-              <textarea className="fi" rows={3} value={form.observacoes}
-                disabled={!podeSalvar} placeholder="Descreva o que foi executado hoje..."
+              <label className="fl">{ehHH ? 'Atividades executadas (observações)' : 'Observações'}</label>
+              <textarea className="fi" rows={ehHH ? 5 : 3} value={form.observacoes}
+                disabled={!podeSalvar} placeholder={ehHH ? 'Descreva as atividades executadas no H/H: serviço, local, equipe...' : 'Descreva o que foi executado hoje...'}
                 onChange={e => set('observacoes', e.target.value)} />
             </div>
           </div>
@@ -1386,6 +1430,11 @@ export function FormularioRdo({ rdoId }: Props) {
             <span style={{ fontSize:10, color:'var(--ta)', background:'var(--bga)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--ba)' }}>
               Total: {totalHH} H/H
             </span>
+            {ehHH && (
+              <span title="Horas extras do dia" style={{ fontSize:10, color: totalHHExtra > 0 ? 'var(--tw)' : 'var(--ts)', background:'var(--s2)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--b)' }}>
+                Normais: {Math.round((totalHH - totalHHExtra) * 100) / 100} · Extras: {Math.round(totalHHExtra * 100) / 100} H/H
+              </span>
+            )}
             {hhPorCategoriaMO.map(c => (
               <span key={c.categoria} style={{ fontSize:10, color:'var(--ta)', background:'var(--bga)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--ba)' }}>
                 {CATEGORIA_L[c.categoria]}: {c.totalPessoas}p · {c.totalHH}H/H
@@ -1393,6 +1442,15 @@ export function FormularioRdo({ rdoId }: Props) {
             ))}
           </div>
           <div className="sec-body">
+            {ehHH && infoDia && infoDia.tipo !== 'UTIL' && (
+              <div data-testid="aviso-dia-hh" style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10, padding:'7px 10px', fontSize:11, color:'var(--tw)', background:'color-mix(in srgb, var(--tw) 12%, transparent)', border:'.5px solid var(--tw)', borderRadius:'var(--r)' }}>
+                <i className="ti ti-calendar-event" />
+                <span>
+                  Este RDO é de um {NOME_DIA_SEMANA[infoDia.diaSemana].toLowerCase()}.
+                  As linhas novas entram como hora extra de {sugestaoHora.percentualExtra}% — confira o tipo de hora em cada linha.
+                </span>
+              </div>
+            )}
             <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap:8, marginBottom:10 }}>
               {form.maoDeObra.map((mo, i) => (
                 <div key={i} style={{ position:'relative', border:'.5px solid var(--b)', borderRadius:'var(--r)', padding:8, background:'var(--s1)' }}>
@@ -1427,6 +1485,32 @@ export function FormularioRdo({ rdoId }: Props) {
                       {mo.totalHH} H/H
                     </span>
                   </div>
+                  {ehHH && (
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                      {/* Tipo de hora: normal, extra 50%, extra 100% (domingo/feriado) ou outro percentual */}
+                      <select className="mf" aria-label="Tipo de hora" disabled={!podeSalvar} style={{ flex:1, minWidth:0 }}
+                        value={mo.tipoHora !== 'EXTRA' ? 'NORMAL' : mo.percentualExtra === 50 ? '50' : mo.percentualExtra === 100 ? '100' : 'OUTRO'}
+                        onChange={e => {
+                          const v = e.target.value
+                          if (v === 'NORMAL') setHoraMO(i, 'NORMAL')
+                          else if (v === 'OUTRO') setHoraMO(i, 'EXTRA', mo.percentualExtra && mo.percentualExtra !== 50 && mo.percentualExtra !== 100 ? mo.percentualExtra : 75)
+                          else setHoraMO(i, 'EXTRA', Number(v))
+                        }}>
+                        <option value="NORMAL">Hora normal</option>
+                        <option value="50">Hora extra 50%</option>
+                        <option value="100">Hora extra 100% (domingo/feriado)</option>
+                        <option value="OUTRO">Hora extra, outro %</option>
+                      </select>
+                      {mo.tipoHora === 'EXTRA' && mo.percentualExtra !== 50 && mo.percentualExtra !== 100 && (
+                        <>
+                          <input className="mf" type="number" min={1} max={300} aria-label="Percentual da hora extra" value={mo.percentualExtra ?? 75}
+                            disabled={!podeSalvar} style={{ width:58, textAlign:'center', flexShrink:0 }}
+                            onChange={e => setHoraMO(i, 'EXTRA', Number(e.target.value))} />
+                          <span style={{ fontSize:10, color:'var(--tm)' }}>%</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                   <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:3 }}>
                       <label style={{ fontSize:10, color:'var(--tm)' }}>Qtd.</label>
@@ -1860,6 +1944,8 @@ export function FormularioRdo({ rdoId }: Props) {
           criarFuncao={criarFuncao}
           editarFuncao={editarFuncao}
           excluirFuncao={excluirFuncao}
+          valorHoraEditavel={pode('gerenciar_projetos')}
+          valorHoraVisivel={pode('gerenciar_projetos') || pode('ver_relatorios')}
         />
       )}
 

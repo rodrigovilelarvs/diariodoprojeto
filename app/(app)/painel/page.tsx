@@ -9,14 +9,47 @@ import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar }    from '@/components/layout/Topbar'
 import { KpiCard, DualBar, Desvio, Badge, Skeleton, AutocompleteSearchInput, Modal, Field, Input, Textarea, Select, Btn } from '@/components/ui'
 import { toast }     from 'sonner'
-import type { Projeto } from '@/lib/types'
+import type { ModalidadeMedicao, Projeto } from '@/lib/types'
 import { EmpresaCampo } from '@/components/projetos/EmpresaCampo'
+import { ModalidadeCampos } from '@/components/projetos/ModalidadeCampos'
 import { mensagemErro } from '@/lib/api'
+
+// Projeto por homem-hora: horas aprovadas (e saldo do contrato, se cadastrado) no lugar do % de avanço
+function HHProjeto({ p }: { p: Projeto }) {
+  const consumido = p.hhConsumido ?? 0
+  const contratado = p.hhContratado ?? null
+  const pct = contratado && contratado > 0 ? Math.min(100, Math.round((consumido / contratado) * 100)) : null
+  return (
+    <div title="Homem-hora: horas de RDOs aprovados" style={{ minWidth: 110 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
+        <i className="ti ti-clock-hour-4" style={{ color: 'var(--ta)' }} />
+        <strong>{consumido.toLocaleString('pt-BR')}</strong>
+        <span style={{ color: 'var(--tm)' }}>{contratado != null ? `de ${contratado.toLocaleString('pt-BR')} H/H` : 'H/H'}</span>
+      </div>
+      {pct != null && (
+        <div className="hbtr" style={{ marginTop: 3 }}>
+          <div className="hbf" style={{ width: `${pct}%`, background: pct >= 100 ? 'var(--td)' : pct >= 80 ? 'var(--tw)' : 'var(--fa)' }} />
+        </div>
+      )}
+    </div>
+  )
+}
 
 const STATUS_L: Record<string, string> = { NAO_INICIADO: 'Não iniciado', ATIVO: 'Em andamento', PAUSADO: 'Paralisado', CONCLUIDO: 'Concluído', CANCELADO: 'Cancelado' }
 const STATUS_V: Record<string, 'ok' | 'warn' | 'gray' | 'danger' | 'blue'> = { NAO_INICIADO: 'gray', ATIVO: 'blue', PAUSADO: 'warn', CONCLUIDO: 'ok', CANCELADO: 'danger' }
 
 const PREFS_KEY = 'painel_prefs'
+
+// Formulário de projeto (criar/editar). hhContratado fica como texto até salvar.
+interface FormProjeto {
+  nome: string; descricao: string; pedidoCompraContrato: string; empresaContratada: string
+  grupo: string; gestorId: string; dataInicioContrato: string; dataFimContrato: string
+  modalidade: ModalidadeMedicao; hhContratado: string
+}
+const FORM_PROJETO_VAZIO: FormProjeto = {
+  nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', gestorId: '',
+  dataInicioContrato: '', dataFimContrato: '', modalidade: 'AVANCO', hhContratado: '',
+}
 
 function lerPrefs() {
   try {
@@ -70,11 +103,11 @@ export default function PainelPage() {
   }, [prefsCarregadas, busca, filtSt, filtGrupo, view])
 
   const [modalProjeto, setModalProjeto] = useState(false)
-  const [formProjeto, setFormProjeto]   = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+  const [formProjeto, setFormProjeto]   = useState<FormProjeto>(FORM_PROJETO_VAZIO)
   const [fotoNovo, setFotoNovo] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' })
 
   const [modalEdit, setModalEdit] = useState<Projeto | null>(null)
-  const [editForm, setEditForm]   = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', status: 'NAO_INICIADO', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+  const [editForm, setEditForm]   = useState<FormProjeto & { status: string }>({ ...FORM_PROJETO_VAZIO, status: 'NAO_INICIADO' })
   const [fotoEdit, setFotoEdit] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' })
 
   const [modalDuplicar, setModalDuplicar] = useState<Projeto | null>(null)
@@ -91,8 +124,10 @@ export default function PainelPage() {
   // KPIs calculados a partir da lista filtrada — sem filtro, filtrados === projetos (mostra o total)
   const ativos      = filtrados.filter(p => p.status === 'ATIVO').length
   const totalRdos   = filtrados.reduce((s, p) => s + p._count.rdos, 0)
-  const pctMedio    = filtrados.length ? Math.round(filtrados.reduce((s, p) => s + p.pctReal, 0) / filtrados.length) : 0
-  const desvioMedio = filtrados.length ? Math.round(filtrados.reduce((s, p) => s + p.desvio, 0) / filtrados.length) : 0
+  // Avanço e desvio médios só consideram projetos por avanço: os por homem-hora não têm % de atividades
+  const porAvanco   = filtrados.filter(p => p.modalidade !== 'HOMEM_HORA')
+  const pctMedio    = porAvanco.length ? Math.round(porAvanco.reduce((s, p) => s + p.pctReal, 0) / porAvanco.length) : 0
+  const desvioMedio = porAvanco.length ? Math.round(porAvanco.reduce((s, p) => s + p.desvio, 0) / porAvanco.length) : 0
   const ocorrenciasAbertas = filtrados.reduce((s, p) => s + p.ocorrenciasAbertas, 0)
 
   async function handleNovoRdo(projetoId: string) {
@@ -129,6 +164,8 @@ export default function PainelPage() {
         gestorId:           formProjeto.gestorId || undefined,
         dataInicioContrato: formProjeto.dataInicioContrato || undefined,
         dataFimContrato:    formProjeto.dataFimContrato || undefined,
+        modalidade:         formProjeto.modalidade,
+        hhContratado:       formProjeto.modalidade === 'HOMEM_HORA' && formProjeto.hhContratado ? Number(formProjeto.hhContratado) : undefined,
       })
       if (fotoNovo.file && session?.tenantId) {
         try {
@@ -141,7 +178,7 @@ export default function PainelPage() {
       }
       toast.success(`Projeto "${formProjeto.nome}" criado!`)
       setModalProjeto(false)
-      setFormProjeto({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+      setFormProjeto(FORM_PROJETO_VAZIO)
       setFotoNovo({ file: null, preview: '' })
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao criar projeto.'))
@@ -160,6 +197,8 @@ export default function PainelPage() {
       gestorId: p.gestor?.id ?? '',
       dataInicioContrato: p.dataInicioContrato ? p.dataInicioContrato.slice(0, 10) : '',
       dataFimContrato: p.dataFimContrato ? p.dataFimContrato.slice(0, 10) : '',
+      modalidade: p.modalidade ?? 'AVANCO',
+      hhContratado: p.hhContratado != null ? String(p.hhContratado) : '',
     })
     setFotoEdit({ file: null, preview: p.fotoUrl ?? '' })
   }
@@ -187,6 +226,8 @@ export default function PainelPage() {
         fotoUrl,
         dataInicioContrato: editForm.dataInicioContrato,
         dataFimContrato: editForm.dataFimContrato,
+        modalidade: editForm.modalidade,
+        hhContratado: editForm.modalidade === 'HOMEM_HORA' && editForm.hhContratado ? Number(editForm.hhContratado) : null,
       })
       toast.success(`"${editForm.nome}" atualizado!`)
       setModalEdit(null)
@@ -275,6 +316,8 @@ export default function PainelPage() {
               {gestoresDisponiveis.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
             </Select>
           </Field>
+          <ModalidadeCampos modalidade={formProjeto.modalidade} onModalidade={m => setFormProjeto(f => ({ ...f, modalidade: m }))}
+            horas={formProjeto.hhContratado} onHoras={h => setFormProjeto(f => ({ ...f, hhContratado: h }))} />
           <Field label="Início do contrato">
             <Input type="date" value={formProjeto.dataInicioContrato} onChange={e => setFormProjeto(f => ({ ...f, dataInicioContrato: e.target.value }))} />
           </Field>
@@ -323,6 +366,8 @@ export default function PainelPage() {
               {gestoresDisponiveis.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
             </Select>
           </Field>
+          <ModalidadeCampos modalidade={editForm.modalidade} onModalidade={m => setEditForm(f => ({ ...f, modalidade: m }))}
+            horas={editForm.hhContratado} onHoras={h => setEditForm(f => ({ ...f, hhContratado: h }))} />
           <Field label="Início do contrato">
             <Input type="date" value={editForm.dataInicioContrato} onChange={e => setEditForm(f => ({ ...f, dataInicioContrato: e.target.value }))} />
           </Field>
@@ -502,8 +547,8 @@ function TabelaProjetos({ projetos, onNovoRdo, onEditar, onDuplicar, onExcluir }
               </td>
               <td style={{ fontSize: 11, color: 'var(--ts)' }}>{p.grupo ?? '—'}</td>
               <td style={{ fontSize: 11, color: 'var(--ts)' }}>{p.gestor?.nome ?? '—'}</td>
-              <td><DualBar plan={p.pctPlanejado} real={p.pctReal} /></td>
-              <td style={{ textAlign: 'center' }}><Desvio valor={p.desvio} /></td>
+              <td>{p.modalidade === 'HOMEM_HORA' ? <HHProjeto p={p} /> : <DualBar plan={p.pctPlanejado} real={p.pctReal} />}</td>
+              <td style={{ textAlign: 'center' }}>{p.modalidade === 'HOMEM_HORA' ? <span style={{ color: 'var(--tm)' }}>—</span> : <Desvio valor={p.desvio} />}</td>
               <td><Badge variant={STATUS_V[p.status] ?? 'gray'}>{STATUS_L[p.status] ?? p.status}</Badge></td>
               <td style={{ textAlign: 'right' }}>
                 <CardMenu
@@ -557,13 +602,13 @@ function CardsProjetos({ projetos, onNovoRdo, onEditar, onDuplicar, onExcluir }:
                   onExcluir={() => onExcluir(p)}
                 />
               </div>
-              <DualBar plan={p.pctPlanejado} real={p.pctReal} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}>
+              {p.modalidade === 'HOMEM_HORA' ? <HHProjeto p={p} /> : <DualBar plan={p.pctPlanejado} real={p.pctReal} />}
+              {p.modalidade !== 'HOMEM_HORA' && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5 }}>
                 <span style={{ color: 'var(--tm)' }}>Desvio:</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 2, color: p.desvio >= 0 ? 'var(--tsu)' : 'var(--td)', fontWeight: 600 }}>
                   <i className={`ti ti-trending-${p.desvio >= 0 ? 'up' : 'down'}`} /> {p.desvio >= 0 ? '+' : ''}{p.desvio}%
                 </span>
-              </div>
+              </div>}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '6px 8px', fontSize: 12.5, color: 'var(--tm)' }}>
                 <span title="RDOs emitidos" style={{ display: 'flex', alignItems: 'center', gap: 3 }}><i className="ti ti-file-text" /> {p._count.rdos}</span>
                 <span title="Atividades" style={{ display: 'flex', alignItems: 'center', gap: 3 }}><i className="ti ti-list-check" /> {p.totalAtividades ?? 0}</span>

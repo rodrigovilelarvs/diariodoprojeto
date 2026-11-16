@@ -1,7 +1,8 @@
 // src/api/app/projetos/[id]/route.ts
 // PATCH /api/app/projetos/:id — editar projeto (nome, grupo, status, datas, etc.)
 
-import { LogCategoria, ProjetoStatus } from '@/lib/prisma-enums'
+import { LogCategoria, ModalidadeMedicao, ProjetoStatus } from '@/lib/prisma-enums'
+import { numeroOuNull } from '@/lib/homem-hora'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -39,6 +40,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     dataFimContrato?:    string
     gestorId?:           string
     cor?:                string
+    modalidade?:         string
+    hhContratado?:       number | string | null
   }
   try {
     body = await req.json()
@@ -54,9 +57,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Status inválido.' }, { status: 400 })
   }
 
+  if (body.modalidade != null && !Object.values(ModalidadeMedicao).includes(body.modalidade as ModalidadeMedicao)) {
+    return NextResponse.json({ erro: 'Modalidade inválida.' }, { status: 400 })
+  }
+  const mudaHoras = body.hhContratado !== undefined
+  const hhContratado = numeroOuNull(body.hhContratado)
+  if (hhContratado != null && hhContratado < 0) {
+    return NextResponse.json({ erro: 'As horas contratadas não podem ser negativas.' }, { status: 400 })
+  }
+
   const atualizado = await prisma.projeto.update({
     where: { id: projetoId },
     data: {
+      ...(body.modalidade != null && { modalidade: body.modalidade as ModalidadeMedicao }),
+      ...(mudaHoras && { hhContratado }),
       ...(body.nome != null && { nome: body.nome }),
       ...(body.descricao != null && { descricao: body.descricao }),
       ...(body.pedidoCompraContrato != null && { pedidoCompraContrato: body.pedidoCompraContrato || null }),

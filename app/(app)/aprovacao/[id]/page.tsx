@@ -223,6 +223,8 @@ export default function AprovacaoPage() {
   const quemAguarda = vez.aguardandoId ? assinaturas.find(a => a.usuario.id === vez.aguardandoId)?.usuario.nome : undefined
 
   const registros   = rdo.atividadeRegistros ?? []
+  // Projeto por homem-hora: o RDO mostra horas (normais/extras) em vez do % das atividades
+  const ehHH        = rdo.projeto.modalidade === 'HOMEM_HORA'
 
   const prazo         = calcPrazo(rdo.projeto.dataInicioContrato, rdo.projeto.dataFimContrato, rdo.data)
   const totalTrabalho = calcHH(rdo.horaInicio ?? '', rdo.horaTermino ?? '', Number(rdo.intervaloHoras ?? 0))
@@ -230,6 +232,7 @@ export default function AprovacaoPage() {
   const equipamentos   = rdo.equipamentos ?? []
   const ocorrencias    = rdo.ocorrencias ?? []
   const totalHH        = maoDeObra.reduce((s: number, m) => s + Number(m.totalHH), 0)
+  const totalHHExtra   = maoDeObra.filter((m) => m.tipoHora === 'EXTRA').reduce((s: number, m) => s + Number(m.totalHH), 0)
   const hhPorCategoriaMO = CATEGORIAS.map(cat => ({
     categoria: cat,
     totalHH:      maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m) => s + Number(m.totalHH), 0),
@@ -396,8 +399,8 @@ export default function AprovacaoPage() {
             <div className="sec">
               <div className="sec-h">
                 <span className="sec-num">3</span>
-                <span className="sec-title">Atividade, horários e progresso</span>
-                {registros.length > 0 && (
+                <span className="sec-title">{ehHH ? 'Horários e atividades executadas' : 'Atividade, horários e progresso'}</span>
+                {!ehHH && registros.length > 0 && (
                   <span style={{ fontSize:10, color:'var(--ts)', background:'var(--s2)', border:'.5px solid var(--b)', borderRadius:20, padding:'2px 7px' }}>
                     {registros.length} atividade{registros.length !== 1 ? 's' : ''}
                   </span>
@@ -425,7 +428,7 @@ export default function AprovacaoPage() {
                   </div>
                 </div>
 
-                {registros.map((reg, ri: number) => {
+                {!ehHH && registros.map((reg, ri: number) => {
                   const ativ = reg.atividade
                   const pct  = reg.pctAtual
                   const cor  = pct >= 90 ? 'var(--fsu)' : pct >= 60 ? 'var(--fa)' : pct > 0 ? 'var(--fw)' : 'var(--tm)'
@@ -469,7 +472,7 @@ export default function AprovacaoPage() {
 
                 {rdo.observacoes && (
                   <div className="fr">
-                    <label className="fl">Observações</label>
+                    <label className="fl">{ehHH ? 'Atividades executadas (observações)' : 'Observações'}</label>
                     <div className="fi" style={{ background:'var(--s2)', color:'var(--ts)', cursor:'default', minHeight:60, whiteSpace:'pre-wrap' }}>
                       {rdo.observacoes}
                     </div>
@@ -487,6 +490,11 @@ export default function AprovacaoPage() {
                   <span style={{ fontSize:10, color:'var(--ta)', background:'var(--bga)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--ba)' }}>
                     Total: {totalHH} H/H
                   </span>
+                  {ehHH && (
+                    <span style={{ fontSize:10, color: totalHHExtra > 0 ? 'var(--tw)' : 'var(--ts)', background:'var(--s2)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--b)' }}>
+                      Normais: {Math.round((totalHH - totalHHExtra) * 100) / 100} · Extras: {Math.round(totalHHExtra * 100) / 100} H/H
+                    </span>
+                  )}
                   {hhPorCategoriaMO.map(c => (
                     <span key={c.categoria} style={{ fontSize:10, color:'var(--ta)', background:'var(--bga)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--ba)' }}>
                       {CATEGORIA_L[c.categoria]}: {c.totalPessoas}p · {c.totalHH}H/H
@@ -494,7 +502,7 @@ export default function AprovacaoPage() {
                   ))}
                 </div>
                 <div className="sec-body">
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(100%, 240px), 1fr))', gap:8 }}>
                     {maoDeObra.map((mo, i: number) => (
                       <div key={i} style={{ border:'.5px solid var(--b)', borderRadius:'var(--r)', padding:8, background:'var(--s1)' }}>
                         <div style={{ fontSize:12, fontWeight:500, marginBottom:6 }}>{mo.funcaoNome}</div>
@@ -511,6 +519,11 @@ export default function AprovacaoPage() {
                         <div style={{ fontSize:11, color:'var(--ts)' }}>
                           Qtd. {mo.quantidade} · {mo.horaEntrada} → {mo.horaSaida}
                         </div>
+                        {ehHH && (
+                          <div style={{ fontSize:10.5, marginTop:4, fontWeight:600, color: mo.tipoHora === 'EXTRA' ? 'var(--tw)' : 'var(--tm)' }}>
+                            {mo.tipoHora === 'EXTRA' ? `Hora extra ${mo.percentualExtra ?? 50}%` : 'Hora normal'}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

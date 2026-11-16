@@ -182,7 +182,11 @@ export async function gerarPdfRdo(
   const HEADER_H = 19
 
   // Dados pré-computados — não dependem do doc, calculados uma vez só
-  const regs    = rdo.atividadeRegistros ?? []
+  // Projeto por homem-hora: sem % de atividades; as atividades executadas vão nas observações e a mão de obra traz hora normal/extra
+  const ehHH    = rdo.projeto.modalidade === 'HOMEM_HORA'
+  const regs    = ehHH ? [] : (rdo.atividadeRegistros ?? [])
+  const hhExtra = (rdo.maoDeObra ?? []).filter((m) => m.tipoHora === 'EXTRA').reduce((s:number,m)=>s+Number(m.totalHH),0)
+  const rotuloHora = (m: { tipoHora?: string; percentualExtra?: number | null }) => m.tipoHora === 'EXTRA' ? `Extra ${m.percentualExtra ?? 50}%` : 'Normal'
   const totalHH = (rdo.maoDeObra ?? []).reduce((s:number,m)=>s+Number(m.totalHH),0)
   const prazo   = calcPrazo(rdo.projeto.dataInicioContrato, rdo.projeto.dataFimContrato, rdo.data)
   const midias    = rdo.midias ?? []
@@ -207,6 +211,7 @@ export async function gerarPdfRdo(
     badgeMO = subtotaisMO.map(s => `${CATEGORIA_L[s.cat]}: ${s.pessoas}p · ${s.hh}H/H`).join('  |  ') + '  |  '
   }
   badgeMO += `Total: ${totalHH} H/H`
+  if (ehHH) badgeMO += `  |  Normais: ${Math.round((totalHH - hhExtra) * 100) / 100} · Extras: ${Math.round(hhExtra * 100) / 100} H/H`
 
   // ── Desenha (ou só mede) todo o conteúdo do RDO ──────────────────────
   // `medindo=true`: não desenha nada de verdade nem busca imagem — só corre
@@ -416,7 +421,7 @@ export async function gerarPdfRdo(
     // SEC 3 — ATIVIDADES E PROGRESSO
     // ════════════════════════════════════════════════════
     novaPaginaSeNecessario(E(20))
-    secHeader('Atividade, horários e progresso', '3',
+    secHeader(ehHH ? 'Horários e atividades executadas' : 'Atividade, horários e progresso', '3',
       regs.length > 0 ? `${regs.length} atividade${regs.length !== 1 ? 's' : ''}` : undefined)
 
     infoGrid([
@@ -426,7 +431,9 @@ export async function gerarPdfRdo(
       { label:'Total trabalhado', valor:calcHH(rdo.horaInicio ?? '', rdo.horaTermino ?? '', Number(rdo.intervaloHoras ?? 0)) },
     ], 4)
 
-    if (regs.length === 0) {
+    if (ehHH) {
+      // sem lista de atividades com %: a descrição do que foi feito está nas observações logo abaixo
+    } else if (regs.length === 0) {
       vazio('Nenhuma atividade registrada.')
     } else {
       regs.forEach((r) => {
@@ -468,7 +475,7 @@ export async function gerarPdfRdo(
 
     // Observações — sempre mostrado, mesmo vazio
     novaPaginaSeNecessario(E(10))
-    txt('Observações', M, y+E(2), { size:6, bold:true, cor:COR.ts })
+    txt(ehHH ? 'Atividades executadas (observações)' : 'Observações', M, y+E(2), { size:6, bold:true, cor:COR.ts })
     y += E(3.4)
     rect(M, y, CW, E(0.3), COR.brd)
     y += E(1.8)
@@ -500,10 +507,12 @@ export async function gerarPdfRdo(
       for (let i = 0; i < maoDeObraArr.length; i += 2) {
         const a = maoDeObraArr[i], b = maoDeObraArr[i+1]
         bodyMO.push([
-          a.funcaoNome ?? '—', CATEGORIA_L[a.categoria as keyof typeof CATEGORIA_L] ?? '—',
+          a.funcaoNome ?? '—', (CATEGORIA_L[a.categoria as keyof typeof CATEGORIA_L] ?? '—') + (ehHH ? `
+${rotuloHora(a)}` : ''),
           `${a.quantidade}`, `${a.horaEntrada}-${a.horaSaida}`, `${a.totalHH}`,
           b ? (b.funcaoNome ?? '—') : '',
-          b ? (CATEGORIA_L[b.categoria as keyof typeof CATEGORIA_L] ?? '—') : '',
+          b ? ((CATEGORIA_L[b.categoria as keyof typeof CATEGORIA_L] ?? '—') + (ehHH ? `
+${rotuloHora(b)}` : '')) : '',
           b ? `${b.quantidade}` : '',
           b ? `${b.horaEntrada}-${b.horaSaida}` : '',
           b ? `${b.totalHH}` : '',

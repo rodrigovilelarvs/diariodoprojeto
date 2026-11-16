@@ -3,7 +3,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, resolverAcessoProjeto, podeVerProjeto, podeGerenciarProjeto, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
+import { requireAuth, resolverAcessoProjeto, podeVerProjeto, podeGerenciarProjeto, podeVerRelatorios, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
+import { arredonda2, custoDaLinha, numeroOuNull } from '@/lib/homem-hora'
 import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 type Params = { params: Promise<{ id: string }> }
@@ -17,7 +18,7 @@ type RdoResumo = {
   assinaturas: Array<{ status: string }>
   midias: Array<{ id: string; tipo: string; url: string; nomeArq: string; descricao: string | null }>
   ocorrencias: Array<{ id: string; tipo: string; descricao: string; resolvida: boolean }>
-  maoDeObra: Array<{ funcaoNome: string; quantidade: number; horaEntrada: string; horaSaida: string; totalHH: number }>
+  maoDeObra: Array<{ funcaoNome: string; quantidade: number; horaEntrada: string; horaSaida: string; totalHH: number; tipoHora: string; percentualExtra: number | null; funcaoCadastro: { valorHora: unknown } | null }>
   equipamentos: Array<{ equipamentoNome: string; quantidade: number; observacao: string | null }>
   atividadeRegistros: Array<{ id: string; pctAnterior: number; pctAtual: number; deltaHoje: number; avulsa: boolean; avulsaEtapa: string | null; avulsaNome: string | null; atividade: { nome: string } | null }>
   comentarios: Array<{ id: string; texto: string; criadoEm: Date; autor: { nome: string }; _count: { respostas: number } }>
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       assinaturas: { select: { status: true } },
       midias: { select: { id: true, tipo: true, url: true, nomeArq: true, descricao: true } },
       ocorrencias: { select: { id: true, tipo: true, descricao: true, resolvida: true } },
-      maoDeObra: { select: { funcaoNome: true, quantidade: true, horaEntrada: true, horaSaida: true, totalHH: true } },
+      maoDeObra: { select: { funcaoNome: true, quantidade: true, horaEntrada: true, horaSaida: true, totalHH: true, tipoHora: true, percentualExtra: true, funcaoCadastro: { select: { valorHora: true } } } },
       equipamentos: { select: { equipamentoNome: true, quantidade: true, observacao: true } },
       atividadeRegistros: {
         select: {
@@ -138,6 +139,38 @@ export async function GET(req: NextRequest, { params }: Params) {
     }
   }
 
+  // Projeto por homem-hora: horas aprovadas (abatem o saldo do contrato), horas ainda em aprovação,
+  // divisão normal/extra e custo (só para quem gerencia o projeto ou vê relatórios)
+  let hh: Record<string, number | null> | undefined
+  if (projeto.modalidade === 'HOMEM_HORA') {
+    const contratado = numeroOuNull(projeto.hhContratado)
+    const veValor = podeGerenciar || podeVerRelatorios(auth.ctx)
+    let aprovadas = 0, emAprovacao = 0, normais = 0, extras = 0, valor = 0, semValor = 0, algumValor = false
+    for (const r of rdos) {
+      for (const mo of r.maoDeObra) {
+        const horas = Number(mo.totalHH)
+        if (r.status === 'APROVADO') {
+          aprovadas += horas
+          if (mo.tipoHora === 'EXTRA') extras += horas; else normais += horas
+          const custo = custoDaLinha(horas, numeroOuNull(mo.funcaoCadastro?.valorHora), mo.tipoHora, mo.percentualExtra)
+          if (custo == null) semValor += horas; else { valor += custo; algumValor = true }
+        } else if (r.status === 'PENDENTE_APROVACAO') {
+          emAprovacao += horas
+        }
+      }
+    }
+    hh = {
+      contratado,
+      aprovadas: arredonda2(aprovadas),
+      emAprovacao: arredonda2(emAprovacao),
+      normais: arredonda2(normais),
+      extras: arredonda2(extras),
+      saldo: contratado == null ? null : arredonda2(contratado - aprovadas),
+      valor: veValor && algumValor ? arredonda2(valor) : null,
+      semValor: veValor ? arredonda2(semValor) : 0,
+    }
+  }
+
   // Prévia dos RDOs mais recentes para a visão geral (já vem ordenado desc por data)
   const rdosRecentes = rdos.slice(0, 15).map(r => ({
     id: r.id, numero: r.numero, data: r.data, status: r.status,
@@ -146,8 +179,10 @@ export async function GET(req: NextRequest, { params }: Params) {
   }))
 
   return NextResponse.json({
+    ...(hh ? { hh } : {}),
     projeto: {
       id: projeto.id, nome: projeto.nome, descricao: projeto.descricao,
+      modalidade: projeto.modalidade, hhContratado: numeroOuNull(projeto.hhContratado),
       pedidoCompraContrato: projeto.pedidoCompraContrato,
       empresaContratada: projeto.empresaContratada,
       empresaTipo: empresa?.tipoEmpresaProjeto ?? 'CONTRATADA',

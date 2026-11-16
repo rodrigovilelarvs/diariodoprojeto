@@ -323,6 +323,45 @@ export const SECOES: Secao[] = [
   },
 
   {
+    id: 'homem-hora',
+    icone: 'ti-clock-hour-4',
+    titulo: 'Projetos por homem-hora (H/H)',
+    resumo: 'Como medir um projeto por horas trabalhadas: hora normal e extra, valor da hora, saldo do contrato e relatório por dia.',
+    blocos: [
+      { t: 'p', x: 'Alguns serviços não se medem por **percentual de avanço**, e sim por **horas trabalhadas** (homem-hora, ou **H/H**). Para esses projetos, escolha a **modalidade de medição "Por homem-hora"**. Os demais projetos continuam **por avanço**, como sempre foram; cada pasta tem a sua modalidade.' },
+      { t: 'h', x: 'Como ativar' },
+      {
+        t: 'passos',
+        x: [
+          'Ao **criar** ou **editar** um projeto (no painel ou na própria pasta), em **Modalidade de medição**, escolha **Por homem-hora (horas trabalhadas)**.',
+          'Opcional: informe as **Horas contratadas (H/H)**. Com esse número, o sistema acompanha o **saldo** e vai abatendo as horas de cada RDO aprovado. Se deixar em branco, ele apenas **soma** as horas trabalhadas.',
+          'Pode voltar a modalidade para "Por avanço" quando quiser: os RDOs e as atividades que já existiam não se perdem.',
+        ],
+      },
+      { t: 'h', x: 'Preenchendo o RDO de um projeto por H/H' },
+      {
+        t: 'lista',
+        x: [
+          'A seção 3 passa a se chamar **Horários e atividades executadas**: não há percentual por atividade. Use o campo **Atividades executadas (observações)** para descrever o que foi feito no H/H (serviço, local, equipe).',
+          'Na seção de **Mão de obra**, cada linha (função, quantidade, entrada e saída) tem o campo **Tipo de hora**: **Hora normal**, **Hora extra 50%**, **Hora extra 100% (domingo/feriado)** ou **Hora extra, outro %** (então você digita o percentual).',
+          'O cabeçalho da seção mostra as horas **normais** e **extras** do dia. Se uma pessoa trabalhou parte do dia em hora normal e parte em extra, use duas linhas da mesma função.',
+          'Em RDO de **sábado** as linhas novas já entram como hora extra de 50%, e de **domingo**, de 100%: um aviso na seção avisa disso, e você pode trocar em cada linha. Em **feriado** (dia de semana), marque você mesmo a **hora extra 100%**: o sistema não tem cadastro de feriados.',
+          'Ao **copiar o RDO anterior**, o tipo de hora das linhas segue o dia do novo RDO (e não o do anterior).',
+        ],
+      },
+      { t: 'h', x: 'Valor da hora por função' },
+      { t: 'p', x: 'Em **Adicionar mão de obra**, ao **criar** ou **editar** uma função, aparece o campo **R$/h** (valor da hora **normal**, opcional). Com ele, o sistema calcula o **custo**: horas × valor da hora × (1 + acréscimo da hora extra). Por exemplo, 8 horas extras de 100% de uma função de R$ 50/h custam R$ 800. Quem **gerencia projetos** define os valores; quem vê relatórios os enxerga; os demais não veem valores.' },
+      { t: 'h', x: 'Saldo de horas do contrato' },
+      { t: 'p', x: 'Na pasta do projeto aparece o bloco **Homem-hora**: **H/H aprovadas**, **em aprovação**, **normais**, **extras** e, se o contrato tem horas cadastradas, o **saldo** com uma barra de consumo (amarela a partir de 80% e vermelha ao estourar). O que **abate o saldo** são só as horas de RDOs **aprovados**. No painel de projetos, o projeto por H/H mostra as horas consumidas (e "de X H/H") no lugar do avanço.' },
+      { t: 'h', x: 'Relatório "Horas por dia (H/H)"' },
+      { t: 'p', x: 'Em **Relatórios**, a aba **Horas por dia (H/H)** lista, para cada data, o **dia da semana**, o tipo do dia (**dia útil, sábado, domingo ou feriado**), as horas **normais** e **extras**, o total e o valor. Sábados, domingos e feriados aparecem **destacados**, para você enxergar logo as horas de fim de semana. Clique numa data para ver as funções do dia. Escolha o projeto e o período; por padrão só entram RDOs **aprovados** (a base da medição), e dá para incluir os demais. O botão **Exportar planilha** gera um arquivo para o Excel.' },
+      { t: 'aviso', x: 'Como não há cadastro de feriados, o relatório trata como **feriado** um dia de semana em que foi marcada **hora extra de 100%**. Se um domingo ou sábado aparecer com **horas normais**, o relatório mostra um alerta (⚠): confira se essas horas deveriam ser extras. Para corrigir um RDO já aprovado, use **Voltar para rascunho**, ajuste o tipo de hora e envie de novo.' },
+      { t: 'dica', x: 'Funções sem valor da hora aparecem num aviso do relatório e do bloco Homem-hora, e as horas delas ficam fora do custo até você informar o valor.' },
+    ],
+    quem: 'Definir a modalidade e os valores da hora exige a permissão "Gerenciar projetos"; preencher o RDO, a de "Emitir RDOs".',
+  },
+
+  {
     id: 'celular',
     icone: 'ti-device-mobile',
     titulo: 'Preencher o RDO pelo celular',
@@ -432,6 +471,7 @@ export const SECOES: Secao[] = [
           ['Status dos RDOs', 'Proporção de rascunhos, pendentes, aprovados e a revisar.'],
           ['Ocorrências por tipo', 'Quais tipos de ocorrência mais aparecem.'],
           ['Horas impactadas por ocorrências', 'Quanto tempo de trabalho cada tipo de ocorrência tomou.'],
+          ['Aba Horas por dia (H/H)', 'Para projetos por homem-hora: horas normais e extras de cada data, com sábados, domingos e feriados destacados (veja a seção "Projetos por homem-hora").'],
           ['H/H por função', 'Quais funções mais consumiram horas. Mostra **todas** as funções, da que mais consumiu para a que menos consumiu; quando são muitas, o quadro ganha uma **barra de rolagem** (o mesmo vale para Ocorrências por tipo e Horas impactadas por ocorrências). No PDF a lista continua na página seguinte.'],
           ['Tempo médio de aprovação', 'Quanto tempo os RDOs levam entre o envio e a decisão.'],
           ['RDOs ao longo do tempo', 'Quantos RDOs foram registrados por dia, semana ou mês.'],

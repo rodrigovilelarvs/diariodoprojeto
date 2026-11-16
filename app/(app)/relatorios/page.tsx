@@ -7,6 +7,7 @@ import { useAppAuth } from '@/contexts/AuthContext'
 import { Topbar } from '@/components/layout/Topbar'
 import { Skeleton, Desvio } from '@/components/ui'
 import { gerarPdfRelatorio } from '@/lib/pdf'
+import { RelatorioHoras } from '@/components/relatorios/RelatorioHoras'
 import { toast } from 'sonner'
 
 const OC_L: Record<string, string> = {
@@ -193,6 +194,8 @@ export default function RelatoriosPage() {
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim]       = useState('')
   const [pdfLoading, setPdfLoading] = useState(false)
+  // Aba: visão geral ou "Horas por dia" (projetos por homem-hora)
+  const [aba, setAba] = useState<'geral' | 'horas'>('geral')
 
   const { data: projetos } = useProjetos()
   const grupos = useMemo(
@@ -275,16 +278,22 @@ export default function RelatoriosPage() {
       <Topbar
         titulo="Relatórios"
         subtitulo="Análise de desempenho"
-        acoes={
+        acoes={aba === 'geral' ? (
           <button className="btn" disabled={pdfLoading || isLoading || !data} onClick={handleExportarPdf}>
             <i className={`ti ${pdfLoading ? 'ti-loader' : 'ti-file-export'}`}
               style={pdfLoading ? { animation: 'spin 1s linear infinite' } : {}} />
             {pdfLoading ? 'Gerando...' : 'Exportar PDF'}
           </button>
-        }
+        ) : undefined}
       />
       <div className="content">
 
+        <div className="ta-row">
+          <button className={`ta-tab ${aba === 'geral' ? 'on' : ''}`} onClick={() => setAba('geral')}><i className="ti ti-chart-bar" /> Visão geral</button>
+          <button className={`ta-tab ${aba === 'horas' ? 'on' : ''}`} onClick={() => setAba('horas')}><i className="ti ti-clock-hour-4" /> Horas por dia (H/H)</button>
+        </div>
+
+        {aba === 'horas' ? <RelatorioHoras projetos={projetos ?? []} /> : <>
         <div className="fr-row">
           <select className="fsel" value={grupo} onChange={e => onGrupoChange(e.target.value)}>
             <option value="">Todos os grupos</option>
@@ -489,6 +498,7 @@ export default function RelatoriosPage() {
             </div>
           </div>
         )}
+        </>}
       </div>
     </div>
   )

@@ -25,6 +25,7 @@ type ProjetoParaDuplicar = {
   pedidoCompraContrato: string | null; empresaContratada: string | null
   grupo: string | null; fotoUrl: string | null; cor: string
   dataInicioContrato: Date | null; dataFimContrato: Date | null
+  modalidade: 'AVANCO' | 'HOMEM_HORA'; hhContratado: unknown
   gestorId: string | null
   assinaturaModo: ProjetoAssinaturaModo
   assinante1Id: string | null; assinante2Id: string | null; assinante3Id: string | null
@@ -84,6 +85,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       dataFimContrato:      original.dataFimContrato,
       gestorId:             original.gestorId,
       status:               'NAO_INICIADO',
+      modalidade:           original.modalidade,
+      hhContratado:         original.hhContratado,
       assinaturaModo:       original.assinaturaModo,
       assinante1Id:         original.assinante1Id,
       assinante2Id:         original.assinante2Id,

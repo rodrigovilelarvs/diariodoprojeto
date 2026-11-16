@@ -57,3 +57,32 @@ export function ehDiaUtil(data: Date): boolean {
   if (diaSemana === 0 || diaSemana === 6) return false
   return !feriadosNacionais(data.getUTCFullYear()).has(chave(data))
 }
+
+// ── Dia da semana, para os projetos por homem-hora ─────────────────────────────
+// Não há cadastro de feriados: quem preenche o H/H marca a hora extra de 100% no dia de feriado.
+// O sistema só conhece o calendário (sábado e domingo) para sugerir o tipo de hora.
+
+export type TipoDia = 'UTIL' | 'SABADO' | 'DOMINGO' | 'FERIADO'
+
+export interface InfoDia {
+  tipo: 'UTIL' | 'SABADO' | 'DOMINGO'
+  diaSemana: number // 0 = domingo ... 6 = sábado
+}
+
+export const NOME_DIA_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+
+export function infoDoDia(dia: string | Date): InfoDia {
+  const d = typeof dia === 'string'
+    ? new Date(`${dia.slice(0, 10)}T00:00:00Z`)
+    : new Date(Date.UTC(dia.getUTCFullYear(), dia.getUTCMonth(), dia.getUTCDate()))
+  const diaSemana = d.getUTCDay()
+  return { tipo: diaSemana === 0 ? 'DOMINGO' : diaSemana === 6 ? 'SABADO' : 'UTIL', diaSemana }
+}
+
+// Hora extra sugerida para as linhas novas (o usuário troca em cada linha): domingo 100%, sábado 50%,
+// dia útil hora normal. Feriado em dia de semana: marcar "hora extra 100%" na linha.
+export function extraSugerida(info: InfoDia): { tipoHora: 'NORMAL' | 'EXTRA'; percentualExtra: number | null } {
+  if (info.tipo === 'DOMINGO') return { tipoHora: 'EXTRA', percentualExtra: 100 }
+  if (info.tipo === 'SABADO') return { tipoHora: 'EXTRA', percentualExtra: 50 }
+  return { tipoHora: 'NORMAL', percentualExtra: null }
+}

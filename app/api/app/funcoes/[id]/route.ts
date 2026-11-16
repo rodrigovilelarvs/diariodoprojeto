@@ -6,7 +6,8 @@
 import { MaoDeObraCategoria } from '@/lib/prisma-enums'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { requireAuth, podeEmitirRdo } from '@/lib/auth'
+import { requireAuth, podeEmitirRdo, podeGerenciarProjetos } from '@/lib/auth'
+import { numeroOuNull } from '@/lib/homem-hora'
 import { LogCategoria } from '@/lib/prisma-enums'
 
 type Params = { params: Promise<{ id: string }> }
@@ -28,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Função não encontrada.' }, { status: 404 })
   }
 
-  let body: { nome?: string; categoria?: string }
+  let body: { nome?: string; categoria?: string; valorHora?: number | string | null }
   try {
     body = await req.json()
   } catch {
@@ -43,6 +44,16 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ erro: 'Categoria inválida.' }, { status: 400 })
   }
 
+  // valor da hora (opcional; vazio apaga): só quem gerencia projetos altera
+  const mudaValor = body.valorHora !== undefined
+  if (mudaValor && !podeGerenciarProjetos(auth.ctx)) {
+    return NextResponse.json({ erro: 'Sem permissão para alterar o valor da hora.' }, { status: 403 })
+  }
+  const valorHora = numeroOuNull(body.valorHora)
+  if (valorHora != null && valorHora < 0) {
+    return NextResponse.json({ erro: 'O valor da hora não pode ser negativo.' }, { status: 400 })
+  }
+
   if (nome && nome !== funcao.nome) {
     const conflito = await prisma.funcaoCadastro.findFirst({ where: { tenantId, nome, id: { not: funcaoId } } })
     if (conflito) {
@@ -55,6 +66,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     data: {
       ...(nome && { nome }),
       ...(body.categoria != null && { categoria: body.categoria as MaoDeObraCategoria }),
+      ...(mudaValor && { valorHora }),
     },
     select: { id: true, nome: true, categoria: true },
   })

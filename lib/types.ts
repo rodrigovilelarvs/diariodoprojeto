@@ -150,9 +150,14 @@ export interface UsuarioAcessoProjeto {
 
 export type EmpresaTipo = 'CONTRATADA' | 'CONTRATANTE'
 
+export type ModalidadeMedicao = 'AVANCO' | 'HOMEM_HORA'
+
 export interface Projeto {
   id:                  string
   nome:                string
+  modalidade?:         ModalidadeMedicao // por avanço (padrão) ou por homem-hora
+  hhContratado?:       number | null     // saldo de horas do contrato (modo homem-hora), opcional
+  hhConsumido?:        number            // horas já aprovadas (só na lista de projetos por homem-hora)
   descricao?:          string
   pedidoCompraContrato?: string
   empresaContratada?:  string
@@ -191,8 +196,21 @@ export interface ResumoMaoDeObraItem { funcaoNome: string; quantidade: number; h
 export interface ResumoEquipamentoItem { equipamentoNome: string; quantidade: number; observacao?: string; rdoId: string; rdoNumero: number; rdoData: string }
 export interface ResumoRdoItem { id: string; numero: number; data: string; status: RdoStatus; totalFotos: number; assinaturas: { status: string }[] }
 
+export interface ResumoHH {
+  contratado:   number | null // horas contratadas (null = sem saldo cadastrado: só soma)
+  aprovadas:    number        // H/H de RDOs aprovados — é o que abate o saldo
+  emAprovacao:  number        // H/H de RDOs enviados e ainda não aprovados
+  normais:      number        // das aprovadas
+  extras:       number        // das aprovadas
+  saldo:        number | null // contratado − aprovadas (null sem contrato)
+  valor:        number | null // custo das aprovadas (null se nenhuma função tem valor cadastrado)
+  semValor:     number        // horas aprovadas de funções sem valor da hora cadastrado
+}
+
 export interface ResumoProjeto {
-  projeto: Pick<Projeto, 'id' | 'nome' | 'descricao' | 'pedidoCompraContrato' | 'empresaContratada' | 'empresaTipo' | 'status' | 'grupo' | 'fotoUrl' | 'cor' | 'dataInicioContrato' | 'dataFimContrato' | 'gestor' | 'podeGerenciar'>
+  // projetos por homem-hora: horas aprovadas, em aprovação, saldo do contrato etc.
+  hh?: ResumoHH
+  projeto: Pick<Projeto, 'id' | 'nome' | 'modalidade' | 'hhContratado' | 'descricao' | 'pedidoCompraContrato' | 'empresaContratada' | 'empresaTipo' | 'status' | 'grupo' | 'fotoUrl' | 'cor' | 'dataInicioContrato' | 'dataFimContrato' | 'gestor' | 'podeGerenciar'>
   kpis: {
     totalRdos: number
     pctReal: number
@@ -255,6 +273,8 @@ export interface EapResponse {
 }
 
 // ── RDO ─────────────────────────────────────────────────────
+export type TipoHora = 'NORMAL' | 'EXTRA'
+
 export interface MaoDeObraItem {
   id?:              string
   funcaoCadastroId?: string
@@ -265,12 +285,15 @@ export interface MaoDeObraItem {
   horaEntrada:      string
   horaSaida:        string
   totalHH:          number
+  tipoHora?:        TipoHora   // só nos projetos por homem-hora
+  percentualExtra?: number | null // % de acréscimo da hora extra (50, 100...)
 }
 
 export interface FuncaoCadastro {
   id:        string
   nome:      string
   categoria: MaoDeObraCategoria
+  valorHora?: number | null // valor da hora normal (opcional)
 }
 
 export type EquipamentoTipo = 'PROPRIO' | 'ALUGADO' | 'TERCEIRIZADO'
@@ -359,7 +382,7 @@ export interface Rdo {
   precipitacaoMm?: number
   climaImpacto:   ClimaImpacto
   observacoes?:   string
-  projeto:        Pick<Projeto, 'id' | 'nome' | 'dataInicioContrato' | 'dataFimContrato' | 'pedidoCompraContrato' | 'empresaContratada' | 'empresaTipo' | 'assinaturaModo' | 'assinante1' | 'assinante2' | 'assinante3' | 'gestor'>
+  projeto:        Pick<Projeto, 'id' | 'nome' | 'modalidade' | 'dataInicioContrato' | 'dataFimContrato' | 'pedidoCompraContrato' | 'empresaContratada' | 'empresaTipo' | 'assinaturaModo' | 'assinante1' | 'assinante2' | 'assinante3' | 'gestor'>
   emissor:        UsuarioResumo
   atividadeRegistros: RegistroAtividade[]
   maoDeObra:      MaoDeObraItem[]

@@ -137,9 +137,10 @@ export async function GET(req: NextRequest) {
       where: { rdo: { projeto: whereProjeto }, resolvida: false },
     }),
 
-    // Progresso por projeto (% real vs planejado)
+    // Progresso por projeto (% real vs planejado) — só projetos por avanço: os por homem-hora
+    // não têm % de atividades (a medição deles é em horas, ver /api/app/relatorios/horas)
     prisma.projeto.findMany({
-      where: { ...whereProjeto, status: 'ATIVO' },
+      where: { ...whereProjeto, status: 'ATIVO', modalidade: 'AVANCO' },
       select: {
         id:   true,
         nome: true,

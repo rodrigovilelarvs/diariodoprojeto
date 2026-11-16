@@ -106,6 +106,18 @@ enum MidiaTipo {
   ARQUIVO
 }
 
+// Como o projeto é medido: por avanço (% das atividades) ou por homem-hora (horas trabalhadas)
+enum ModalidadeMedicao {
+  AVANCO
+  HOMEM_HORA
+}
+
+// Hora normal ou hora extra (com percentual de acréscimo — domingo e feriado, por exemplo)
+enum TipoHora {
+  NORMAL
+  EXTRA
+}
+
 enum MaoDeObraCategoria {
   DIRETA
   INDIRETA
@@ -396,6 +408,10 @@ model Projeto {
   pedidoCompraContrato String? // Pedido de compra ou contrato — referência mostrada no RDO e no PDF
   empresaContratada    String? // Nome da empresa do projeto (contratada OU contratante, conforme Tenant.tipoEmpresaProjeto) — mostrado no RDO e no PDF
   status               ProjetoStatus @default(NAO_INICIADO)
+  // Modalidade de medição. HOMEM_HORA: o RDO registra horas (normais/extras) em vez de % de avanço;
+  // hhContratado (opcional) é o saldo de horas do contrato, abatido pelas horas dos RDOs aprovados.
+  modalidade           ModalidadeMedicao @default(AVANCO)
+  hhContratado         Decimal?          @db.Decimal(10, 2)
   grupo                String? // ex: "CAPEX", "Manutenção", "Unidade SP" — texto livre
   fotoUrl              String? // miniatura exibida na lista/cartões do painel
   dataInicioContrato   DateTime?
@@ -583,6 +599,7 @@ model FuncaoCadastro {
   tenantId  String
   nome      String
   categoria MaoDeObraCategoria @default(DIRETA)
+  valorHora Decimal?           @db.Decimal(10, 2) // valor da hora normal (opcional) — base do custo no modo homem-hora
 
   criadoEm DateTime @default(now())
 
@@ -606,6 +623,10 @@ model MaoDeObra {
   horaEntrada String // "07:00"
   horaSaida   String // "17:00"
   totalHH     Decimal @db.Decimal(6, 2) // calculado: (saida-entrada) * quantidade
+
+  // Projetos por homem-hora: hora normal ou extra, e o % de acréscimo da extra (50, 100...)
+  tipoHora        TipoHora @default(NORMAL)
+  percentualExtra Int?
 
   @@map("mao_de_obra")
 }

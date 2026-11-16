@@ -14,7 +14,7 @@ import type {
   EquipamentoCadastro, EquipamentoTipo,
   OcorrenciaTipoCadastro,
   ProjetoAcessoItem, ProjetoAcessoNivel, ProjetoAssinaturaModo, UsuarioAcessoProjeto,
-  UsuarioResumo, Usuario, EmpresaVinculada, EmpresaInfo, EmpresaTipo,
+  UsuarioResumo, Usuario, EmpresaVinculada, EmpresaInfo, EmpresaTipo, ModalidadeMedicao,
 } from '@/lib/types'
 
 // ── Query keys centralizadas ─────────────────────────────────
@@ -70,6 +70,8 @@ export function useCriarProjeto() {
       dataFimContrato?:    string
       gestorId?:           string
       cor?:                string
+      modalidade?:         ModalidadeMedicao
+      hhContratado?:       number | null
     }) => api.post<Projeto>('/api/app/projetos', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.projetos }),
   })
@@ -91,6 +93,8 @@ export function useAtualizarProjeto() {
       dataFimContrato?:    string
       gestorId?:           string
       cor?:                string
+      modalidade?:         ModalidadeMedicao
+      hhContratado?:       number | null
     }) => api.patch<Projeto>(`/api/app/projetos/${id}`, body),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: QK.projetos })
@@ -428,7 +432,7 @@ export function useFuncoes() {
 export function useCriarFuncao() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { nome: string; categoria: MaoDeObraCategoria }) =>
+    mutationFn: (body: { nome: string; categoria: MaoDeObraCategoria; valorHora?: number | null }) =>
       api.post<FuncaoCadastro>('/api/app/funcoes', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.funcoes }),
   })
@@ -437,9 +441,36 @@ export function useCriarFuncao() {
 export function useEditarFuncao() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: string; nome?: string; categoria?: MaoDeObraCategoria }) =>
+    mutationFn: ({ id, ...body }: { id: string; nome?: string; categoria?: MaoDeObraCategoria; valorHora?: number | null }) =>
       api.patch<FuncaoCadastro>(`/api/app/funcoes/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.funcoes }),
+  })
+}
+
+// ── Relatório de horas por dia (projetos por homem-hora) ──
+export type TipoDiaHH = 'UTIL' | 'SABADO' | 'DOMINGO' | 'FERIADO'
+export interface LinhaHorasDia { funcao: string; projeto: string; quantidade: number; tipoHora: string; percentualExtra: number | null; horas: number; valor: number | null }
+export interface DiaHoras {
+  data: string; diaSemana: number; tipoDia: TipoDiaHH
+  pessoas: number; normais: number; extras: number; total: number; valor: number | null
+  linhas: LinhaHorasDia[]
+}
+export interface RelatorioHoras {
+  periodo: { dataInicio: string; dataFim: string }
+  status: 'APROVADO' | 'TODOS'
+  dias: DiaHoras[]
+  totais: { dias: number; normais: number; extras: number; total: number; sabados: number; domingos: number; feriados: number; valor: number | null }
+  funcoesSemValor: string[]
+}
+
+export function useRelatorioHoras(filtros: { projetoId?: string; dataInicio: string; dataFim: string; status: 'APROVADO' | 'TODOS' }, habilitado = true) {
+  const p = new URLSearchParams({ dataInicio: filtros.dataInicio, dataFim: filtros.dataFim, status: filtros.status })
+  if (filtros.projetoId) p.set('projetoId', filtros.projetoId)
+  return useQuery({
+    queryKey: ['relatorio-horas', Object.fromEntries(p)] as const,
+    queryFn:  () => api.get<RelatorioHoras>(`/api/app/relatorios/horas?${p.toString()}`),
+    enabled:  habilitado,
+    placeholderData: (anterior: RelatorioHoras | undefined) => anterior,
   })
 }
 

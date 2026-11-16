@@ -6,7 +6,8 @@ import { MaoDeObraCategoria } from '@/lib/prisma-enums'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, podeEmitirRdo } from '@/lib/auth'
+import { requireAuth, podeEmitirRdo, podeGerenciarProjetos, podeVerRelatorios } from '@/lib/auth'
+import { numeroOuNull } from '@/lib/homem-hora'
 
 // Funções rotineiras de execução de obra — semeadas automaticamente no primeiro acesso do tenant
 const FUNCOES_PADRAO: Array<{ nome: string; categoria: MaoDeObraCategoria }> = [
@@ -42,13 +43,15 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  const funcoes = await prisma.funcaoCadastro.findMany({
+  const funcoes: Array<{ id: string; nome: string; categoria: string; valorHora: unknown }> = await prisma.funcaoCadastro.findMany({
     where:   { tenantId },
-    select:  { id: true, nome: true, categoria: true },
+    select:  { id: true, nome: true, categoria: true, valorHora: true },
     orderBy: { nome: 'asc' },
   })
 
-  return NextResponse.json(funcoes)
+  // O valor da hora é informação financeira: só vai para quem gerencia projetos ou vê relatórios
+  const veValor = podeGerenciarProjetos(auth.ctx) || podeVerRelatorios(auth.ctx)
+  return NextResponse.json(funcoes.map(f => ({ id: f.id, nome: f.nome, categoria: f.categoria, ...(veValor ? { valorHora: numeroOuNull(f.valorHora) } : {}) })))
 }
 
 export async function POST(req: NextRequest) {
@@ -62,7 +65,7 @@ export async function POST(req: NextRequest) {
 
   const { tenantId } = auth.ctx
 
-  let body: { nome?: string; categoria?: string }
+  let body: { nome?: string; categoria?: string; valorHora?: number | string | null }
   try {
     body = await req.json()
   } catch {
@@ -82,8 +85,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(existente, { status: 200 })
   }
 
+  // valor da hora: só quem gerencia projetos define
+  const valorHora = podeGerenciarProjetos(auth.ctx) ? numeroOuNull(body.valorHora) : null
+  if (valorHora != null && valorHora < 0) {
+    return NextResponse.json({ erro: 'O valor da hora não pode ser negativo.' }, { status: 400 })
+  }
+
   const funcao = await prisma.funcaoCadastro.create({
-    data: { tenantId, nome, categoria: body.categoria as MaoDeObraCategoria },
+    data: { tenantId, nome, categoria: body.categoria as MaoDeObraCategoria, valorHora },
     select: { id: true, nome: true, categoria: true },
   })
 

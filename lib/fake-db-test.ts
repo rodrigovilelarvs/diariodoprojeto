@@ -145,6 +145,7 @@ const PROJETO = {
   status: 'ATIVO', grupo: null, fotoUrl: null,
   dataInicioContrato: new Date('2026-08-01'), dataFimContrato: new Date('2026-12-01'),
   cor: '#29B6D8', gestorId: 'gestor-proj', gestor: { id: 'gestor-proj', nome: 'Gestor Do Projeto' },
+  modalidade: 'AVANCO', hhContratado: null,
   assinaturaModo: 'ABERTA', assinante1Id: null, assinante2Id: null, assinante3Id: null,
   assinante1: null, assinante2: null, assinante3: null,
   criadoEm: AGORA, atualizadoEm: AGORA,
@@ -176,8 +177,10 @@ const rdosCriados = new Map<string, any>()
 // (modo e assinantes) é a atual, como num join de verdade.
 function comProjetoAtual(rdo: any) {
   if (!rdo || rdo.projetoId !== PROJETO_ID) return rdo
-  const { assinaturaModo, assinante1Id, assinante2Id, assinante3Id } = PROJETO as any
-  return { ...rdo, projeto: { ...rdo.projeto, assinaturaModo, assinante1Id, assinante2Id, assinante3Id } }
+  const { assinaturaModo, assinante1Id, assinante2Id, assinante3Id, modalidade } = PROJETO as any
+  // (a rota de detalhe seleciona só id/nome/categoria da função — sem o valor da hora —; o banco falso imita isso)
+  const maoDeObra = (rdo.maoDeObra ?? []).map((m: any) => ({ ...m, funcaoCadastro: m.funcaoCadastro ? { id: m.funcaoCadastro.id, nome: m.funcaoCadastro.nome, categoria: m.funcaoCadastro.categoria } : m.funcaoCadastro }))
+  return { ...rdo, maoDeObra, projeto: { ...rdo.projeto, modalidade, assinaturaModo, assinante1Id, assinante2Id, assinante3Id } }
 }
 let proximoNumero = 1
 const rdosConcluido = new Map<string, any>()
@@ -391,9 +394,27 @@ const fakeDbBase = {
   maoDeObra: modelo({
     create: async ({ data }: any) => {
       const rdo = rdosCriados.get(data.rdoId) ?? rdosConcluido.get(data.rdoId)
-      const item = { id: `mo-fake-${Math.random().toString(36).slice(2, 8)}`, ...data }
+      const funcao = FUNCOES_CADASTRO.find(f => f.id === data.funcaoCadastroId)
+      const item = {
+        id: `mo-fake-${Math.random().toString(36).slice(2, 8)}`, tipoHora: 'NORMAL', percentualExtra: null, ...data,
+        funcaoCadastro: funcao ? { id: funcao.id, nome: funcao.nome, categoria: funcao.categoria, valorHora: funcao.valorHora } : null,
+      }
       if (rdo) rdo.maoDeObra.push(item)
       return item
+    },
+    deleteMany: async ({ where }: any) => {
+      const rdo = rdosCriados.get(where?.rdoId) ?? rdosConcluido.get(where?.rdoId)
+      if (rdo) rdo.maoDeObra.length = 0
+      return { count: 0 }
+    },
+    // soma de H/H dos RDOs aprovados de um projeto (lista de projetos por homem-hora)
+    aggregate: async ({ where }: any) => {
+      const projetoId = where?.rdo?.projetoId
+      const status = where?.rdo?.status
+      const total = [...rdosCriados.values(), ...rdosConcluido.values()]
+        .filter(r => (!projetoId || r.projetoId === projetoId) && (!status || r.status === status))
+        .reduce((s, r) => s + (r.maoDeObra ?? []).reduce((t: number, m: any) => t + Number(m.totalHH), 0), 0)
+      return { _sum: { totalHH: total } }
     },
   }),
   equipamentoUso: modelo({
@@ -589,6 +610,10 @@ const fakeDbBase = {
       if (where?.status?.in) lista = lista.filter(r => where.status.in.includes(r.status))
       if (typeof where?.status === 'string') lista = lista.filter(r => r.status === where.status)
       if (where?.enviadoEm?.not === null) lista = lista.filter(r => r.enviadoEm != null)
+      // faixa de datas do dia trabalhado (relatório de horas): data: { gte, lte }
+      if (where?.data && !(where.data instanceof Date) && (where.data.gte || where.data.lte)) {
+        lista = lista.filter(r => (!where.data.gte || r.data >= where.data.gte) && (!where.data.lte || r.data <= where.data.lte))
+      }
       return take ? lista.slice(0, take) : lista
     },
     count: async () => rdosCriados.size,
@@ -602,7 +627,7 @@ const fakeDbBase = {
       for (const r of lista) por[r.status] = (por[r.status] ?? 0) + 1
       return Object.entries(por).map(([status, _count]) => ({ status, _count }))
     },
-    findUnique: async ({ where }: any) => rdosCriados.get(where.id) ?? rdosConcluido.get(where.id) ?? null,
+    findUnique: async ({ where }: any) => comProjetoAtual(rdosCriados.get(where.id)) ?? rdosConcluido.get(where.id) ?? null,
   }),
 
   // A criação de RDO roda dentro de $transaction — implementado fora do

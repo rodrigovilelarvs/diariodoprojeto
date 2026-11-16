@@ -8,6 +8,7 @@ import { AtividadeStatus, LogCategoria, LogNivel, MaoDeObraCategoria, RdoStatus 
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
+import { extraSugerida, infoDoDia } from '@/lib/feriados'
 import { requireAuth, podeEmitirRdo, projetosSemAcesso, resolverAcessoProjeto, podeEditarProjetoConteudo, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
@@ -233,6 +234,14 @@ export async function POST(req: NextRequest) {
       })
     : null
 
+  // Projeto por homem-hora: não há % de atividades a copiar, e o tipo da hora (normal/extra) segue o DIA
+  // do novo RDO — domingo 100%, sábado 50%, dia útil normal — e não o do RDO anterior. (Feriado em dia de
+  // semana: quem preenche marca a hora extra de 100%.)
+  const porHoraHomem = projeto.modalidade === 'HOMEM_HORA'
+  const horaDoDia = porHoraHomem && rdoAnterior
+    ? extraSugerida(infoDoDia(data))
+    : { tipoHora: 'NORMAL' as const, percentualExtra: null }
+
   // Cria o RDO numa transação
   const rdo = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const novoRdo = await tx.rdo.create({
@@ -257,7 +266,7 @@ export async function POST(req: NextRequest) {
       // que a avulsa não tem (atividade === null) e que a da lista só recebe
       // depois; então qualquer uma já em 100% no anterior era copiada.
       // O "?." também evita "Cannot read properties of null" com avulsa.
-      const atividadesParaCopiar = rdoAnterior.atividadeRegistros.filter(
+      const atividadesParaCopiar = porHoraHomem ? [] : rdoAnterior.atividadeRegistros.filter(
         (r) => r.pctAtual < 100 && r.atividade?.status !== AtividadeStatus.CONCLUIDA,
       )
 
@@ -292,6 +301,7 @@ export async function POST(req: NextRequest) {
             horaEntrada:         mo.horaEntrada,
             horaSaida:           mo.horaSaida,
             totalHH:             mo.totalHH,
+            ...(porHoraHomem ? { tipoHora: horaDoDia.tipoHora, percentualExtra: horaDoDia.percentualExtra } : {}),
           },
         })
       }
@@ -329,7 +339,7 @@ export async function POST(req: NextRequest) {
   const rdoCompleto = await prisma.rdo.findUnique({
     where:   { id: rdo.id },
     include: {
-      projeto:            { select: { id: true, nome: true, dataInicioContrato: true, dataFimContrato: true } },
+      projeto:            { select: { id: true, nome: true, modalidade: true, dataInicioContrato: true, dataFimContrato: true } },
       emissor:            { select: { id: true, nome: true } },
       atividadeRegistros: { include: { atividade: { include: { etapa: true } } } },
       maoDeObra:          true,

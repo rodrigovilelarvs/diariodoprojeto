@@ -2,7 +2,8 @@
 // GET  /api/app/projetos — listar projetos do tenant
 // POST /api/app/projetos — criar projeto
 
-import { LogCategoria } from '@/lib/prisma-enums'
+import { LogCategoria, ModalidadeMedicao } from '@/lib/prisma-enums'
+import { arredonda2, numeroOuNull } from '@/lib/homem-hora'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
@@ -66,8 +67,17 @@ export async function GET(req: NextRequest) {
         prisma.midia.count({ where: { rdo: { projetoId: p.id, ...filtroStatusRdo }, tipo: 'VIDEO' } }),
       ])
 
+      // Projeto por homem-hora: o que importa é quantas horas já foram aprovadas (e o saldo do contrato)
+      let hhConsumido: number | undefined
+      if (p.modalidade === 'HOMEM_HORA') {
+        const soma = await prisma.maoDeObra.aggregate({ where: { rdo: { projetoId: p.id, status: 'APROVADO' } }, _sum: { totalHH: true } })
+        hhConsumido = arredonda2(Number(soma._sum?.totalHH ?? 0))
+      }
+
       return {
         ...p,
+        hhContratado: numeroOuNull(p.hhContratado),
+        ...(hhConsumido !== undefined ? { hhConsumido } : {}),
         pctReal,
         pctPlanejado,
         desvio: calcDesvio(pctReal, pctPlanejado, atividades),
@@ -128,6 +138,8 @@ export async function POST(req: NextRequest) {
     dataFimContrato?:    string
     gestorId?:           string
     cor?:                string
+    modalidade?:         string
+    hhContratado?:       number | string | null
   }
   try {
     body = await req.json()
@@ -142,9 +154,19 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  if (body.modalidade != null && !Object.values(ModalidadeMedicao).includes(body.modalidade as ModalidadeMedicao)) {
+    return NextResponse.json({ erro: 'Modalidade inválida.' }, { status: 400 })
+  }
+  const hhContratado = numeroOuNull(body.hhContratado)
+  if (hhContratado != null && hhContratado < 0) {
+    return NextResponse.json({ erro: 'As horas contratadas não podem ser negativas.' }, { status: 400 })
+  }
+
   const projeto = await prisma.projeto.create({
     data: {
       tenantId,
+      modalidade:         (body.modalidade as ModalidadeMedicao | undefined) ?? 'AVANCO',
+      hhContratado:       body.modalidade === 'HOMEM_HORA' ? hhContratado : null,
       nome:               body.nome,
       descricao:          body.descricao          ?? undefined,
       pedidoCompraContrato: body.pedidoCompraContrato ?? undefined,

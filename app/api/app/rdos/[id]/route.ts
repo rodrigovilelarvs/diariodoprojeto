@@ -9,6 +9,7 @@ import { LogCategoria, LogNivel, RdoStatus } from '@/lib/prisma-enums'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
 import { requireAuth, podeEmitirRdo, podeAprovarRdo, resolverAcessoProjeto, podeVerProjeto, podeEditarProjetoConteudo, rdoOcultoParaVisualizador } from '@/lib/auth'
+import { normalizarTipoHora } from '@/lib/homem-hora'
 type Params = { params: Promise<{ id: string }> }
 
 // ── GET ─────────────────────────────────────────────────────
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     include: {
       projeto: {
         select: {
-          id: true, nome: true,
+          id: true, nome: true, modalidade: true,
           dataInicioContrato: true,
           dataFimContrato:    true,
           pedidoCompraContrato: true,
@@ -47,7 +48,8 @@ export async function GET(req: NextRequest, { params }: Params) {
         },
         orderBy: [{ ordem: 'asc' }, { criadoEm: 'asc' }],
       },
-      maoDeObra:   { include: { funcaoCadastro: true } },
+      // (sem o valor da hora da função: é informação financeira, não vai no RDO)
+      maoDeObra:   { include: { funcaoCadastro: { select: { id: true, nome: true, categoria: true } } } },
       equipamentos: { include: { equipamentoCadastro: true } },
       ocorrencias:  { orderBy: { horaInicio: 'asc' } },
       midias:       { orderBy: { ordem: 'asc' } },
@@ -339,7 +341,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         horaEntrada:       string
         horaSaida:         string
         totalHH:           number
+        tipoHora?:         string
+        percentualExtra?:  number | null
       }>) {
+        const hora = normalizarTipoHora(mo.tipoHora, mo.percentualExtra)
         await tx.maoDeObra.create({
           data: {
             rdoId:            (await params).id,
@@ -350,6 +355,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             horaEntrada:      mo.horaEntrada,
             horaSaida:        mo.horaSaida,
             totalHH:          mo.totalHH,
+            tipoHora:         hora.tipoHora,
+            percentualExtra:  hora.percentualExtra,
           },
         })
       }

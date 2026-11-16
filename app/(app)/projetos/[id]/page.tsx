@@ -20,7 +20,8 @@ import { toast } from 'sonner'
 import { EmpresaCampo } from '@/components/projetos/EmpresaCampo'
 import { rotuloEmpresa } from '@/lib/rdo-display'
 import { baixarTodosRdosPdf, baixarMidiasProjeto } from '@/lib/download-projeto'
-import type { ResumoMidiaItem } from '@/lib/types'
+import type { ModalidadeMedicao, ResumoMidiaItem } from '@/lib/types'
+import { ModalidadeCampos } from '@/components/projetos/ModalidadeCampos'
 import { mensagemErro } from '@/lib/api'
 
 const STATUS_L: Record<string, string> = { NAO_INICIADO: 'Não iniciado', ATIVO: 'Em andamento', PAUSADO: 'Paralisado', CONCLUIDO: 'Concluído', CANCELADO: 'Cancelado' }
@@ -71,7 +72,10 @@ export default function ProjetoResumoPage() {
   const [modalRdos, setModalRdos] = useState(false)
   const [modalConteudo, setModalConteudo] = useState(false)
   const [lightbox, setLightbox] = useState<{ itens: MidiaLightboxItem[]; index: number } | null>(null)
-  const [editForm, setEditForm] = useState({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', status: 'NAO_INICIADO', gestorId: '', dataInicioContrato: '', dataFimContrato: '' })
+  const [editForm, setEditForm] = useState<{
+    nome: string; descricao: string; pedidoCompraContrato: string; empresaContratada: string; grupo: string; status: string
+    gestorId: string; dataInicioContrato: string; dataFimContrato: string; modalidade: ModalidadeMedicao; hhContratado: string
+  }>({ nome: '', descricao: '', pedidoCompraContrato: '', empresaContratada: '', grupo: '', status: 'NAO_INICIADO', gestorId: '', dataInicioContrato: '', dataFimContrato: '', modalidade: 'AVANCO', hhContratado: '' })
   const [fotoEdit, setFotoEdit] = useState<{ file: File | null; preview: string }>({ file: null, preview: '' })
   const [baixandoRdos, setBaixandoRdos] = useState<{ feito: number; total: number } | null>(null)
   const [baixandoMidias, setBaixandoMidias] = useState<{ feito: number; total: number } | null>(null)
@@ -99,6 +103,8 @@ export default function ProjetoResumoPage() {
       gestorId: data.projeto.gestor?.id ?? '',
       dataInicioContrato: data.projeto.dataInicioContrato ? data.projeto.dataInicioContrato.slice(0, 10) : '',
       dataFimContrato: data.projeto.dataFimContrato ? data.projeto.dataFimContrato.slice(0, 10) : '',
+      modalidade: data.projeto.modalidade ?? 'AVANCO',
+      hhContratado: data.projeto.hhContratado != null ? String(data.projeto.hhContratado) : '',
     })
     setFotoEdit({ file: null, preview: data.projeto.fotoUrl ?? '' })
     setModalEdit(true)
@@ -132,6 +138,8 @@ export default function ProjetoResumoPage() {
         fotoUrl,
         dataInicioContrato: editForm.dataInicioContrato,
         dataFimContrato: editForm.dataFimContrato,
+        modalidade: editForm.modalidade,
+        hhContratado: editForm.modalidade === 'HOMEM_HORA' && editForm.hhContratado ? Number(editForm.hhContratado) : null,
       })
       toast.success('Projeto atualizado!')
       setModalEdit(false)
@@ -248,12 +256,16 @@ export default function ProjetoResumoPage() {
         {/* KPIs — cada um abre a categoria correspondente */}
         <div className="kgrid" style={{ gridTemplateColumns: 'repeat(6,1fr)', marginBottom: 0, flexShrink: 0 }}>
           <KpiCard icon="ti-file-text"      valor={kpis.totalRdos}            label="RDOs"        onClick={() => setModalRdos(true)} />
-          <KpiCard icon="ti-list-check"     valor={data.atividades.length}    label="Atividades"  onClick={() => abrirConteudo('atividades')} />
+          {data.hh
+            ? <KpiCard icon="ti-clock-hour-4" valor={data.hh.aprovadas.toLocaleString('pt-BR')} label="H/H aprovadas" onClick={() => abrirConteudo('maoDeObra')} />
+            : <KpiCard icon="ti-list-check"     valor={data.atividades.length}    label="Atividades"  onClick={() => abrirConteudo('atividades')} />}
           <KpiCard icon="ti-alert-triangle" valor={data.ocorrencias.length}   label="Ocorrências" cor={kpis.ocorrenciasAbertas > 0 ? 'var(--td)' : undefined} onClick={() => abrirConteudo('ocorrencias')} />
           <KpiCard icon="ti-message"        valor={data.comentarios.length}   label="Comentários" onClick={() => abrirConteudo('comentarios')} />
           <KpiCard icon="ti-photo"          valor={data.fotos.length}         label="Fotos"       cor="var(--tsu)" onClick={() => abrirConteudo('fotos')} />
           <KpiCard icon="ti-video"          valor={data.videos.length}        label="Vídeos"      onClick={() => abrirConteudo('videos')} />
         </div>
+
+        {data.hh && <PainelHH hh={data.hh} />}
 
         {/* RDOs recentes + Fotos recentes */}
         <div className="proj-two-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, flex: '0 0 auto' }}>
@@ -325,6 +337,7 @@ export default function ProjetoResumoPage() {
             )}
             <div className="proj-info-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 12, flex: 1 }}>
               <InfoItem label="Status"><Badge variant={STATUS_V[projeto.status] ?? 'gray'}>{STATUS_L[projeto.status] ?? projeto.status}</Badge></InfoItem>
+              {projeto.modalidade === 'HOMEM_HORA' && <InfoItem label="Medição"><Badge variant="blue">Homem-hora</Badge></InfoItem>}
               <InfoItem label="Planejado"><span style={{ color: 'var(--tsu)', fontWeight: 600 }}>{kpis.pctPlanejado}%</span></InfoItem>
               <InfoItem label="Progresso"><span style={{ color: 'var(--ta)', fontWeight: 600 }}>{kpis.pctReal}%</span></InfoItem>
               <InfoItem label="Desvio"><span style={{ color: kpis.desvio >= 0 ? 'var(--tsu)' : 'var(--td)', fontWeight: 600 }}>{kpis.desvio >= 0 ? '+' : ''}{kpis.desvio}%</span></InfoItem>
@@ -456,6 +469,8 @@ export default function ProjetoResumoPage() {
               {gestoresDisponiveis.map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}
             </Select>
           </Field>
+          <ModalidadeCampos modalidade={editForm.modalidade} onModalidade={m => setEditForm(f => ({ ...f, modalidade: m }))}
+            horas={editForm.hhContratado} onHoras={h => setEditForm(f => ({ ...f, hhContratado: h }))} />
           <div className="g2">
             <Field label="Início do contrato">
               <Input type="date" value={editForm.dataInicioContrato} onChange={e => setEditForm(f => ({ ...f, dataInicioContrato: e.target.value }))} />
@@ -552,6 +567,55 @@ function Lightbox({ fotos, index, onClose, onNavegar }: {
       {fotos.length > 1 && (
         <div style={{ color: 'rgba(255,255,255,.7)', fontSize: 12 }}>{index + 1} / {fotos.length}</div>
       )}
+    </div>
+  )
+}
+
+// Projeto por homem-hora: horas aprovadas, saldo do contrato (se cadastrado), divisão normal/extra e custo
+function PainelHH({ hh }: { hh: NonNullable<ReturnType<typeof useResumoProjeto>['data']>['hh'] }) {
+  if (!hh) return null
+  const fmt = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+  const usado = hh.contratado && hh.contratado > 0 ? (hh.aprovadas / hh.contratado) * 100 : null
+  const estourou = hh.saldo != null && hh.saldo < 0
+  const cor = usado == null ? 'var(--fa)' : usado >= 100 ? 'var(--td)' : usado >= 80 ? 'var(--tw)' : 'var(--fa)'
+  const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return (
+    <div className="sec" style={{ marginBottom: 0, flexShrink: 0 }} data-testid="painel-hh">
+      <div className="sec-h">
+        <span className="sec-title">Homem-hora</span>
+        <span style={{ fontSize: 10.5, color: 'var(--tm)' }}>Conta só RDOs aprovados</span>
+      </div>
+      <div className="sec-body">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+          <InfoItem label="H/H aprovadas"><strong style={{ fontSize: 15 }}>{fmt(hh.aprovadas)}</strong></InfoItem>
+          <InfoItem label="Em aprovação">{fmt(hh.emAprovacao)}</InfoItem>
+          <InfoItem label="Normais">{fmt(hh.normais)}</InfoItem>
+          <InfoItem label="Extras"><span style={{ color: hh.extras > 0 ? 'var(--tw)' : undefined, fontWeight: hh.extras > 0 ? 600 : 400 }}>{fmt(hh.extras)}</span></InfoItem>
+          {hh.contratado != null && <InfoItem label="Contratadas">{fmt(hh.contratado)}</InfoItem>}
+          {hh.saldo != null && (
+            <InfoItem label="Saldo">
+              <strong style={{ fontSize: 15, color: estourou ? 'var(--td)' : 'var(--tsu)' }}>{fmt(hh.saldo)}</strong>
+            </InfoItem>
+          )}
+          {hh.valor != null && <InfoItem label="Custo (aprovadas)">{brl(hh.valor)}</InfoItem>}
+        </div>
+        {usado != null && (
+          <div style={{ marginTop: 10 }}>
+            <div className="hbtr"><div className="hbf" style={{ width: `${Math.min(100, usado)}%`, background: cor }} /></div>
+            <div style={{ fontSize: 10.5, color: estourou ? 'var(--td)' : 'var(--ts)', marginTop: 4 }}>
+              {estourou ? `Contrato estourado em ${fmt(-(hh.saldo ?? 0))} H/H (${Math.round(usado)}% usado)` : `${Math.round(usado)}% do contrato usado`}
+            </div>
+          </div>
+        )}
+        {hh.contratado == null && (
+          <div style={{ fontSize: 10.5, color: 'var(--ts)', marginTop: 8 }}>Sem horas contratadas cadastradas: o sistema apenas soma as horas trabalhadas. Para acompanhar o saldo, informe as horas em <strong>Editar</strong>.</div>
+        )}
+        {hh.semValor > 0 && (
+          <div style={{ fontSize: 10.5, color: 'var(--tw)', marginTop: 6 }}>
+            <i className="ti ti-alert-triangle" /> {fmt(hh.semValor)} H/H de funções sem valor da hora cadastrado ficaram fora do custo.
+          </div>
+        )}
+      </div>
     </div>
   )
 }
