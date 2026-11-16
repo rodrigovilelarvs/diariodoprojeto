@@ -224,7 +224,7 @@ test('RDO de projeto por homem-hora: tipo de hora por linha, sem % de atividades
   }
 })
 
-test('sexta-feira em H/H: "Dividir às 16:00" separa a hora normal da extra de 75%', async ({ page, playwright }) => {
+test('dia de semana em H/H: "Dividir às 16:00/17:00" separa a hora normal da extra de 75%', async ({ page, playwright }) => {
   const admin = await apiComo(playwright)
   try {
     await configurarProjeto(admin, { modalidade: 'HOMEM_HORA' })
@@ -232,15 +232,23 @@ test('sexta-feira em H/H: "Dividir às 16:00" separa a hora normal da extra de 7
 
     await login(page)
     await page.goto(`/rdos/${sexta}`)
-    await expect(page.getByTestId('aviso-sexta-hh')).toBeVisible()
+    await expect(page.getByTestId('aviso-corte-hh')).toBeVisible()
     await expect(page.getByLabel('Tipo de hora')).toHaveCount(1)
-    await page.getByTestId('dividir-sexta').click()
+    await page.getByTestId('dividir-corte').click()
     const tipos = page.getByLabel('Tipo de hora')
     await expect(tipos).toHaveCount(2)
     await expect(tipos.nth(0)).toHaveValue('NORMAL')
     await expect(tipos.nth(1)).toHaveValue('75')
-    await expect(page.getByTestId('dividir-sexta')).toHaveCount(0)
+    await expect(page.getByTestId('dividir-corte')).toHaveCount(0)
     await expect(page.getByText('Normais: 8 · Extras: 1 H/H')).toBeVisible()
+
+    // quarta-feira: corte às 17h — linha das 07:00 às 19:00 (11h) vira 9h normais + 2h extras
+    const quarta = await criarRdo(admin, '2027-10-20', [linha(11, { horaSaida: '19:00' })])
+    await page.goto(`/rdos/${quarta}`)
+    await expect(page.getByTestId('dividir-corte')).toContainText('17:00')
+    await page.getByTestId('dividir-corte').click()
+    await expect(page.getByLabel('Tipo de hora').nth(1)).toHaveValue('75')
+    await expect(page.getByText('Normais: 9 · Extras: 2 H/H')).toBeVisible()
   } finally {
     await voltarParaAvanco(admin)
     await admin.dispose()

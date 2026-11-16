@@ -20,7 +20,7 @@ import type {
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
 import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
-import { extraSugerida, infoDoDia, NOME_DIA_SEMANA, SEXTA_CORTE_EXTRA, SEXTA_PERCENTUAL_EXTRA } from '@/lib/feriados'
+import { extraSugerida, infoDoDia, NOME_DIA_SEMANA, PERCENTUAL_EXTRA_APOS_CORTE, corteExtraDoDia } from '@/lib/feriados'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
   CATEGORIA_L, CATEGORIAS, EQUIPAMENTO_TIPO_L, EQUIPAMENTO_TIPOS,
@@ -471,6 +471,8 @@ export function FormularioRdo({ rdoId }: Props) {
   // semana: quem preenche marca "hora extra 100%" na linha.
   const infoDia = rdo ? infoDoDia(String(rdo.data).slice(0, 10)) : null
   const sugestaoHora = infoDia ? extraSugerida(infoDia) : { tipoHora: 'NORMAL' as const, percentualExtra: null }
+  // Horário a partir do qual o dia de semana é hora extra (sexta 16h; segunda a quinta 17h)
+  const corteExtra = infoDia ? corteExtraDoDia(infoDia.diaSemana) : null
   const criarFuncao = useCriarFuncao()
   const editarFuncao = useEditarFuncao()
   const excluirFuncao = useExcluirFuncao()
@@ -759,15 +761,16 @@ export function FormularioRdo({ rdoId }: Props) {
     })
     setDirty(true)
   }
-  // Sexta-feira: a linha que passa das 16h vira duas — normal até as 16h e extra (75%) das 16h até a saída
-  function dividirSexta(idx: number) {
+  // A linha que passa do horário de corte vira duas — normal até o corte e extra (75%) do corte até a saída
+  function dividirNoCorte(idx: number) {
+    if (!corteExtra) return
     setForm(f => {
       if (!f) return f
       const mo = [...f.maoDeObra]
       const l = mo[idx]
-      const normal = { ...l, horaSaida: SEXTA_CORTE_EXTRA, tipoHora: 'NORMAL' as const, percentualExtra: null, percentualLivre: false }
+      const normal = { ...l, horaSaida: corteExtra, tipoHora: 'NORMAL' as const, percentualExtra: null, percentualLivre: false }
       normal.totalHH = calcMoHH(normal.horaEntrada, normal.horaSaida, f.intervaloHoras, normal.quantidade, true)
-      const extra = { ...l, horaEntrada: SEXTA_CORTE_EXTRA, tipoHora: 'EXTRA' as const, percentualExtra: SEXTA_PERCENTUAL_EXTRA, percentualLivre: false }
+      const extra = { ...l, horaEntrada: corteExtra, tipoHora: 'EXTRA' as const, percentualExtra: PERCENTUAL_EXTRA_APOS_CORTE, percentualLivre: false }
       extra.totalHH = calcMoHH(extra.horaEntrada, extra.horaSaida, f.intervaloHoras, extra.quantidade, true)
       mo.splice(idx, 1, normal, extra)
       return { ...f, maoDeObra: mo }
@@ -1471,10 +1474,10 @@ export function FormularioRdo({ rdoId }: Props) {
                 </span>
               </div>
             )}
-            {ehHH && infoDia?.diaSemana === 5 && (
-              <div data-testid="aviso-sexta-hh" style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10, padding:'7px 10px', fontSize:11, color:'var(--tw)', background:'color-mix(in srgb, var(--tw) 12%, transparent)', border:'.5px solid var(--tw)', borderRadius:'var(--r)' }}>
+            {ehHH && corteExtra && (
+              <div data-testid="aviso-corte-hh" style={{ display:'flex', alignItems:'center', gap:6, marginBottom:10, padding:'7px 10px', fontSize:11, color:'var(--tw)', background:'color-mix(in srgb, var(--tw) 12%, transparent)', border:'.5px solid var(--tw)', borderRadius:'var(--r)' }}>
                 <i className="ti ti-clock-exclamation" />
-                <span>Sexta-feira: o que passa das {SEXTA_CORTE_EXTRA} é hora extra de {SEXTA_PERCENTUAL_EXTRA}%. Na linha que sai depois das {SEXTA_CORTE_EXTRA}, use <strong>Dividir às {SEXTA_CORTE_EXTRA}</strong>.</span>
+                <span>{NOME_DIA_SEMANA[infoDia!.diaSemana]}: o que passa das {corteExtra} é hora extra de {PERCENTUAL_EXTRA_APOS_CORTE}%. Na linha que sai depois das {corteExtra}, use <strong>Dividir às {corteExtra}</strong>.</span>
               </div>
             )}
             <div className="rdo-item-grid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap:8, marginBottom:10 }}>
@@ -1536,10 +1539,10 @@ export function FormularioRdo({ rdoId }: Props) {
                           <span style={{ fontSize:10, color:'var(--tm)' }}>%</span>
                         </>
                       )}
-                      {podeSalvar && infoDia?.diaSemana === 5 && mo.tipoHora !== 'EXTRA' && mo.horaEntrada < SEXTA_CORTE_EXTRA && mo.horaSaida > SEXTA_CORTE_EXTRA && (
-                        <button type="button" className="btn btn-ghost" data-testid="dividir-sexta" onClick={() => dividirSexta(i)}
+                      {podeSalvar && corteExtra && mo.tipoHora !== 'EXTRA' && mo.horaEntrada < corteExtra && mo.horaSaida > corteExtra && (
+                        <button type="button" className="btn btn-ghost" data-testid="dividir-corte" onClick={() => dividirNoCorte(i)}
                           style={{ fontSize:10, padding:'3px 7px', flexShrink:0, whiteSpace:'nowrap' }}>
-                          Dividir às {SEXTA_CORTE_EXTRA}
+                          Dividir às {corteExtra}
                         </button>
                       )}
                     </div>
