@@ -4,7 +4,8 @@ import { PROJETO_ID, RDO_ANTERIOR_ID, LEITOR_EMAIL } from '../../lib/fake-db-tes
 import { custoDaLinha, horasNoturnas, limparCampoCadastro, mesmaFuncao, nomeComposto, normalizarTipoHora, pessoasDistintas } from '../../lib/homem-hora'
 import { infoDoDia } from '../../lib/feriados'
 import { calcMoHH } from '../../lib/rdo-display'
-import { agruparPorSemana, atalhosDePeriodo, semanaDoDia } from '../../lib/horas-relatorio'
+import { agruparPorSemana, atalhosDePeriodo, celulaCsv, montarCsv, numeroCsv, semanaDoDia } from '../../lib/horas-relatorio'
+import { readFileSync } from 'node:fs'
 
 // Modalidade "por homem-hora" (H/H): o projeto é medido por horas trabalhadas, e não por % das atividades.
 // Cada linha de mão de obra tem hora normal ou extra (com o % de acréscimo: domingo/feriado 100%, sábado
@@ -17,6 +18,17 @@ import { agruparPorSemana, atalhosDePeriodo, semanaDoDia } from '../../lib/horas
 
 // ── regras puras ─────────────────────────────────────────────────────────────
 test.describe('regras de hora normal/extra e custo (funções puras)', () => {
+  test('planilha: números com vírgula decimal (o Excel brasileiro lê "688.5" como 6885 e "8.5" como data)', () => {
+    expect(numeroCsv(8.5)).toBe('8,5')
+    expect(numeroCsv(688.5)).toBe('688,5')
+    expect(numeroCsv(1234.567)).toBe('1234,57')
+    expect(numeroCsv(301)).toBe('301')
+    expect(numeroCsv(null)).toBe('')
+    expect(celulaCsv(2.25)).toBe('2,25')
+    expect(celulaCsv('a;b')).toBe('"a;b"')
+    expect(montarCsv([['Horas', 7.5], ['x', null]])).toBe('\uFEFFHoras;7,5\r\nx;')
+  })
+
   test('cadastro H/H: nome e função separados formam o texto "NOME - FUNÇÃO"', () => {
     expect(nomeComposto('FABIO OLIVEIRA', 'SOLDADOR')).toBe('FABIO OLIVEIRA - SOLDADOR')
     expect(limparCampoCadastro('  Fabio   Oliveira ')).toBe('Fabio Oliveira')
@@ -423,6 +435,17 @@ test('Relatórios: aba "Horas por dia" destaca domingo e feriado; painel e pasta
     await page.getByLabel('Data inicial').fill('2027-11-01')
     await page.getByLabel('Data final').fill('2027-11-30')
     await expect(tabela).toContainText('07/11/2027')
+    // planilha: a linha de TOTAL bate com o total mostrado na tela (22 H/H) e os números saem com vírgula
+    const [planilha] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Exportar planilha' }).click(),
+    ])
+    const csv = readFileSync(await planilha.path(), 'utf8').replace(/^\uFEFF/, '').split('\r\n')
+    const cab = csv[0].split(';')
+    const total = csv[csv.length - 1].split(';')
+    expect(total[0]).toBe('TOTAL')
+    expect(total[cab.indexOf('Horas')]).toBe('22')
+    await expect(page.getByTestId('resumo-horas')).toContainText('22')
     // visão por pessoa
     await page.getByTestId('visao-pessoa').click()
     await expect(page.getByTestId('tabela-pessoas')).toContainText('Soldador')

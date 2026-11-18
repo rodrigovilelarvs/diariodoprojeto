@@ -2,6 +2,21 @@
 // Funções puras do relatório "Horas por dia (H/H)": semanas (segunda a domingo), subtotais por semana e
 // atalhos de período. Usadas pela tela e pelo PDF.
 
+// ── Planilha (CSV com ";" e vírgula decimal, que o Excel brasileiro abre direto) ──
+// Número em texto com VÍRGULA decimal e no máximo 2 casas: com ponto, o Excel em português lê "688.5" como 6885
+// e "8.5" como data. null/undefined vira célula vazia.
+export function numeroCsv(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return ''
+  return String(Math.round(n * 100) / 100).replace('.', ',')
+}
+export function celulaCsv(v: string | number | null | undefined): string {
+  const t = v == null ? '' : typeof v === 'number' ? numeroCsv(v) : v
+  return /[;"\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
+}
+export function montarCsv(linhas: Array<Array<string | number | null | undefined>>): string {
+  return '\uFEFF' + linhas.map(l => l.map(celulaCsv).join(';')).join('\r\n')
+}
+
 const DIA_MS = 86_400_000
 
 const paraDate = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`)

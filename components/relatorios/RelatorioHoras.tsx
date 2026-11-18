@@ -12,7 +12,7 @@ import { useRelatorioHoras, type DiaHoras, type PessoaHoras } from '@/hooks/useE
 import { fmtData } from '@/lib/format'
 import { NOME_DIA_SEMANA } from '@/lib/feriados'
 import { ADICIONAL_NOTURNO_PERCENTUAL } from '@/lib/homem-hora'
-import { agruparPorSemana, atalhosDePeriodo, type SemanaHoras } from '@/lib/horas-relatorio'
+import { agruparPorSemana, atalhosDePeriodo, montarCsv, numeroCsv, type SemanaHoras } from '@/lib/horas-relatorio'
 import type { Projeto } from '@/lib/types'
 
 const TIPO_DIA: Record<DiaHoras['tipoDia'], { rotulo: string; cor: string; fundo: string }> = {
@@ -28,46 +28,45 @@ const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', curren
 function hojeISO() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) }
 function inicioDoMes() { return hojeISO().slice(0, 8) + '01' }
 
-// Planilha (CSV com ; e vírgula decimal, que o Excel brasileiro abre direto)
-function baixarCsv(dias: DiaHoras[]) {
-  const celula = (v: string | number | null) => {
-    const t = v == null ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v
-    return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
-  }
-  const linhas = [['Data', 'Dia', 'Tipo do dia', 'Projeto', 'Função', 'Qtd.', 'Entrada', 'Saída', 'Tipo da hora', '% extra', 'Horas', `Horas noturnas (adicional ${ADICIONAL_NOTURNO_PERCENTUAL}%)`, 'Valor (R$)']]
-  for (const d of dias) {
-    for (const l of d.linhas) {
-      linhas.push([
-        fmtData(d.data), NOME_DIA_SEMANA[d.diaSemana], TIPO_DIA[d.tipoDia].rotulo,
-        l.projeto, l.funcao, String(l.quantidade), l.horaEntrada, l.horaSaida, l.tipoHora === 'EXTRA' ? 'Extra' : 'Normal',
-        l.tipoHora === 'EXTRA' ? String(l.percentualExtra ?? 50) : '', String(l.horas), String(l.noturnas), l.valor == null ? '' : String(l.valor),
-      ])
-    }
-  }
-  const csv = '\uFEFF' + linhas.map(l => l.map(celula).join(';')).join('\r\n')
+// Planilha: números com vírgula decimal (o Excel brasileiro lê "8.5" como data e "688.5" como 6885) e linha de TOTAL
+function baixarArquivoCsv(csv: string, nome: string) {
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
   const a = document.createElement('a')
-  a.href = url; a.download = 'horas-por-dia.csv'
+  a.href = url; a.download = nome
   document.body.appendChild(a); a.click(); a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 30_000)
 }
 
-function baixarCsvPessoas(pessoas: PessoaHoras[]) {
-  const celula = (v: string | number | null) => {
-    const t = v == null ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v
-    return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
+function baixarCsv(dias: DiaHoras[]) {
+  const linhas: Array<Array<string | number | null>> = [['Data', 'Dia', 'Tipo do dia', 'Projeto', 'Nome', 'Função', 'Qtd.', 'Entrada', 'Saída', 'Tipo da hora', '% extra', 'Horas', `Horas noturnas (adicional ${ADICIONAL_NOTURNO_PERCENTUAL}%)`, 'Valor (R$)']]
+  let horas = 0, noturnas = 0, valor: number | null = null
+  for (const d of dias) {
+    for (const l of d.linhas) {
+      const { pessoa, funcao } = partesDoNome(l.funcao)
+      linhas.push([
+        fmtData(d.data), NOME_DIA_SEMANA[d.diaSemana], TIPO_DIA[d.tipoDia].rotulo,
+        l.projeto, pessoa, funcao, l.quantidade, l.horaEntrada, l.horaSaida, l.tipoHora === 'EXTRA' ? 'Extra' : 'Normal',
+        l.tipoHora === 'EXTRA' ? (l.percentualExtra ?? 50) : '', numeroCsv(l.horas), numeroCsv(l.noturnas), numeroCsv(l.valor),
+      ])
+      horas += l.horas; noturnas += l.noturnas
+      if (l.valor != null) valor = (valor ?? 0) + l.valor
+    }
   }
-  const linhas: Array<Array<string | number | null>> = [['Pessoa', 'Função', 'Projetos', 'Dias', 'Horas normais', 'Horas extras', 'Extras por %', `Horas noturnas (adicional ${ADICIONAL_NOTURNO_PERCENTUAL}%)`, 'Total de horas', 'Valor (R$)']]
+  linhas.push(['TOTAL', '', '', '', '', '', '', '', '', '', '', numeroCsv(horas), numeroCsv(noturnas), numeroCsv(valor)])
+  baixarArquivoCsv(montarCsv(linhas), 'horas-por-dia.csv')
+}
+
+function baixarCsvPessoas(pessoas: PessoaHoras[]) {
+  const linhas: Array<Array<string | number | null>> = [['Nome', 'Função', 'Projetos', 'Dias', 'Horas normais', 'Horas extras', 'Extras por %', `Horas noturnas (adicional ${ADICIONAL_NOTURNO_PERCENTUAL}%)`, 'Total de horas', 'Valor (R$)']]
+  let normais = 0, extras = 0, noturnas = 0, total = 0, valor: number | null = null
   for (const p of pessoas) {
     const { pessoa, funcao } = partesDoNome(p.funcao)
-    linhas.push([pessoa, funcao, p.projetos.join(' / '), p.dias, p.normais, p.extras, p.extrasPorPercentual.map(e => `${e.percentual}%: ${e.horas}`).join(' | '), p.noturnas, p.total, p.valor])
+    linhas.push([pessoa, funcao, p.projetos.join(' / '), p.dias, numeroCsv(p.normais), numeroCsv(p.extras), p.extrasPorPercentual.map(e => `${e.percentual}%: ${numeroCsv(e.horas)}`).join(' | '), numeroCsv(p.noturnas), numeroCsv(p.total), numeroCsv(p.valor)])
+    normais += p.normais; extras += p.extras; noturnas += p.noturnas; total += p.total
+    if (p.valor != null) valor = (valor ?? 0) + p.valor
   }
-  const csv = '\uFEFF' + linhas.map(l => l.map(celula).join(';')).join('\r\n')
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
-  const a = document.createElement('a')
-  a.href = url; a.download = 'horas-por-pessoa.csv'
-  document.body.appendChild(a); a.click(); a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 30_000)
+  linhas.push(['TOTAL', '', '', '', numeroCsv(normais), numeroCsv(extras), '', numeroCsv(noturnas), numeroCsv(total), numeroCsv(valor)])
+  baixarArquivoCsv(montarCsv(linhas), 'horas-por-pessoa.csv')
 }
 
 // Tela estreita (celular): a tabela vira cartões
