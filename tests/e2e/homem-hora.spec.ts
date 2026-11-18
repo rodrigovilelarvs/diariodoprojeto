@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { apiComo, login } from './helpers'
 import { PROJETO_ID, RDO_ANTERIOR_ID, LEITOR_EMAIL } from '../../lib/fake-db-test'
-import { custoDaLinha, horasNoturnas, normalizarTipoHora, pessoasDistintas } from '../../lib/homem-hora'
+import { custoDaLinha, horasNoturnas, limparCampoCadastro, mesmaFuncao, nomeComposto, normalizarTipoHora, pessoasDistintas } from '../../lib/homem-hora'
 import { infoDoDia } from '../../lib/feriados'
 import { calcMoHH } from '../../lib/rdo-display'
 import { agruparPorSemana, atalhosDePeriodo, semanaDoDia } from '../../lib/horas-relatorio'
@@ -17,6 +17,15 @@ import { agruparPorSemana, atalhosDePeriodo, semanaDoDia } from '../../lib/horas
 
 // ── regras puras ─────────────────────────────────────────────────────────────
 test.describe('regras de hora normal/extra e custo (funções puras)', () => {
+  test('cadastro H/H: nome e função separados formam o texto "NOME - FUNÇÃO"', () => {
+    expect(nomeComposto('FABIO OLIVEIRA', 'SOLDADOR')).toBe('FABIO OLIVEIRA - SOLDADOR')
+    expect(limparCampoCadastro('  Fabio   Oliveira ')).toBe('Fabio Oliveira')
+    expect(limparCampoCadastro('Op. - Munck')).toBe('Op. Munck')   // o hífen com espaços é o separador: não pode aparecer dentro de um campo
+    expect(mesmaFuncao('Soldador', ' soldador ')).toBe(true)
+    expect(mesmaFuncao('Soldador', 'Caldeireiro')).toBe(false)
+    expect(mesmaFuncao(null, 'Soldador')).toBe(false)
+  })
+
   test('semanas de segunda a domingo, subtotal por semana e atalhos de período', () => {
     expect(semanaDoDia('2027-11-07')).toEqual({ inicio: '2027-11-01', fim: '2027-11-07' })   // domingo fecha a semana
     expect(semanaDoDia('2027-11-08')).toEqual({ inicio: '2027-11-08', fim: '2027-11-14' })   // segunda abre outra
@@ -289,6 +298,51 @@ test('adicional noturno: aparece no RDO, no relatório por dia e na pasta do pro
     await page.goto(`/rdos/${dia}`)
     await expect(page.getByLabel('Tipo de hora').first()).toBeVisible()
     await expect(page.getByTestId('selo-noturno')).toHaveCount(0)
+  } finally {
+    await voltarParaAvanco(admin)
+    await admin.dispose()
+  }
+})
+
+test('cadastro de mão de obra: Nome e Função separados e valor da hora só em projetos H/H; valor vale para a função', async ({ page, playwright }) => {
+  const admin = await apiComo(playwright)
+  try {
+    // API: nome + função formam o texto exibido; só um dos dois é recusado
+    const a = await admin.post('/api/app/funcoes', { data: { pessoa: 'Fabio Teste', funcao: 'Soldador Teste', categoria: 'TERCEIRIZADO', valorHora: 90 } })
+    expect(a.status()).toBe(201)
+    expect(await a.json()).toMatchObject({ nome: 'Fabio Teste - Soldador Teste', pessoa: 'Fabio Teste', funcao: 'Soldador Teste' })
+    const b = await admin.post('/api/app/funcoes', { data: { pessoa: 'Luiz Teste', funcao: 'soldador teste', categoria: 'TERCEIRIZADO' } })
+    expect(b.status()).toBe(201)
+    expect((await admin.post('/api/app/funcoes', { data: { pessoa: 'Sem Funcao', categoria: 'TERCEIRIZADO' } })).status()).toBe(400)
+    const lista = async () => (await (await admin.get('/api/app/funcoes')).json()) as Array<{ id: string; nome: string; pessoa: string | null; valorHora?: number | null }>
+    // quem entra numa função que já tem valor herda o valor
+    expect((await lista()).find(x => x.nome === 'Luiz Teste - soldador teste')?.valorHora).toBe(90)
+    // mudar o valor de um muda para todos da mesma função
+    const idA = (await a.json()).id as string
+    expect((await admin.patch('/api/app/funcoes/' + idA, { data: { valorHora: 95 } })).status()).toBe(200)
+    const aposMudar = (await lista()).filter(x => x.pessoa === 'Fabio Teste' || x.pessoa === 'Luiz Teste')
+    expect(aposMudar.map(x => x.valorHora)).toEqual([95, 95])
+    // editar nome e função recompõe o texto
+    const ed = await admin.patch('/api/app/funcoes/' + idA, { data: { pessoa: 'Fabio T.', funcao: 'Caldeireiro Teste' } })
+    expect((await ed.json()).nome).toBe('Fabio T. - Caldeireiro Teste')
+
+    // tela: projeto por H/H mostra Nome + Função e o valor da hora; projeto por avanço, só a função e sem valor
+    await configurarProjeto(admin, { modalidade: 'HOMEM_HORA' })
+    const rdo = await criarRdo(admin, '2027-11-23', [linha(8)])
+    await login(page)
+    await page.goto('/rdos/' + rdo)
+    await page.getByRole('button', { name: /Adicionar mão de obra/ }).click()
+    await expect(page.getByLabel('Nome', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('Função', { exact: true })).toBeVisible()
+    await expect(page.getByLabel('Valor da hora da nova função')).toBeVisible()
+    await expect(page.locator('.modal')).toContainText('Luiz Teste')
+    await voltarParaAvanco(admin)
+    await page.goto('/rdos/' + RDO_ANTERIOR_ID)
+    await page.getByRole('button', { name: /Adicionar mão de obra/ }).click()
+    await expect(page.getByPlaceholder('Nova função...')).toBeVisible()
+    await expect(page.getByLabel('Nome', { exact: true })).toHaveCount(0)
+    await expect(page.getByLabel('Valor da hora da nova função')).toHaveCount(0)
+    await expect(page.locator('.modal')).not.toContainText('Luiz Teste')
   } finally {
     await voltarParaAvanco(admin)
     await admin.dispose()

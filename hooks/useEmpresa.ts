@@ -432,7 +432,7 @@ export function useFuncoes() {
 export function useCriarFuncao() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { nome: string; categoria: MaoDeObraCategoria; valorHora?: number | null }) =>
+    mutationFn: (body: { nome?: string; pessoa?: string; funcao?: string; categoria: MaoDeObraCategoria; valorHora?: number | null }) =>
       api.post<FuncaoCadastro>('/api/app/funcoes', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.funcoes }),
   })
@@ -441,7 +441,7 @@ export function useCriarFuncao() {
 export function useEditarFuncao() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: string; nome?: string; categoria?: MaoDeObraCategoria; valorHora?: number | null }) =>
+    mutationFn: ({ id, ...body }: { id: string; nome?: string; pessoa?: string; funcao?: string; categoria?: MaoDeObraCategoria; valorHora?: number | null }) =>
       api.patch<FuncaoCadastro>(`/api/app/funcoes/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: QK.funcoes }),
   })

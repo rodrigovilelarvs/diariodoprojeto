@@ -7,7 +7,7 @@ import { MaoDeObraCategoria } from '@/lib/prisma-enums'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, podeEmitirRdo, podeGerenciarProjetos, podeVerRelatorios } from '@/lib/auth'
-import { numeroOuNull } from '@/lib/homem-hora'
+import { numeroOuNull, limparCampoCadastro, nomeComposto, mesmaFuncao } from '@/lib/homem-hora'
 
 // Funções rotineiras de execução de obra — semeadas automaticamente no primeiro acesso do tenant
 const FUNCOES_PADRAO: Array<{ nome: string; categoria: MaoDeObraCategoria }> = [
@@ -43,15 +43,15 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  const funcoes: Array<{ id: string; nome: string; categoria: string; valorHora: unknown }> = await prisma.funcaoCadastro.findMany({
+  const funcoes: Array<{ id: string; nome: string; categoria: string; valorHora: unknown; pessoa: string | null; funcao: string | null }> = await prisma.funcaoCadastro.findMany({
     where:   { tenantId },
-    select:  { id: true, nome: true, categoria: true, valorHora: true },
+    select:  { id: true, nome: true, categoria: true, valorHora: true, pessoa: true, funcao: true },
     orderBy: { nome: 'asc' },
   })
 
   // O valor da hora é informação financeira: só vai para quem gerencia projetos ou vê relatórios
   const veValor = podeGerenciarProjetos(auth.ctx) || podeVerRelatorios(auth.ctx)
-  return NextResponse.json(funcoes.map(f => ({ id: f.id, nome: f.nome, categoria: f.categoria, ...(veValor ? { valorHora: numeroOuNull(f.valorHora) } : {}) })))
+  return NextResponse.json(funcoes.map(f => ({ id: f.id, nome: f.nome, categoria: f.categoria, pessoa: f.pessoa ?? null, funcao: f.funcao ?? null, ...(veValor ? { valorHora: numeroOuNull(f.valorHora) } : {}) })))
 }
 
 export async function POST(req: NextRequest) {
@@ -65,14 +65,21 @@ export async function POST(req: NextRequest) {
 
   const { tenantId } = auth.ctx
 
-  let body: { nome?: string; categoria?: string; valorHora?: number | string | null }
+  let body: { nome?: string; pessoa?: string; funcao?: string; categoria?: string; valorHora?: number | string | null }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ erro: 'JSON inválido.' }, { status: 400 })
   }
 
-  const nome = body.nome?.trim()
+  // Projetos H/H: Nome + Função em campos separados; os demais: só a função
+  const hh = body.pessoa !== undefined || body.funcao !== undefined
+  const pessoa = limparCampoCadastro(body.pessoa)
+  const funcao = limparCampoCadastro(body.funcao)
+  if (hh && (!pessoa || !funcao)) {
+    return NextResponse.json({ erro: 'Informe o nome e a função.' }, { status: 400 })
+  }
+  const nome = hh ? nomeComposto(pessoa, funcao) : body.nome?.trim()
   if (!nome) {
     return NextResponse.json({ erro: 'Nome da função é obrigatório.' }, { status: 400 })
   }
@@ -86,15 +93,27 @@ export async function POST(req: NextRequest) {
   }
 
   // valor da hora: só quem gerencia projetos define
-  const valorHora = podeGerenciarProjetos(auth.ctx) ? numeroOuNull(body.valorHora) : null
+  let valorHora = podeGerenciarProjetos(auth.ctx) ? numeroOuNull(body.valorHora) : null
   if (valorHora != null && valorHora < 0) {
     return NextResponse.json({ erro: 'O valor da hora não pode ser negativo.' }, { status: 400 })
   }
 
-  const funcao = await prisma.funcaoCadastro.create({
-    data: { tenantId, nome, categoria: body.categoria as MaoDeObraCategoria, valorHora },
-    select: { id: true, nome: true, categoria: true },
-  })
+  // O valor da hora é da função: quem entra numa função que já tem valor herda esse valor,
+  // e informar um valor novo vale para todos os cadastros dessa função
+  let mesmos: Array<{ id: string; funcao: string | null; valorHora: unknown }> = []
+  if (hh) {
+    const todos: typeof mesmos = await prisma.funcaoCadastro.findMany({ where: { tenantId }, select: { id: true, funcao: true, valorHora: true } })
+    mesmos = todos.filter(f => mesmaFuncao(f.funcao, funcao))
+    if (valorHora == null) valorHora = mesmos.map(f => numeroOuNull(f.valorHora)).find(v => v != null) ?? null
+  }
 
-  return NextResponse.json(funcao, { status: 201 })
+  const criada = await prisma.funcaoCadastro.create({
+    data: { tenantId, nome, categoria: body.categoria as MaoDeObraCategoria, valorHora, ...(hh ? { pessoa, funcao } : {}) },
+    select: { id: true, nome: true, categoria: true, pessoa: true, funcao: true },
+  })
+  if (hh && valorHora != null && podeGerenciarProjetos(auth.ctx) && body.valorHora != null) {
+    for (const f of mesmos) await prisma.funcaoCadastro.update({ where: { id: f.id }, data: { valorHora } })
+  }
+
+  return NextResponse.json(criada, { status: 201 })
 }

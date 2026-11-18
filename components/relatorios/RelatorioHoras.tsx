@@ -285,7 +285,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
                         <tr style={{ background: c.fundo }}>
                           <td colSpan={colunas} style={{ padding: '2px 10px 10px 30px' }}>
                             <div role="table" style={{ display: 'grid', gridTemplateColumns: gradeDetalhe, columnGap: 10, rowGap: 4, fontSize: 11, alignItems: 'center' }}>
-                              {['Pessoa', 'Função', ...(mostraProjetoDetalhe ? ['Projeto'] : []), 'Horário', 'Tipo da hora', ...(temQtd ? ['Qtd.'] : []), 'Horas', 'Noturnas', ...(temValor ? ['Valor'] : [])].map(h => (
+                              {['Nome', 'Função', ...(mostraProjetoDetalhe ? ['Projeto'] : []), 'Horário', 'Tipo da hora', ...(temQtd ? ['Qtd.'] : []), 'Horas', 'Noturnas', ...(temValor ? ['Valor'] : [])].map(h => (
                                 <div key={h} style={{ fontSize: 10, color: 'var(--tm)', textTransform: 'uppercase', letterSpacing: '.04em', paddingBottom: 3, borderBottom: '.5px solid var(--b)', ...(colunasDireita.includes(h) ? celulaDir : {}) }}>{h}</div>
                               ))}
                               {d.linhas.map((l, i) => {
@@ -514,7 +514,7 @@ function ResumoPorPessoa({ pessoas, totais, temValor, projetos, projetoId, statu
         </colgroup>
         <thead>
           <tr>
-            <th style={cabecalho}>Pessoa</th>
+            <th style={cabecalho}>Nome</th>
             <th style={cabecalho}>Função</th>
             {mostraProjeto && <th style={cabecalho}>Projeto</th>}
             <th style={{ ...cabecalho, ...direita }} title="Dias em que a pessoa teve horas lançadas">Dias</th>

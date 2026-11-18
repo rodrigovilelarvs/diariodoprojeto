@@ -59,6 +59,12 @@ export const arredonda2 = (n: number) => Math.round(n * 100) / 100
 // Pessoas diferentes numa lista de linhas de mão de obra: quem tem uma linha de hora normal e outra de hora extra
 // no mesmo dia (mesma função) conta uma vez só. Para uma função com mais de uma pessoa (quantidade 3), vale a
 // maior quantidade entre as linhas dela.
+// Cadastro de mão de obra H/H: Nome e Função separados. O texto exibido (e gravado nas linhas do RDO) é "NOME - FUNÇÃO".
+export const SEPARADOR_NOME_FUNCAO = ' - '
+export const limparCampoCadastro = (s: unknown) => String(s ?? '').replace(/\s+-\s+/g, ' ').replace(/\s+/g, ' ').trim()
+export const nomeComposto = (pessoa: string, funcao: string) => `${pessoa}${SEPARADOR_NOME_FUNCAO}${funcao}`
+export const mesmaFuncao = (a?: string | null, b?: string | null) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
+
 export function pessoasDistintas(linhas: Array<{ funcaoNome: string; quantidade: number | string }>): number {
   const porFuncao = new Map<string, number>()
   for (const l of linhas) porFuncao.set(l.funcaoNome, Math.max(porFuncao.get(l.funcaoNome) ?? 0, Number(l.quantidade) || 0))

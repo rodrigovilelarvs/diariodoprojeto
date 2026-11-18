@@ -91,8 +91,10 @@ function estadoInicial(rdo: NonNullable<ReturnType<typeof useRdo>['data']>): For
 // vez, uma de cada vez, pra cada pessoa do dia) e também gerencia o próprio
 // catálogo (editar/excluir função cadastrada) sem precisar sair daqui.
 function SeletorFuncoesModal({
-  funcoes, onFechar, onAdicionar, criarFuncao, editarFuncao, excluirFuncao, valorHoraEditavel, valorHoraVisivel,
+  funcoes, onFechar, onAdicionar, criarFuncao, editarFuncao, excluirFuncao, valorHoraEditavel, valorHoraVisivel, hh,
 }: {
+  // projeto por homem-hora: o cadastro tem Nome e Função em campos separados (e só esses aparecem); nos demais, só a função
+  hh: boolean
   // valor da hora por função (projetos por homem-hora): só quem gerencia projetos edita; quem vê relatórios enxerga
   valorHoraEditavel: boolean
   valorHoraVisivel:  boolean
@@ -109,12 +111,17 @@ function SeletorFuncoesModal({
   const [editNome, setEditNome]           = useState('')
   const [editCategoria, setEditCategoria] = useState<MaoDeObraCategoria>('DIRETA')
   const [novoNome, setNovoNome]           = useState('')
-  const [novaCategoria, setNovaCategoria] = useState<MaoDeObraCategoria>('DIRETA')
+  const [novaCategoria, setNovaCategoria] = useState<MaoDeObraCategoria>(hh ? 'TERCEIRIZADO' : 'DIRETA')
   const [editValor, setEditValor]         = useState('')
   const [novoValor, setNovoValor]         = useState('')
+  const [editPessoa, setEditPessoa]       = useState('')
+  const [editFuncao, setEditFuncao]       = useState('')
+  const [novaPessoa, setNovaPessoa]       = useState('')
+  const [novaFuncaoH, setNovaFuncaoH]     = useState('')
 
   const buscaNorm = busca.trim().toLowerCase()
-  const filtradas  = buscaNorm ? funcoes.filter(f => f.nome.toLowerCase().includes(buscaNorm)) : funcoes
+  const doTipo     = funcoes.filter(f => hh ? !!f.pessoa : !f.pessoa)
+  const filtradas  = buscaNorm ? doTipo.filter(f => f.nome.toLowerCase().includes(buscaNorm)) : doTipo
   const idsSelecionados = Object.keys(selecionados).filter(id => selecionados[id])
 
   function toggle(id: string) {
@@ -122,14 +129,15 @@ function SeletorFuncoesModal({
   }
   function iniciarEdicao(f: FuncaoCadastro) {
     setEditandoId(f.id); setEditNome(f.nome); setEditCategoria(f.categoria)
+    setEditPessoa(f.pessoa ?? ''); setEditFuncao(f.funcao ?? '')
     setEditValor(f.valorHora != null ? String(f.valorHora) : '')
   }
   async function salvarEdicao() {
     const nome = editNome.trim()
-    if (!nome) { toast.error('Informe o nome da função.'); return }
+    if (hh ? (!editPessoa.trim() || !editFuncao.trim()) : !nome) { toast.error(hh ? 'Informe o nome e a função.' : 'Informe o nome da função.'); return }
     try {
       await editarFuncao.mutateAsync({
-        id: editandoId!, nome, categoria: editCategoria,
+        id: editandoId!, ...(hh ? { pessoa: editPessoa, funcao: editFuncao } : { nome }), categoria: editCategoria,
         ...(valorHoraEditavel ? { valorHora: editValor.trim() === '' ? null : Number(editValor.replace(',', '.')) } : {}),
       })
       setEditandoId(null)
@@ -148,14 +156,14 @@ function SeletorFuncoesModal({
   }
   async function criar() {
     const nome = novoNome.trim()
-    if (!nome) { toast.error('Informe o nome da função.'); return }
+    if (hh ? (!novaPessoa.trim() || !novaFuncaoH.trim()) : !nome) { toast.error(hh ? 'Informe o nome e a função.' : 'Informe o nome da função.'); return }
     try {
       const funcao = await criarFuncao.mutateAsync({
-        nome, categoria: novaCategoria,
+        ...(hh ? { pessoa: novaPessoa, funcao: novaFuncaoH } : { nome }), categoria: novaCategoria,
         ...(valorHoraEditavel && novoValor.trim() !== '' ? { valorHora: Number(novoValor.replace(',', '.')) } : {}),
       })
       setSelecionados(s => ({ ...s, [funcao.id]: true }))
-      setNovoNome(''); setNovoValor('')
+      setNovoNome(''); setNovoValor(''); setNovaPessoa(''); setNovaFuncaoH('')
     } catch (err) {
       toast.error(mensagemErro(err, 'Erro ao criar função.'))
     }
@@ -171,7 +179,7 @@ function SeletorFuncoesModal({
         </div>
         <div className="mb">
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-            <label className="fl" style={{ margin:0 }}>Funções cadastradas</label>
+            <label className="fl" style={{ margin:0 }}>{hh ? 'Nomes e funções cadastrados' : 'Funções cadastradas'}</label>
             {filtradas.length > 0 && (
               <button type="button" style={{ fontSize:10.5, color:'var(--ta)', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit' }}
                 onClick={() => {
@@ -190,13 +198,13 @@ function SeletorFuncoesModal({
           <div style={{ position:'relative', marginBottom:8 }}>
             <i className="ti ti-search" style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', fontSize:13, color:'var(--tm)' }} />
             <input className="fi" value={busca} onChange={e => setBusca(e.target.value)}
-              placeholder="Buscar função..." style={{ paddingLeft:30 }} />
+              placeholder={hh ? 'Buscar nome ou função...' : 'Buscar função...'} style={{ paddingLeft:30 }} />
           </div>
 
           <div style={{ maxHeight:220, overflowY:'auto', border:'.5px solid var(--b)', borderRadius:'var(--r)', background:'var(--s1)', marginBottom:10 }}>
             {filtradas.length === 0 ? (
               <div style={{ textAlign:'center', padding:14, color:'var(--tm)', fontSize:11 }}>
-                Nenhuma função encontrada.
+                {hh ? 'Nenhum nome cadastrado. Cadastre abaixo.' : 'Nenhuma função encontrada.'}
               </div>
             ) : CATEGORIAS.map(cat => {
               const lista = filtradas.filter(f => f.categoria === cat)
@@ -208,8 +216,17 @@ function SeletorFuncoesModal({
                   </div>
                   {lista.map(f => editandoId === f.id ? (
                     <div key={f.id} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 10px', borderBottom:'.5px solid var(--b)' }}>
-                      <input className="fi" value={editNome} onChange={e => setEditNome(e.target.value)}
-                        style={{ flex:1, minWidth:0 }} autoFocus />
+                      {hh ? (
+                        <>
+                          <input className="fi" value={editPessoa} onChange={e => setEditPessoa(e.target.value)} aria-label="Nome"
+                            placeholder="Nome" style={{ flex:1, minWidth:0 }} autoFocus />
+                          <input className="fi" value={editFuncao} onChange={e => setEditFuncao(e.target.value)} aria-label="Função"
+                            placeholder="Função" style={{ flex:1, minWidth:0 }} />
+                        </>
+                      ) : (
+                        <input className="fi" value={editNome} onChange={e => setEditNome(e.target.value)}
+                          style={{ flex:1, minWidth:0 }} autoFocus />
+                      )}
                       <select className="fi" value={editCategoria} style={{ width:110, flexShrink:0 }}
                         onChange={e => setEditCategoria(e.target.value as MaoDeObraCategoria)}>
                         {CATEGORIAS.map(c => <option key={c} value={c}>{CATEGORIA_L[c]}</option>)}
@@ -232,7 +249,7 @@ function SeletorFuncoesModal({
                       style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderBottom:'.5px solid var(--b)', cursor:'pointer' }}>
                       <input type="checkbox" checked={!!selecionados[f.id]} onChange={() => toggle(f.id)} />
                       <span style={{ flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontSize:12 }}>
-                        {f.nome}
+                        {hh && f.pessoa ? <><strong style={{ fontWeight:600 }}>{f.pessoa}</strong><span style={{ color:'var(--tm)' }}> · {f.funcao}</span></> : f.nome}
                       </span>
                       {valorHoraVisivel && f.valorHora != null && (
                         <span title="Valor da hora normal" style={{ fontSize:10, color:'var(--ts)', flexShrink:0 }}>
@@ -255,8 +272,17 @@ function SeletorFuncoesModal({
           </div>
 
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-            <input className="fi" value={novoNome} onChange={e => setNovoNome(e.target.value)}
-              placeholder="Nova função..." style={{ flex:1, minWidth:0 }} />
+            {hh ? (
+              <>
+                <input className="fi" value={novaPessoa} onChange={e => setNovaPessoa(e.target.value)} aria-label="Nome"
+                  placeholder="Nome..." style={{ flex:1, minWidth:0 }} />
+                <input className="fi" value={novaFuncaoH} onChange={e => setNovaFuncaoH(e.target.value)} aria-label="Função"
+                  placeholder="Função..." style={{ flex:1, minWidth:0 }} />
+              </>
+            ) : (
+              <input className="fi" value={novoNome} onChange={e => setNovoNome(e.target.value)}
+                placeholder="Nova função..." style={{ flex:1, minWidth:0 }} />
+            )}
             <select className="fi" value={novaCategoria} style={{ width:110, flexShrink:0 }}
               onChange={e => setNovaCategoria(e.target.value as MaoDeObraCategoria)}>
               {CATEGORIAS.map(c => <option key={c} value={c}>{CATEGORIA_L[c]}</option>)}
@@ -496,6 +522,9 @@ export function FormularioRdo({ rdoId }: Props) {
   const [modalFuncao, setModalFuncao] = useState(false)
   const [funcaoMoIndex, setFuncaoMoIndex] = useState<number | null>(null)
   const [novaFuncaoNome, setNovaFuncaoNome] = useState('')
+  const [novaFuncaoPessoa, setNovaFuncaoPessoa] = useState('')
+  const [novaFuncaoSimples, setNovaFuncaoSimples] = useState('')
+  const [novaFuncaoValor, setNovaFuncaoValor] = useState('')
   const [novaFuncaoCategoria, setNovaFuncaoCategoria] = useState<MaoDeObraCategoria>('DIRETA')
   const [modalEquipamento, setModalEquipamento] = useState(false)
   const [equipamentoEqIndex, setEquipamentoEqIndex] = useState<number | null>(null)
@@ -762,8 +791,8 @@ export function FormularioRdo({ rdoId }: Props) {
   function selecionarFuncao(idx: number, funcaoCadastroId: string) {
     if (funcaoCadastroId === '__nova__') {
       setFuncaoMoIndex(idx)
-      setNovaFuncaoNome('')
-      setNovaFuncaoCategoria('DIRETA')
+      setNovaFuncaoNome(''); setNovaFuncaoPessoa(''); setNovaFuncaoSimples(''); setNovaFuncaoValor('')
+      setNovaFuncaoCategoria(ehHH ? 'TERCEIRIZADO' : 'DIRETA')
       setModalFuncao(true)
       return
     }
@@ -779,9 +808,12 @@ export function FormularioRdo({ rdoId }: Props) {
   }
   async function criarNovaFuncao() {
     const nome = novaFuncaoNome.trim()
-    if (!nome) { toast.error('Informe o nome da função.'); return }
+    if (ehHH ? (!novaFuncaoPessoa.trim() || !novaFuncaoSimples.trim()) : !nome) { toast.error(ehHH ? 'Informe o nome e a função.' : 'Informe o nome da função.'); return }
     try {
-      const funcao = await criarFuncao.mutateAsync({ nome, categoria: novaFuncaoCategoria })
+      const funcao = await criarFuncao.mutateAsync({
+        ...(ehHH ? { pessoa: novaFuncaoPessoa, funcao: novaFuncaoSimples } : { nome }), categoria: novaFuncaoCategoria,
+        ...(ehHH && pode('gerenciar_projetos') && novaFuncaoValor.trim() !== '' ? { valorHora: Number(novaFuncaoValor.replace(',', '.')) } : {}),
+      })
       if (funcaoMoIndex !== null) {
         setForm(f => {
           if (!f) return f
@@ -1478,7 +1510,7 @@ export function FormularioRdo({ rdoId }: Props) {
                     onChange={e => selecionarFuncao(i, e.target.value)}>
                     <option value="">{mo.funcaoNome || 'Selecione...'}</option>
                     {CATEGORIAS.map(cat => {
-                      const lista = (funcoes ?? []).filter(fn => fn.categoria === cat)
+                      const lista = (funcoes ?? []).filter(fn => fn.categoria === cat && (ehHH ? !!fn.pessoa : !fn.pessoa))
                       if (!lista.length) return null
                       return (
                         <optgroup key={cat} label={CATEGORIA_L[cat]}>
@@ -1488,7 +1520,7 @@ export function FormularioRdo({ rdoId }: Props) {
                         </optgroup>
                       )
                     })}
-                    <option value="__nova__">+ Nova função...</option>
+                    <option value="__nova__">{ehHH ? '+ Novo nome e função...' : '+ Nova função...'}</option>
                   </select>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
                     {mo.categoria ? (
@@ -1965,8 +1997,9 @@ export function FormularioRdo({ rdoId }: Props) {
           criarFuncao={criarFuncao}
           editarFuncao={editarFuncao}
           excluirFuncao={excluirFuncao}
-          valorHoraEditavel={pode('gerenciar_projetos')}
-          valorHoraVisivel={pode('gerenciar_projetos') || pode('ver_relatorios')}
+          hh={ehHH}
+          valorHoraEditavel={ehHH && pode('gerenciar_projetos')}
+          valorHoraVisivel={ehHH && (pode('gerenciar_projetos') || pode('ver_relatorios'))}
         />
       )}
 
@@ -1987,14 +2020,27 @@ export function FormularioRdo({ rdoId }: Props) {
         <div className="overlay" onClick={e => e.target === e.currentTarget && setModalFuncao(false)}>
           <div className="modal" style={{ width:400 }}>
             <div className="mh">
-              <div className="mh-t"><i className="ti ti-user-plus" /> Nova função</div>
+              <div className="mh-t"><i className="ti ti-user-plus" /> {ehHH ? 'Novo nome e função' : 'Nova função'}</div>
               <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--tm)', fontSize:17 }}
                 onClick={() => setModalFuncao(false)}><i className="ti ti-x" /></button>
             </div>
             <div className="mb">
-              <label className="fl">Nome da função</label>
-              <input className="fi" value={novaFuncaoNome} style={{ marginBottom:8 }}
-                placeholder="Ex: Soldador" onChange={e => setNovaFuncaoNome(e.target.value)} />
+              {ehHH ? (
+                <>
+                  <label className="fl">Nome</label>
+                  <input className="fi" value={novaFuncaoPessoa} style={{ marginBottom:8 }}
+                    placeholder="Ex: Fabio Oliveira" onChange={e => setNovaFuncaoPessoa(e.target.value)} />
+                  <label className="fl">Função</label>
+                  <input className="fi" value={novaFuncaoSimples} style={{ marginBottom:8 }}
+                    placeholder="Ex: Soldador" onChange={e => setNovaFuncaoSimples(e.target.value)} />
+                </>
+              ) : (
+                <>
+                  <label className="fl">Nome da função</label>
+                  <input className="fi" value={novaFuncaoNome} style={{ marginBottom:8 }}
+                    placeholder="Ex: Soldador" onChange={e => setNovaFuncaoNome(e.target.value)} />
+                </>
+              )}
               <label className="fl">Categoria</label>
               <select className="fi" value={novaFuncaoCategoria}
                 onChange={e => setNovaFuncaoCategoria(e.target.value as MaoDeObraCategoria)}>
@@ -2002,6 +2048,13 @@ export function FormularioRdo({ rdoId }: Props) {
                   <option key={cat} value={cat}>{CATEGORIA_L[cat]}</option>
                 ))}
               </select>
+              {ehHH && pode('gerenciar_projetos') && (
+                <>
+                  <label className="fl" style={{ marginTop:8 }}>Valor da hora (R$/h, opcional)</label>
+                  <input className="fi" type="number" min={0} step="0.01" value={novaFuncaoValor} aria-label="Valor da hora"
+                    placeholder="Vale para todos com esta função" onChange={e => setNovaFuncaoValor(e.target.value)} />
+                </>
+              )}
             </div>
             <div className="mf2">
               <button className="btn" onClick={() => setModalFuncao(false)}>Cancelar</button>

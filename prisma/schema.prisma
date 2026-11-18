@@ -600,6 +600,9 @@ model FuncaoCadastro {
   nome      String
   categoria MaoDeObraCategoria @default(DIRETA)
   valorHora Decimal?           @db.Decimal(10, 2) // valor da hora normal (opcional) — base do custo no modo homem-hora
+  // Projetos por homem-hora: Nome e Função em campos separados; "nome" guarda o texto exibido "NOME - FUNÇÃO"
+  pessoa    String?
+  funcao    String?
 
   criadoEm DateTime @default(now())
 

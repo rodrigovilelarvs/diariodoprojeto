@@ -296,6 +296,8 @@ export interface FuncaoCadastro {
   nome:      string
   categoria: MaoDeObraCategoria
   valorHora?: number | null // valor da hora normal (opcional)
+  pessoa?:   string | null  // projetos H/H: nome da pessoa (o `nome` é o texto "NOME - FUNÇÃO")
+  funcao?:   string | null  // projetos H/H: só a função
 }
 
 export type EquipamentoTipo = 'PROPRIO' | 'ALUGADO' | 'TERCEIRIZADO'
