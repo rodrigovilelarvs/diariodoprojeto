@@ -32,7 +32,7 @@ type DocComTabela = jsPDF & { lastAutoTable: { finalY: number } }
 // Fundos escuros foram removidos de propósito: em papel/impressão eles
 // gastam mais tinta, perdem contraste sob luz direta e destoam do padrão
 // de laudos e diários de obra, que são tradicionalmente claros.
-const COR = {
+export const COR = {
   s0:   [244, 248, 251] as [number,number,number],  // faixa do cabeçalho/rodapé — quase-branco
   s1:   [241, 245, 249] as [number,number,number],  // fundo dos cartões (seções, atividades, comentários...)
   s2:   [231, 236, 243] as [number,number,number],  // fundo alternado (linhas de tabela, moldura de foto)

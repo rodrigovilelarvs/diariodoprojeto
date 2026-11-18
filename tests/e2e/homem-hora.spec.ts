@@ -4,6 +4,7 @@ import { PROJETO_ID, RDO_ANTERIOR_ID, LEITOR_EMAIL } from '../../lib/fake-db-tes
 import { custoDaLinha, horasNoturnas, normalizarTipoHora, pessoasDistintas } from '../../lib/homem-hora'
 import { infoDoDia } from '../../lib/feriados'
 import { calcMoHH } from '../../lib/rdo-display'
+import { agruparPorSemana, atalhosDePeriodo, semanaDoDia } from '../../lib/horas-relatorio'
 
 // Modalidade "por homem-hora" (H/H): o projeto é medido por horas trabalhadas, e não por % das atividades.
 // Cada linha de mão de obra tem hora normal ou extra (com o % de acréscimo: domingo/feriado 100%, sábado
@@ -16,6 +17,21 @@ import { calcMoHH } from '../../lib/rdo-display'
 
 // ── regras puras ─────────────────────────────────────────────────────────────
 test.describe('regras de hora normal/extra e custo (funções puras)', () => {
+  test('semanas de segunda a domingo, subtotal por semana e atalhos de período', () => {
+    expect(semanaDoDia('2027-11-07')).toEqual({ inicio: '2027-11-01', fim: '2027-11-07' })   // domingo fecha a semana
+    expect(semanaDoDia('2027-11-08')).toEqual({ inicio: '2027-11-08', fim: '2027-11-14' })   // segunda abre outra
+    const dia = (data: string, normais: number, extras: number, valor: number | null) => ({ data, normais, extras, noturnas: 0, total: normais + extras, valor })
+    const semanas = agruparPorSemana([dia('2027-11-05', 8, 0, 100), dia('2027-11-07', 0, 4, null), dia('2027-11-09', 8, 2, 50.5)])
+    expect(semanas).toHaveLength(2)
+    expect(semanas[0]).toMatchObject({ inicio: '2027-11-01', fim: '2027-11-07', normais: 8, extras: 4, total: 12, valor: 100 })
+    expect(semanas[1]).toMatchObject({ inicio: '2027-11-08', total: 10, valor: 50.5 })
+    const a = Object.fromEntries(atalhosDePeriodo('2027-03-15').map(x => [x.id, x]))
+    expect(a['este-mes']).toMatchObject({ inicio: '2027-03-01', fim: '2027-03-15' })
+    expect(a['mes-passado']).toMatchObject({ inicio: '2027-02-01', fim: '2027-02-28' })
+    expect(a['7-dias']).toMatchObject({ inicio: '2027-03-09', fim: '2027-03-15' })
+    expect(a['30-dias']).toMatchObject({ inicio: '2027-02-14', fim: '2027-03-15' })
+  })
+
   test('hora extra sem percentual válido vira 50%; normal não tem percentual', () => {
     expect(normalizarTipoHora('NORMAL', 100)).toEqual({ tipoHora: 'NORMAL', percentualExtra: null })
     expect(normalizarTipoHora(undefined, 50)).toEqual({ tipoHora: 'NORMAL', percentualExtra: null })
@@ -340,6 +356,35 @@ test('Relatórios: aba "Horas por dia" destaca domingo e feriado; painel e pasta
     await expect(page.getByTestId('alternar-todos')).toContainText('Recolher tudo')
     await page.getByTestId('alternar-todos').click()
     await expect(page.getByTestId('alternar-todos')).toContainText('Expandir tudo')
+
+    // subtotal por semana (segunda a domingo): 01–07/11 e 08–14/11
+    await expect(tabela.getByTestId('subtotal-semana')).toHaveCount(2)
+    await expect(tabela.getByTestId('subtotal-semana').first()).toContainText('Semana 01/11 a 07/11')
+    // a coluna Qtd. some quando toda linha é de 1 pessoa
+    await linhaDomingo.click()
+    await expect(tabela.getByText('Qtd.')).toHaveCount(0)
+    // atalho de período preenche as datas
+    await page.getByTestId('atalhos-periodo').getByRole('button', { name: 'Este mês' }).click()
+    await expect(page.getByLabel('Data inicial')).toHaveValue(/-01$/)
+    await page.getByLabel('Data inicial').fill('2027-11-01')
+    await page.getByLabel('Data final').fill('2027-11-30')
+    await expect(tabela).toContainText('07/11/2027')
+    // visão por pessoa
+    await page.getByTestId('visao-pessoa').click()
+    await expect(page.getByTestId('tabela-pessoas')).toContainText('Soldador')
+    await page.getByTestId('visao-dia').click()
+    // exportar PDF
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByTestId('exportar-pdf-horas').click(),
+    ])
+    expect(download.suggestedFilename()).toBe('Horas-por-dia_2027-11-01_2027-11-30.pdf')
+    // celular: a tabela vira cartões, com o subtotal da semana
+    await page.setViewportSize({ width: 390, height: 800 })
+    await expect(page.getByTestId('cartoes-horas')).toBeVisible()
+    await expect(page.getByTestId('tabela-horas')).toHaveCount(0)
+    await expect(page.getByTestId('cartoes-horas').getByTestId('subtotal-semana').first()).toContainText('Semana')
+    await page.setViewportSize({ width: 1280, height: 800 })
 
     // painel: horas aprovadas em vez do % de avanço; pasta: bloco Homem-hora com o saldo
     await page.goto('/painel')

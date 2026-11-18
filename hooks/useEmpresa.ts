@@ -455,11 +455,17 @@ export interface DiaHoras {
   pessoas: number; normais: number; extras: number; noturnas: number; total: number; valor: number | null
   linhas: LinhaHorasDia[]
 }
+export interface PessoaHoras {
+  funcao: string; projetos: string[]; dias: number
+  normais: number; extras: number; noturnas: number; total: number; valor: number | null
+  extrasPorPercentual: Array<{ percentual: number; horas: number }>
+}
 export interface RelatorioHoras {
   periodo: { dataInicio: string; dataFim: string }
   status: 'APROVADO' | 'TODOS'
   dias: DiaHoras[]
   totais: { dias: number; normais: number; extras: number; noturnas: number; total: number; sabados: number; domingos: number; feriados: number; valor: number | null }
+  pessoas: PessoaHoras[]
   funcoesSemValor: string[]
 }
 

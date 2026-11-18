@@ -72,6 +72,10 @@ export async function GET(req: NextRequest) {
 
   const semValor = new Set<string>()
 
+  // Resumo por pessoa (a função do cadastro é "PESSOA - FUNÇÃO"): dias trabalhados, horas e custo no período
+  type AcumuladoPessoa = { projetos: Set<string>; dias: Set<string>; normais: number; extras: number; noturnas: number; valor: number; temValor: boolean; extrasPorPercentual: Map<number, number> }
+  const porPessoa = new Map<string, AcumuladoPessoa>()
+
   type Linha = { funcao: string; projeto: string; quantidade: number; horaEntrada: string; horaSaida: string; tipoHora: string; percentualExtra: number | null; horas: number; noturnas: number; valor: number | null }
   const porDia = new Map<string, { normais: number; extras: number; noturnas: number; pessoasPorChave: Map<string, number>; valor: number; temValor: boolean; linhas: Linha[] }>()
 
@@ -85,6 +89,17 @@ export async function GET(req: NextRequest) {
       const valor = custoDaLinha(horas, numeroOuNull(mo.funcaoCadastro?.valorHora), mo.tipoHora, mo.percentualExtra, noturnas)
       if (mo.tipoHora === 'EXTRA') acc.extras += horas; else acc.normais += horas
       acc.noturnas += noturnas
+      const pessoa = porPessoa.get(mo.funcaoNome) ?? { projetos: new Set<string>(), dias: new Set<string>(), normais: 0, extras: 0, noturnas: 0, valor: 0, temValor: false, extrasPorPercentual: new Map<number, number>() }
+      pessoa.projetos.add(r.projeto.nome)
+      pessoa.dias.add(dia)
+      if (mo.tipoHora === 'EXTRA') {
+        pessoa.extras += horas
+        const pct = mo.percentualExtra ?? 50
+        pessoa.extrasPorPercentual.set(pct, (pessoa.extrasPorPercentual.get(pct) ?? 0) + horas)
+      } else pessoa.normais += horas
+      pessoa.noturnas += noturnas
+      if (valor != null) { pessoa.valor += valor; pessoa.temValor = true }
+      porPessoa.set(mo.funcaoNome, pessoa)
       // pessoas diferentes: a mesma função com linha normal e extra no dia conta uma vez (maior quantidade)
       const chavePessoa = r.projeto.id + '|' + mo.funcaoNome
       acc.pessoasPorChave.set(chavePessoa, Math.max(acc.pessoasPorChave.get(chavePessoa) ?? 0, mo.quantidade))
@@ -117,6 +132,12 @@ export async function GET(req: NextRequest) {
       sabados: horasDe(doTipo('SABADO')), domingos: horasDe(doTipo('DOMINGO')), feriados: horasDe(doTipo('FERIADO')),
       valor: dias.some(d => d.valor != null) ? soma(d => d.valor ?? 0) : null,
     },
+    pessoas: Array.from(porPessoa.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([funcao, p]) => ({
+      funcao, projetos: Array.from(p.projetos).sort(), dias: p.dias.size,
+      normais: arredonda2(p.normais), extras: arredonda2(p.extras), noturnas: arredonda2(p.noturnas), total: arredonda2(p.normais + p.extras),
+      valor: p.temValor ? arredonda2(p.valor) : null,
+      extrasPorPercentual: Array.from(p.extrasPorPercentual.entries()).sort((a, b) => a[0] - b[0]).map(([percentual, horas]) => ({ percentual, horas: arredonda2(horas) })),
+    })),
     funcoesSemValor: Array.from(semValor).sort(),
   })
 }
