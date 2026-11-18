@@ -13,7 +13,7 @@ import { gerarPdfRdo }  from '@/lib/pdf'
 import { ApiError, mensagemErro } from '@/lib/api'
 import { RdoStatusBadge, Skeleton, Modal } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
-import { ADICIONAL_NOTURNO_PERCENTUAL, horasNoturnas } from '@/lib/homem-hora'
+import { ADICIONAL_NOTURNO_PERCENTUAL, horasNoturnas, pessoasDistintas } from '@/lib/homem-hora'
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
 import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
@@ -238,7 +238,9 @@ export default function AprovacaoPage() {
   const hhPorCategoriaMO = CATEGORIAS.map(cat => ({
     categoria: cat,
     totalHH:      maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m) => s + Number(m.totalHH), 0),
-    totalPessoas: maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m) => s + Number(m.quantidade), 0),
+    totalPessoas: ehHH
+      ? pessoasDistintas(maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat))
+      : maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m) => s + Number(m.quantidade), 0),
   })).filter(c => c.totalPessoas > 0)
   const totalEQ         = equipamentos.reduce((s: number, e) => s + Number(e.quantidade), 0)
 

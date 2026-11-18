@@ -72,22 +72,24 @@ export async function GET(req: NextRequest) {
 
   const semValor = new Set<string>()
 
-  type Linha = { funcao: string; projeto: string; quantidade: number; tipoHora: string; percentualExtra: number | null; horas: number; noturnas: number; valor: number | null }
-  const porDia = new Map<string, { normais: number; extras: number; noturnas: number; pessoas: number; valor: number; temValor: boolean; linhas: Linha[] }>()
+  type Linha = { funcao: string; projeto: string; quantidade: number; horaEntrada: string; horaSaida: string; tipoHora: string; percentualExtra: number | null; horas: number; noturnas: number; valor: number | null }
+  const porDia = new Map<string, { normais: number; extras: number; noturnas: number; pessoasPorChave: Map<string, number>; valor: number; temValor: boolean; linhas: Linha[] }>()
 
   for (const r of rdos) {
     const dia = r.data.toISOString().slice(0, 10)
     if (r.maoDeObra.length === 0) continue // RDO sem mão de obra não tem horas: não vira linha do relatório
-    const acc = porDia.get(dia) ?? { normais: 0, extras: 0, noturnas: 0, pessoas: 0, valor: 0, temValor: false, linhas: [] }
+    const acc = porDia.get(dia) ?? { normais: 0, extras: 0, noturnas: 0, pessoasPorChave: new Map<string, number>(), valor: 0, temValor: false, linhas: [] }
     for (const mo of r.maoDeObra) {
       const horas = Number(mo.totalHH)
       const noturnas = horasNoturnas(mo.horaEntrada, mo.horaSaida, mo.quantidade)
       const valor = custoDaLinha(horas, numeroOuNull(mo.funcaoCadastro?.valorHora), mo.tipoHora, mo.percentualExtra, noturnas)
       if (mo.tipoHora === 'EXTRA') acc.extras += horas; else acc.normais += horas
       acc.noturnas += noturnas
-      acc.pessoas += mo.quantidade
+      // pessoas diferentes: a mesma função com linha normal e extra no dia conta uma vez (maior quantidade)
+      const chavePessoa = r.projeto.id + '|' + mo.funcaoNome
+      acc.pessoasPorChave.set(chavePessoa, Math.max(acc.pessoasPorChave.get(chavePessoa) ?? 0, mo.quantidade))
       if (valor == null) semValor.add(mo.funcaoNome); else { acc.valor += valor; acc.temValor = true }
-      acc.linhas.push({ funcao: mo.funcaoNome, projeto: r.projeto.nome, quantidade: mo.quantidade, tipoHora: mo.tipoHora, percentualExtra: mo.percentualExtra, horas: arredonda2(horas), noturnas: arredonda2(noturnas), valor })
+      acc.linhas.push({ funcao: mo.funcaoNome, projeto: r.projeto.nome, quantidade: mo.quantidade, horaEntrada: mo.horaEntrada, horaSaida: mo.horaSaida, tipoHora: mo.tipoHora, percentualExtra: mo.percentualExtra, horas: arredonda2(horas), noturnas: arredonda2(noturnas), valor })
     }
     porDia.set(dia, acc)
   }
@@ -98,7 +100,7 @@ export async function GET(req: NextRequest) {
     const feriado = info.tipo === 'UTIL' && a.linhas.some((l) => l.tipoHora === 'EXTRA' && (l.percentualExtra ?? 0) >= 100)
     return {
       data, diaSemana: info.diaSemana, tipoDia: feriado ? 'FERIADO' : info.tipo,
-      pessoas: a.pessoas, normais: arredonda2(a.normais), extras: arredonda2(a.extras), noturnas: arredonda2(a.noturnas), total: arredonda2(a.normais + a.extras),
+      pessoas: Array.from(a.pessoasPorChave.values()).reduce((s, q) => s + q, 0), normais: arredonda2(a.normais), extras: arredonda2(a.extras), noturnas: arredonda2(a.noturnas), total: arredonda2(a.normais + a.extras),
       valor: a.temValor ? arredonda2(a.valor) : null, linhas: a.linhas,
     }
   })

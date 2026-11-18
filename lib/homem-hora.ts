@@ -55,3 +55,14 @@ export function custoDaLinha(horas: number, valorHora: number | null, tipoHora: 
 }
 
 export const arredonda2 = (n: number) => Math.round(n * 100) / 100
+
+// Pessoas diferentes numa lista de linhas de mão de obra: quem tem uma linha de hora normal e outra de hora extra
+// no mesmo dia (mesma função) conta uma vez só. Para uma função com mais de uma pessoa (quantidade 3), vale a
+// maior quantidade entre as linhas dela.
+export function pessoasDistintas(linhas: Array<{ funcaoNome: string; quantidade: number | string }>): number {
+  const porFuncao = new Map<string, number>()
+  for (const l of linhas) porFuncao.set(l.funcaoNome, Math.max(porFuncao.get(l.funcaoNome) ?? 0, Number(l.quantidade) || 0))
+  let soma = 0
+  for (const q of porFuncao.values()) soma += q
+  return soma
+}

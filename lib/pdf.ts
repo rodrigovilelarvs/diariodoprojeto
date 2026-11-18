@@ -14,7 +14,7 @@ import type { jsPDF } from 'jspdf'
 import type { CellHookData } from 'jspdf-autotable'
 import type { Rdo, RelatorioResponse } from '@/lib/types'
 import { numeroRdo, fmtData } from '@/lib/format'
-import { ADICIONAL_NOTURNO_PERCENTUAL, horasNoturnas } from '@/lib/homem-hora'
+import { ADICIONAL_NOTURNO_PERCENTUAL, horasNoturnas, pessoasDistintas } from '@/lib/homem-hora'
 import { CLIMA_L, calcHH, calcOcDur, calcPrazo, CATEGORIA_L, rotuloEmpresa } from '@/lib/rdo-display'
 
 // O plugin jspdf-autotable pendura a última tabela desenhada no próprio doc
@@ -206,7 +206,7 @@ export async function gerarPdfRdo(
       const linhas = (rdo.maoDeObra ?? []).filter((m) => (m.categoria ?? 'DIRETA') === cat)
       return {
         cat,
-        pessoas: linhas.reduce((s:number,m)=>s+Number(m.quantidade),0),
+        pessoas: ehHH ? pessoasDistintas(linhas) : linhas.reduce((s:number,m)=>s+Number(m.quantidade),0),
         hh:      linhas.reduce((s:number,m)=>s+Number(m.totalHH),0),
       }
     })

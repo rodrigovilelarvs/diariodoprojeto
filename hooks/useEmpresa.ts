@@ -449,7 +449,7 @@ export function useEditarFuncao() {
 
 // ── Relatório de horas por dia (projetos por homem-hora) ──
 export type TipoDiaHH = 'UTIL' | 'SABADO' | 'DOMINGO' | 'FERIADO'
-export interface LinhaHorasDia { funcao: string; projeto: string; quantidade: number; tipoHora: string; percentualExtra: number | null; horas: number; noturnas: number; valor: number | null }
+export interface LinhaHorasDia { funcao: string; projeto: string; quantidade: number; horaEntrada: string; horaSaida: string; tipoHora: string; percentualExtra: number | null; horas: number; noturnas: number; valor: number | null }
 export interface DiaHoras {
   data: string; diaSemana: number; tipoDia: TipoDiaHH
   pessoas: number; normais: number; extras: number; noturnas: number; total: number; valor: number | null

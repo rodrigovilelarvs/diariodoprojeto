@@ -1,8 +1,8 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { apiComo, login } from './helpers'
 import { PROJETO_ID, RDO_ANTERIOR_ID, LEITOR_EMAIL } from '../../lib/fake-db-test'
-import { custoDaLinha, horasNoturnas, normalizarTipoHora } from '../../lib/homem-hora'
-import { extraSugerida, infoDoDia } from '../../lib/feriados'
+import { custoDaLinha, horasNoturnas, normalizarTipoHora, pessoasDistintas } from '../../lib/homem-hora'
+import { infoDoDia } from '../../lib/feriados'
 import { calcMoHH } from '../../lib/rdo-display'
 
 // Modalidade "por homem-hora" (H/H): o projeto é medido por horas trabalhadas, e não por % das atividades.
@@ -44,6 +44,13 @@ test.describe('regras de hora normal/extra e custo (funções puras)', () => {
     expect(horasNoturnas('19:00', '19:00')).toBe(0)
   })
 
+  test('pessoas distintas: quem tem hora normal e extra no mesmo dia conta uma vez', () => {
+    expect(pessoasDistintas([{ funcaoNome: 'A - SOLDADOR', quantidade: 1 }, { funcaoNome: 'A - SOLDADOR', quantidade: 1 }])).toBe(1)
+    expect(pessoasDistintas([{ funcaoNome: 'A - SOLDADOR', quantidade: 1 }, { funcaoNome: 'B - AJUDANTE', quantidade: 1 }])).toBe(2)
+    expect(pessoasDistintas([{ funcaoNome: 'SOLDADOR', quantidade: 3 }, { funcaoNome: 'SOLDADOR', quantidade: 2 }])).toBe(3)
+    expect(pessoasDistintas([])).toBe(0)
+  })
+
   test('custo = horas × valor da hora × (1 + acréscimo da extra); sem valor da hora, não há custo', () => {
     expect(custoDaLinha(8, 50, 'NORMAL', null)).toBe(400)
     expect(custoDaLinha(8, 50, 'EXTRA', 100)).toBe(800)
@@ -54,10 +61,10 @@ test.describe('regras de hora normal/extra e custo (funções puras)', () => {
     expect(custoDaLinha(8, 50, 'EXTRA', 100, 4)).toBe(880)        // 800 + 4h × 50 × 2 × 20%
   })
 
-  test('sugestão pelo dia: domingo 100%, sábado 75%, dia útil normal', () => {
-    expect(extraSugerida(infoDoDia('2027-10-17'))).toEqual({ tipoHora: 'EXTRA', percentualExtra: 100 }) // domingo
-    expect(extraSugerida(infoDoDia('2027-10-16'))).toEqual({ tipoHora: 'EXTRA', percentualExtra: 75 })  // sábado
-    expect(extraSugerida(infoDoDia('2027-10-19'))).toEqual({ tipoHora: 'NORMAL', percentualExtra: null }) // terça
+  test('calendário: o sistema só distingue sábado e domingo (tipo da hora e % da extra são de quem preenche)', () => {
+    expect(infoDoDia('2027-10-17').tipo).toBe('DOMINGO')
+    expect(infoDoDia('2027-10-16').tipo).toBe('SABADO')
+    expect(infoDoDia('2027-10-19').tipo).toBe('UTIL')
   })
 })
 
@@ -239,37 +246,6 @@ test('RDO de projeto por homem-hora: tipo de hora por linha, sem % de atividades
   }
 })
 
-test('dia de semana em H/H: "Dividir às 16:00/17:00" separa a hora normal da extra de 75%', async ({ page, playwright }) => {
-  const admin = await apiComo(playwright)
-  try {
-    await configurarProjeto(admin, { modalidade: 'HOMEM_HORA' })
-    const sexta = await criarRdo(admin, '2027-10-22', [linha(9)]) // sexta, 07:00 às 17:00
-
-    await login(page)
-    await page.goto(`/rdos/${sexta}`)
-    await expect(page.getByTestId('aviso-corte-hh')).toBeVisible()
-    await expect(page.getByLabel('Tipo de hora')).toHaveCount(1)
-    await page.getByTestId('dividir-corte').click()
-    const tipos = page.getByLabel('Tipo de hora')
-    await expect(tipos).toHaveCount(2)
-    await expect(tipos.nth(0)).toHaveValue('NORMAL')
-    await expect(tipos.nth(1)).toHaveValue('75')
-    await expect(page.getByTestId('dividir-corte')).toHaveCount(0)
-    await expect(page.getByText('Normais: 8 · Extras: 1 H/H')).toBeVisible()
-
-    // quarta-feira: corte às 17h — linha das 07:00 às 19:00 (11h) vira 9h normais + 2h extras
-    const quarta = await criarRdo(admin, '2027-10-20', [linha(11, { horaSaida: '19:00' })])
-    await page.goto(`/rdos/${quarta}`)
-    await expect(page.getByTestId('dividir-corte')).toContainText('17:00')
-    await page.getByTestId('dividir-corte').click()
-    await expect(page.getByLabel('Tipo de hora').nth(1)).toHaveValue('75')
-    await expect(page.getByText('Normais: 9 · Extras: 2 H/H')).toBeVisible()
-  } finally {
-    await voltarParaAvanco(admin)
-    await admin.dispose()
-  }
-})
-
 test('adicional noturno: aparece no RDO, no relatório por dia e na pasta do projeto', async ({ page, playwright }) => {
   const admin = await apiComo(playwright)
   try {
@@ -288,7 +264,12 @@ test('adicional noturno: aparece no RDO, no relatório por dia e na pasta do pro
     await expect(page.getByTestId('pill-noturno')).toContainText('7')
 
     // RDO sem hora na faixa da noite não mostra o selo
-    const dia = await criarRdo(admin, '2027-11-10', [linha(9)])
+    // a mesma pessoa com linha normal e linha extra no dia conta como 1 pessoa no relatório
+    const dia = await criarRdo(admin, '2027-11-10', [linha(8), linha(1, { horaEntrada: '17:00', horaSaida: '18:00', tipoHora: 'EXTRA', percentualExtra: 75 })])
+    const relDia = await (await admin.get('/api/app/relatorios/horas?projetoId=' + PROJETO_ID + '&dataInicio=2027-11-10&dataFim=2027-11-10&status=TODOS')).json()
+    expect(relDia.dias[0].pessoas).toBe(1)
+    expect(relDia.dias[0].normais).toBe(8)
+    expect(relDia.dias[0].extras).toBe(1)
     await page.goto(`/rdos/${dia}`)
     await expect(page.getByLabel('Tipo de hora').first()).toBeVisible()
     await expect(page.getByTestId('selo-noturno')).toHaveCount(0)
@@ -354,6 +335,11 @@ test('Relatórios: aba "Horas por dia" destaca domingo e feriado; painel e pasta
     await linhaDomingo.click()
     await expect(tabela).toContainText('Soldador HH')
     await expect(tabela).toContainText('Extra 100%')
+    // expandir/recolher tudo
+    await page.getByTestId('alternar-todos').click()
+    await expect(page.getByTestId('alternar-todos')).toContainText('Recolher tudo')
+    await page.getByTestId('alternar-todos').click()
+    await expect(page.getByTestId('alternar-todos')).toContainText('Expandir tudo')
 
     // painel: horas aprovadas em vez do % de avanço; pasta: bloco Homem-hora com o saldo
     await page.goto('/painel')

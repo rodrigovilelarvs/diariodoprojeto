@@ -60,7 +60,8 @@ export function ehDiaUtil(data: Date): boolean {
 
 // ── Dia da semana, para os projetos por homem-hora ─────────────────────────────
 // Não há cadastro de feriados: quem preenche o H/H marca a hora extra de 100% no dia de feriado.
-// O sistema só conhece o calendário (sábado e domingo) para sugerir o tipo de hora.
+// O sistema só conhece o calendário (sábado e domingo), para avisar quem preenche; o tipo da hora e o
+// percentual da extra são sempre definidos por quem preenche.
 
 export type TipoDia = 'UTIL' | 'SABADO' | 'DOMINGO' | 'FERIADO'
 
@@ -79,19 +80,3 @@ export function infoDoDia(dia: string | Date): InfoDia {
   return { tipo: diaSemana === 0 ? 'DOMINGO' : diaSemana === 6 ? 'SABADO' : 'UTIL', diaSemana }
 }
 
-// Hora extra sugerida para as linhas novas (o usuário troca em cada linha): domingo 100%, sábado 75%,
-// dia útil hora normal. Feriado em dia de semana: marcar "hora extra 100%" na linha.
-// Dia de semana: o que passa do horário de corte é hora extra de 75% (a linha é dividida em duas: normal e
-// extra). Segunda a quinta: depois das 17h; sexta: depois das 16h. Sábado e domingo não têm corte (o dia todo é extra).
-export const PERCENTUAL_EXTRA_APOS_CORTE = 75
-export function corteExtraDoDia(diaSemana: number): string | null {
-  if (diaSemana === 5) return '16:00'
-  if (diaSemana >= 1 && diaSemana <= 4) return '17:00'
-  return null
-}
-
-export function extraSugerida(info: InfoDia): { tipoHora: 'NORMAL' | 'EXTRA'; percentualExtra: number | null } {
-  if (info.tipo === 'DOMINGO') return { tipoHora: 'EXTRA', percentualExtra: 100 }
-  if (info.tipo === 'SABADO') return { tipoHora: 'EXTRA', percentualExtra: 75 }
-  return { tipoHora: 'NORMAL', percentualExtra: null }
-}

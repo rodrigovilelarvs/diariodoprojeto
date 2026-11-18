@@ -8,7 +8,6 @@ import { AtividadeStatus, LogCategoria, LogNivel, MaoDeObraCategoria, RdoStatus 
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma, registrarLog, getRequestMeta } from '@/lib/prisma'
-import { extraSugerida, infoDoDia } from '@/lib/feriados'
 import { requireAuth, podeEmitirRdo, projetosSemAcesso, resolverAcessoProjeto, podeEditarProjetoConteudo, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
 
 // `prisma` não carrega os tipos gerados do Prisma Client neste projeto (ver
@@ -234,13 +233,10 @@ export async function POST(req: NextRequest) {
       })
     : null
 
-  // Projeto por homem-hora: não há % de atividades a copiar, e o tipo da hora (normal/extra) segue o DIA
-  // do novo RDO — domingo 100%, sábado 75%, dia útil normal — e não o do RDO anterior. (Feriado em dia de
-  // semana: quem preenche marca a hora extra de 100%.)
+  // Projeto por homem-hora: não há % de atividades a copiar, e as linhas copiadas voltam como hora normal:
+  // o tipo da hora (normal/extra) e o percentual da extra são definidos por quem preenche o novo RDO.
   const porHoraHomem = projeto.modalidade === 'HOMEM_HORA'
-  const horaDoDia = porHoraHomem && rdoAnterior
-    ? extraSugerida(infoDoDia(data))
-    : { tipoHora: 'NORMAL' as const, percentualExtra: null }
+  const horaDoDia = { tipoHora: 'NORMAL' as const, percentualExtra: null }
 
   // Cria o RDO numa transação
   const rdo = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
