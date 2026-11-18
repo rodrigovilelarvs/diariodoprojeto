@@ -137,8 +137,8 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
   // detalhe do dia: colunas próprias e alinhadas (pessoa, função, horário, tipo, qtd., horas, noturnas, valor)
   // "Qtd." só aparece se alguma linha tiver mais de 1 pessoa (em H/H cada linha costuma ser 1 pessoa)
   const temQtd = !!data && data.dias.some(d => d.linhas.some(l => l.quantidade > 1))
-  const mostraPasta = projetos.length > 1 && !projetoId
-  const gradeDetalhe = `minmax(130px, 1.3fr) minmax(90px, 1fr)${mostraPasta ? ' minmax(90px, 1fr)' : ''} 108px 96px${temQtd ? ' 44px' : ''} 66px 72px${temValor ? ' 98px' : ''}`
+  const mostraProjetoDetalhe = projetos.length > 1 && !projetoId
+  const gradeDetalhe = `minmax(130px, 1.3fr) minmax(90px, 1fr)${mostraProjetoDetalhe ? ' minmax(90px, 1fr)' : ''} 108px 96px${temQtd ? ' 44px' : ''} 66px 72px${temValor ? ' 98px' : ''}`
   const colunasDireita = ['Qtd.', 'Horas', 'Noturnas', 'Valor']
   const celulaDir: CSSProperties = { textAlign: 'right', fontVariantNumeric: 'tabular-nums' }
   const cabecalho: CSSProperties = { position: 'sticky', top: 0, zIndex: 2, background: 'var(--s1)' }
@@ -285,7 +285,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
                         <tr style={{ background: c.fundo }}>
                           <td colSpan={colunas} style={{ padding: '2px 10px 10px 30px' }}>
                             <div role="table" style={{ display: 'grid', gridTemplateColumns: gradeDetalhe, columnGap: 10, rowGap: 4, fontSize: 11, alignItems: 'center' }}>
-                              {['Pessoa', 'Função', ...(mostraPasta ? ['Pasta'] : []), 'Horário', 'Tipo da hora', ...(temQtd ? ['Qtd.'] : []), 'Horas', 'Noturnas', ...(temValor ? ['Valor'] : [])].map(h => (
+                              {['Pessoa', 'Função', ...(mostraProjetoDetalhe ? ['Projeto'] : []), 'Horário', 'Tipo da hora', ...(temQtd ? ['Qtd.'] : []), 'Horas', 'Noturnas', ...(temValor ? ['Valor'] : [])].map(h => (
                                 <div key={h} style={{ fontSize: 10, color: 'var(--tm)', textTransform: 'uppercase', letterSpacing: '.04em', paddingBottom: 3, borderBottom: '.5px solid var(--b)', ...(colunasDireita.includes(h) ? celulaDir : {}) }}>{h}</div>
                               ))}
                               {d.linhas.map((l, i) => {
@@ -297,7 +297,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
                                       {pessoa}
                                     </div>
                                     <div style={{ color: 'var(--ts)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{funcao || '—'}</div>
-                                    {mostraPasta && <div style={{ color: 'var(--ts)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.projeto}>{l.projeto}</div>}
+                                    {mostraProjetoDetalhe && <div style={{ color: 'var(--ts)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.projeto}>{l.projeto}</div>}
                                     <div style={{ color: 'var(--ts)', fontVariantNumeric: 'tabular-nums' }}>{l.horaEntrada}–{l.horaSaida}</div>
                                     <div>
                                       {extra ? (
@@ -516,7 +516,7 @@ function ResumoPorPessoa({ pessoas, totais, temValor, projetos, projetoId, statu
           <tr>
             <th style={cabecalho}>Pessoa</th>
             <th style={cabecalho}>Função</th>
-            {mostraProjeto && <th style={cabecalho}>Pasta</th>}
+            {mostraProjeto && <th style={cabecalho}>Projeto</th>}
             <th style={{ ...cabecalho, ...direita }} title="Dias em que a pessoa teve horas lançadas">Dias</th>
             <th style={{ ...cabecalho, ...direita }}>Normais</th>
             <th style={{ ...cabecalho, ...direita }}>Extras</th>
