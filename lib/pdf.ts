@@ -14,6 +14,7 @@ import type { jsPDF } from 'jspdf'
 import type { CellHookData } from 'jspdf-autotable'
 import type { Rdo, RelatorioResponse } from '@/lib/types'
 import { numeroRdo, fmtData } from '@/lib/format'
+import { ADICIONAL_NOTURNO_PERCENTUAL, horasNoturnas } from '@/lib/homem-hora'
 import { CLIMA_L, calcHH, calcOcDur, calcPrazo, CATEGORIA_L, rotuloEmpresa } from '@/lib/rdo-display'
 
 // O plugin jspdf-autotable pendura a última tabela desenhada no próprio doc
@@ -186,7 +187,11 @@ export async function gerarPdfRdo(
   const ehHH    = rdo.projeto.modalidade === 'HOMEM_HORA'
   const regs    = ehHH ? [] : (rdo.atividadeRegistros ?? [])
   const hhExtra = (rdo.maoDeObra ?? []).filter((m) => m.tipoHora === 'EXTRA').reduce((s:number,m)=>s+Number(m.totalHH),0)
-  const rotuloHora = (m: { tipoHora?: string; percentualExtra?: number | null }) => m.tipoHora === 'EXTRA' ? `Extra ${m.percentualExtra ?? 50}%` : 'Normal'
+  const noturnasDe = (m: { horaEntrada: string; horaSaida: string; quantidade: number }) => horasNoturnas(m.horaEntrada, m.horaSaida, Number(m.quantidade))
+  const rotuloHora = (m: { tipoHora?: string; percentualExtra?: number | null; horaEntrada: string; horaSaida: string; quantidade: number }) =>
+    (m.tipoHora === 'EXTRA' ? `Extra ${m.percentualExtra ?? 50}%` : 'Normal') +
+    (noturnasDe(m) > 0 ? `\nNoturno ${ADICIONAL_NOTURNO_PERCENTUAL}%: ${noturnasDe(m)}h` : '')
+  const hhNoturno = ehHH ? (rdo.maoDeObra ?? []).reduce((s: number, m) => s + noturnasDe(m), 0) : 0
   const totalHH = (rdo.maoDeObra ?? []).reduce((s:number,m)=>s+Number(m.totalHH),0)
   const prazo   = calcPrazo(rdo.projeto.dataInicioContrato, rdo.projeto.dataFimContrato, rdo.data)
   const midias    = rdo.midias ?? []
@@ -212,6 +217,7 @@ export async function gerarPdfRdo(
   }
   badgeMO += `Total: ${totalHH} H/H`
   if (ehHH) badgeMO += `  |  Normais: ${Math.round((totalHH - hhExtra) * 100) / 100} · Extras: ${Math.round(hhExtra * 100) / 100} H/H`
+  if (hhNoturno > 0) badgeMO += `  |  Adicional noturno: ${Math.round(hhNoturno * 100) / 100} H/H`
 
   // ── Desenha (ou só mede) todo o conteúdo do RDO ──────────────────────
   // `medindo=true`: não desenha nada de verdade nem busca imagem — só corre

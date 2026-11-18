@@ -9,14 +9,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, podeVerRelatorios, projetosSemAcesso, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
-import { arredonda2, custoDaLinha, numeroOuNull } from '@/lib/homem-hora'
+import { arredonda2, custoDaLinha, horasNoturnas, numeroOuNull } from '@/lib/homem-hora'
 import { infoDoDia } from '@/lib/feriados'
 
 type RdoHoras = {
   data: Date
   projeto: { id: string; nome: string }
   maoDeObra: Array<{
-    funcaoNome: string; quantidade: number; totalHH: unknown; tipoHora: string; percentualExtra: number | null
+    funcaoNome: string; quantidade: number; horaEntrada: string; horaSaida: string; totalHH: unknown; tipoHora: string; percentualExtra: number | null
     funcaoCadastro: { valorHora: unknown } | null
   }>
 }
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       projeto: { select: { id: true, nome: true } },
       maoDeObra: {
         select: {
-          funcaoNome: true, quantidade: true, totalHH: true, tipoHora: true, percentualExtra: true,
+          funcaoNome: true, quantidade: true, horaEntrada: true, horaSaida: true, totalHH: true, tipoHora: true, percentualExtra: true,
           funcaoCadastro: { select: { valorHora: true } },
         },
       },
@@ -72,20 +72,22 @@ export async function GET(req: NextRequest) {
 
   const semValor = new Set<string>()
 
-  type Linha = { funcao: string; projeto: string; quantidade: number; tipoHora: string; percentualExtra: number | null; horas: number; valor: number | null }
-  const porDia = new Map<string, { normais: number; extras: number; pessoas: number; valor: number; temValor: boolean; linhas: Linha[] }>()
+  type Linha = { funcao: string; projeto: string; quantidade: number; tipoHora: string; percentualExtra: number | null; horas: number; noturnas: number; valor: number | null }
+  const porDia = new Map<string, { normais: number; extras: number; noturnas: number; pessoas: number; valor: number; temValor: boolean; linhas: Linha[] }>()
 
   for (const r of rdos) {
     const dia = r.data.toISOString().slice(0, 10)
     if (r.maoDeObra.length === 0) continue // RDO sem mão de obra não tem horas: não vira linha do relatório
-    const acc = porDia.get(dia) ?? { normais: 0, extras: 0, pessoas: 0, valor: 0, temValor: false, linhas: [] }
+    const acc = porDia.get(dia) ?? { normais: 0, extras: 0, noturnas: 0, pessoas: 0, valor: 0, temValor: false, linhas: [] }
     for (const mo of r.maoDeObra) {
       const horas = Number(mo.totalHH)
-      const valor = custoDaLinha(horas, numeroOuNull(mo.funcaoCadastro?.valorHora), mo.tipoHora, mo.percentualExtra)
+      const noturnas = horasNoturnas(mo.horaEntrada, mo.horaSaida, mo.quantidade)
+      const valor = custoDaLinha(horas, numeroOuNull(mo.funcaoCadastro?.valorHora), mo.tipoHora, mo.percentualExtra, noturnas)
       if (mo.tipoHora === 'EXTRA') acc.extras += horas; else acc.normais += horas
+      acc.noturnas += noturnas
       acc.pessoas += mo.quantidade
       if (valor == null) semValor.add(mo.funcaoNome); else { acc.valor += valor; acc.temValor = true }
-      acc.linhas.push({ funcao: mo.funcaoNome, projeto: r.projeto.nome, quantidade: mo.quantidade, tipoHora: mo.tipoHora, percentualExtra: mo.percentualExtra, horas: arredonda2(horas), valor })
+      acc.linhas.push({ funcao: mo.funcaoNome, projeto: r.projeto.nome, quantidade: mo.quantidade, tipoHora: mo.tipoHora, percentualExtra: mo.percentualExtra, horas: arredonda2(horas), noturnas: arredonda2(noturnas), valor })
     }
     porDia.set(dia, acc)
   }
@@ -96,7 +98,7 @@ export async function GET(req: NextRequest) {
     const feriado = info.tipo === 'UTIL' && a.linhas.some((l) => l.tipoHora === 'EXTRA' && (l.percentualExtra ?? 0) >= 100)
     return {
       data, diaSemana: info.diaSemana, tipoDia: feriado ? 'FERIADO' : info.tipo,
-      pessoas: a.pessoas, normais: arredonda2(a.normais), extras: arredonda2(a.extras), total: arredonda2(a.normais + a.extras),
+      pessoas: a.pessoas, normais: arredonda2(a.normais), extras: arredonda2(a.extras), noturnas: arredonda2(a.noturnas), total: arredonda2(a.normais + a.extras),
       valor: a.temValor ? arredonda2(a.valor) : null, linhas: a.linhas,
     }
   })
@@ -109,7 +111,7 @@ export async function GET(req: NextRequest) {
     periodo: { dataInicio, dataFim }, status: todos ? 'TODOS' : 'APROVADO',
     dias,
     totais: {
-      dias: dias.length, normais: soma(d => d.normais), extras: soma(d => d.extras), total: soma(d => d.total),
+      dias: dias.length, normais: soma(d => d.normais), extras: soma(d => d.extras), noturnas: soma(d => d.noturnas), total: soma(d => d.total),
       sabados: horasDe(doTipo('SABADO')), domingos: horasDe(doTipo('DOMINGO')), feriados: horasDe(doTipo('FERIADO')),
       valor: dias.some(d => d.valor != null) ? soma(d => d.valor ?? 0) : null,
     },

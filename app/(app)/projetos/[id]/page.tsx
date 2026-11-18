@@ -591,6 +591,7 @@ function PainelHH({ hh }: { hh: NonNullable<ReturnType<typeof useResumoProjeto>[
           <InfoItem label="Em aprovação">{fmt(hh.emAprovacao)}</InfoItem>
           <InfoItem label="Normais">{fmt(hh.normais)}</InfoItem>
           <InfoItem label="Extras"><span style={{ color: hh.extras > 0 ? 'var(--tw)' : undefined, fontWeight: hh.extras > 0 ? 600 : 400 }}>{fmt(hh.extras)}</span></InfoItem>
+          {hh.noturnas > 0 && <InfoItem label="Adicional noturno (22h–05h)"><span style={{ color: 'var(--tpu)', fontWeight: 600 }}><i className="ti ti-moon" /> {fmt(hh.noturnas)}</span></InfoItem>}
           {hh.contratado != null && <InfoItem label="Contratadas">{fmt(hh.contratado)}</InfoItem>}
           {hh.saldo != null && (
             <InfoItem label="Saldo">

@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { apiComo, login } from './helpers'
 import { PROJETO_ID, RDO_ANTERIOR_ID, LEITOR_EMAIL } from '../../lib/fake-db-test'
-import { custoDaLinha, normalizarTipoHora } from '../../lib/homem-hora'
+import { custoDaLinha, horasNoturnas, normalizarTipoHora } from '../../lib/homem-hora'
 import { extraSugerida, infoDoDia } from '../../lib/feriados'
 import { calcMoHH } from '../../lib/rdo-display'
 
@@ -32,11 +32,26 @@ test.describe('regras de hora normal/extra e custo (funções puras)', () => {
     expect(calcMoHH('16:00', '17:00', 1, 1)).toBe(0)  // regra antiga (avanço) não muda: sempre desconta
   })
 
+  test('adicional noturno: horas entre 22h e 05h pela entrada e saída (vira o dia, por pessoa)', () => {
+    expect(horasNoturnas('07:00', '17:00')).toBe(0)
+    expect(horasNoturnas('17:00', '22:00')).toBe(0)
+    expect(horasNoturnas('17:00', '23:30')).toBe(1.5)
+    expect(horasNoturnas('22:00', '05:00')).toBe(7)
+    expect(horasNoturnas('20:00', '06:00')).toBe(7)        // 22h–24h + 00h–05h
+    expect(horasNoturnas('20:00', '06:00', 3)).toBe(21)    // × pessoas
+    expect(horasNoturnas('00:00', '04:00')).toBe(4)
+    expect(horasNoturnas('04:00', '07:00')).toBe(1)
+    expect(horasNoturnas('19:00', '19:00')).toBe(0)
+  })
+
   test('custo = horas × valor da hora × (1 + acréscimo da extra); sem valor da hora, não há custo', () => {
     expect(custoDaLinha(8, 50, 'NORMAL', null)).toBe(400)
     expect(custoDaLinha(8, 50, 'EXTRA', 100)).toBe(800)
     expect(custoDaLinha(4, 50, 'EXTRA', 50)).toBe(300)
     expect(custoDaLinha(8, null, 'NORMAL', null)).toBeNull()
+    // adicional noturno de 20% só sobre as horas noturnas; na hora extra, sobre o valor já com o acréscimo
+    expect(custoDaLinha(8, 50, 'NORMAL', null, 4)).toBe(440)      // 400 + 4h × 50 × 20%
+    expect(custoDaLinha(8, 50, 'EXTRA', 100, 4)).toBe(880)        // 800 + 4h × 50 × 2 × 20%
   })
 
   test('sugestão pelo dia: domingo 100%, sábado 75%, dia útil normal', () => {
@@ -249,6 +264,34 @@ test('dia de semana em H/H: "Dividir às 16:00/17:00" separa a hora normal da ex
     await page.getByTestId('dividir-corte').click()
     await expect(page.getByLabel('Tipo de hora').nth(1)).toHaveValue('75')
     await expect(page.getByText('Normais: 9 · Extras: 2 H/H')).toBeVisible()
+  } finally {
+    await voltarParaAvanco(admin)
+    await admin.dispose()
+  }
+})
+
+test('adicional noturno: aparece no RDO, no relatório por dia e na pasta do projeto', async ({ page, playwright }) => {
+  const admin = await apiComo(playwright)
+  try {
+    await configurarProjeto(admin, { modalidade: 'HOMEM_HORA' })
+    // terça-feira, turno da noite: 20:00 às 06:00 = 7 h entre 22h e 05h
+    const noite = await criarRdo(admin, '2027-11-09', [linha(10, { horaEntrada: '20:00', horaSaida: '06:00', tipoHora: 'EXTRA', percentualExtra: 75 })])
+
+    const rel = await (await admin.get('/api/app/relatorios/horas?projetoId=' + PROJETO_ID + '&dataInicio=2027-11-09&dataFim=2027-11-09&status=TODOS')).json()
+    expect(rel.totais.noturnas).toBe(7)
+    expect(rel.dias[0].noturnas).toBe(7)
+    expect(rel.dias[0].linhas[0].noturnas).toBe(7)
+
+    await login(page)
+    await page.goto(`/rdos/${noite}`)
+    await expect(page.getByTestId('selo-noturno')).toContainText('7')
+    await expect(page.getByTestId('pill-noturno')).toContainText('7')
+
+    // RDO sem hora na faixa da noite não mostra o selo
+    const dia = await criarRdo(admin, '2027-11-10', [linha(9)])
+    await page.goto(`/rdos/${dia}`)
+    await expect(page.getByLabel('Tipo de hora').first()).toBeVisible()
+    await expect(page.getByTestId('selo-noturno')).toHaveCount(0)
   } finally {
     await voltarParaAvanco(admin)
     await admin.dispose()

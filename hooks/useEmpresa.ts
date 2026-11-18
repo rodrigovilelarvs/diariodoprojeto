@@ -449,17 +449,17 @@ export function useEditarFuncao() {
 
 // ── Relatório de horas por dia (projetos por homem-hora) ──
 export type TipoDiaHH = 'UTIL' | 'SABADO' | 'DOMINGO' | 'FERIADO'
-export interface LinhaHorasDia { funcao: string; projeto: string; quantidade: number; tipoHora: string; percentualExtra: number | null; horas: number; valor: number | null }
+export interface LinhaHorasDia { funcao: string; projeto: string; quantidade: number; tipoHora: string; percentualExtra: number | null; horas: number; noturnas: number; valor: number | null }
 export interface DiaHoras {
   data: string; diaSemana: number; tipoDia: TipoDiaHH
-  pessoas: number; normais: number; extras: number; total: number; valor: number | null
+  pessoas: number; normais: number; extras: number; noturnas: number; total: number; valor: number | null
   linhas: LinhaHorasDia[]
 }
 export interface RelatorioHoras {
   periodo: { dataInicio: string; dataFim: string }
   status: 'APROVADO' | 'TODOS'
   dias: DiaHoras[]
-  totais: { dias: number; normais: number; extras: number; total: number; sabados: number; domingos: number; feriados: number; valor: number | null }
+  totais: { dias: number; normais: number; extras: number; noturnas: number; total: number; sabados: number; domingos: number; feriados: number; valor: number | null }
   funcoesSemValor: string[]
 }
 

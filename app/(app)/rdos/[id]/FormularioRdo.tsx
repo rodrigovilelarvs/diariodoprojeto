@@ -20,6 +20,7 @@ import type {
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
 import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
+import { ADICIONAL_NOTURNO_PERCENTUAL, horasNoturnas } from '@/lib/homem-hora'
 import { extraSugerida, infoDoDia, NOME_DIA_SEMANA, PERCENTUAL_EXTRA_APOS_CORTE, corteExtraDoDia } from '@/lib/feriados'
 import {
   CLIMA, CLIMA_NOITE, CLIMA_L, CLIMAS,
@@ -820,6 +821,8 @@ export function FormularioRdo({ rdoId }: Props) {
   }
   const totalHH = (form?.maoDeObra ?? []).reduce((s,m) => s + Number(m.totalHH), 0)
   const totalHHExtra = (form?.maoDeObra ?? []).filter(m => m.tipoHora === 'EXTRA').reduce((s,m) => s + Number(m.totalHH), 0)
+  // Adicional noturno (22h–05h): horas da faixa noturna, calculadas pela entrada/saída de cada linha
+  const totalHHNoturno = ehHH ? (form?.maoDeObra ?? []).reduce((s,m) => s + horasNoturnas(m.horaEntrada, m.horaSaida, m.quantidade), 0) : 0
   const hhPorCategoriaMO = CATEGORIAS.map(cat => ({
     categoria: cat,
     totalHH:   (form?.maoDeObra ?? []).filter(m => (m.categoria ?? 'DIRETA') === cat).reduce((s,m) => s + Number(m.totalHH), 0),
@@ -1458,6 +1461,11 @@ export function FormularioRdo({ rdoId }: Props) {
                 Normais: {Math.round((totalHH - totalHHExtra) * 100) / 100} · Extras: {Math.round(totalHHExtra * 100) / 100} H/H
               </span>
             )}
+            {ehHH && totalHHNoturno > 0 && (
+              <span data-testid="pill-noturno" title={`Horas entre 22h e 05h: adicional noturno de ${ADICIONAL_NOTURNO_PERCENTUAL}%`} style={{ fontSize:10, color:'var(--tpu)', background:'var(--s2)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--b)' }}>
+                <i className="ti ti-moon" /> Adicional noturno: {Math.round(totalHHNoturno * 100) / 100} H/H
+              </span>
+            )}
             {hhPorCategoriaMO.map(c => (
               <span key={c.categoria} style={{ fontSize:10, color:'var(--ta)', background:'var(--bga)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--ba)' }}>
                 {CATEGORIA_L[c.categoria]}: {c.totalPessoas}p · {c.totalHH}H/H
@@ -1567,6 +1575,11 @@ export function FormularioRdo({ rdoId }: Props) {
                         onChange={e => updMO(i,'horaSaida',e.target.value)} />
                     </div>
                   </div>
+                  {ehHH && horasNoturnas(mo.horaEntrada, mo.horaSaida, mo.quantidade) > 0 && (
+                    <div data-testid="selo-noturno" style={{ marginTop:6, fontSize:10.5, fontWeight:600, color:'var(--tpu)' }}>
+                      <i className="ti ti-moon" /> Adicional noturno de {ADICIONAL_NOTURNO_PERCENTUAL}%: {horasNoturnas(mo.horaEntrada, mo.horaSaida, mo.quantidade)} H/H entre 22h e 05h
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

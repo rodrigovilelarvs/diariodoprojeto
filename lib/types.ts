@@ -202,6 +202,7 @@ export interface ResumoHH {
   emAprovacao:  number        // H/H de RDOs enviados e ainda não aprovados
   normais:      number        // das aprovadas
   extras:       number        // das aprovadas
+  noturnas:     number        // das aprovadas: horas entre 22h e 05h (adicional noturno de 20%; já contam no total)
   saldo:        number | null // contratado − aprovadas (null sem contrato)
   valor:        number | null // custo das aprovadas (null se nenhuma função tem valor cadastrado)
   semValor:     number        // horas aprovadas de funções sem valor da hora cadastrado

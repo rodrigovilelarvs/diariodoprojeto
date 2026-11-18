@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui'
 import { useRelatorioHoras, type DiaHoras } from '@/hooks/useEmpresa'
 import { fmtData } from '@/lib/format'
 import { NOME_DIA_SEMANA } from '@/lib/feriados'
+import { ADICIONAL_NOTURNO_PERCENTUAL } from '@/lib/homem-hora'
 import type { Projeto } from '@/lib/types'
 
 const TIPO_DIA: Record<DiaHoras['tipoDia'], { rotulo: string; cor: string; fundo: string }> = {
@@ -29,13 +30,13 @@ function baixarCsv(dias: DiaHoras[]) {
     const t = v == null ? '' : typeof v === 'number' ? String(v).replace('.', ',') : v
     return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t
   }
-  const linhas = [['Data', 'Dia', 'Tipo do dia', 'Projeto', 'Função', 'Qtd.', 'Tipo da hora', '% extra', 'Horas', 'Valor (R$)']]
+  const linhas = [['Data', 'Dia', 'Tipo do dia', 'Projeto', 'Função', 'Qtd.', 'Tipo da hora', '% extra', 'Horas', `Horas noturnas (adicional ${ADICIONAL_NOTURNO_PERCENTUAL}%)`, 'Valor (R$)']]
   for (const d of dias) {
     for (const l of d.linhas) {
       linhas.push([
         fmtData(d.data), NOME_DIA_SEMANA[d.diaSemana], TIPO_DIA[d.tipoDia].rotulo,
         l.projeto, l.funcao, String(l.quantidade), l.tipoHora === 'EXTRA' ? 'Extra' : 'Normal',
-        l.tipoHora === 'EXTRA' ? String(l.percentualExtra ?? 50) : '', String(l.horas), l.valor == null ? '' : String(l.valor),
+        l.tipoHora === 'EXTRA' ? String(l.percentualExtra ?? 50) : '', String(l.horas), String(l.noturnas), l.valor == null ? '' : String(l.valor),
       ])
     }
   }
@@ -94,6 +95,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
             <MiniCard rotulo="Total de H/H" valor={fmt(t.total)} />
             <MiniCard rotulo="Normais" valor={fmt(t.normais)} />
             <MiniCard rotulo="Extras" valor={fmt(t.extras)} cor="var(--tw)" />
+            <MiniCard rotulo={`Adicional noturno (${ADICIONAL_NOTURNO_PERCENTUAL}%)`} valor={fmt(t.noturnas)} cor="var(--tpu)" />
             <MiniCard rotulo="Sábados" valor={fmt(t.sabados)} cor="var(--tw)" />
             <MiniCard rotulo="Domingos" valor={fmt(t.domingos)} cor="var(--td)" />
             <MiniCard rotulo="Feriados" valor={fmt(t.feriados)} cor="var(--tpu)" />
@@ -116,13 +118,13 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
                 <tr>
                   <th>Data</th><th>Dia</th><th>Tipo do dia</th>
                   <th style={{ textAlign: 'right' }}>Pessoas</th><th style={{ textAlign: 'right' }}>Normais</th>
-                  <th style={{ textAlign: 'right' }}>Extras</th><th style={{ textAlign: 'right' }}>Total H/H</th>
+                  <th style={{ textAlign: 'right' }}>Extras</th><th style={{ textAlign: 'right' }} title="Horas entre 22h e 05h (já contam no total)">Noturnas</th><th style={{ textAlign: 'right' }}>Total H/H</th>
                   <th style={{ textAlign: 'right' }}>Valor</th>
                 </tr>
               </thead>
               <tbody>
                 {data.dias.length === 0 ? (
-                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: 28, color: 'var(--tm)' }}>
+                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: 28, color: 'var(--tm)' }}>
                     Nenhuma hora registrada no período{status === 'APROVADO' ? ' em RDOs aprovados' : ''}.
                   </td></tr>
                 ) : data.dias.map(d => {
@@ -147,6 +149,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
                         <td style={{ textAlign: 'right' }}>{d.pessoas}</td>
                         <td style={{ textAlign: 'right' }}>{fmt(d.normais)}</td>
                         <td style={{ textAlign: 'right', color: d.extras > 0 ? 'var(--tw)' : undefined, fontWeight: d.extras > 0 ? 600 : 400 }}>{fmt(d.extras)}</td>
+                        <td data-testid="noturnas-dia" style={{ textAlign: 'right', color: d.noturnas > 0 ? 'var(--tpu)' : undefined, fontWeight: d.noturnas > 0 ? 600 : 400 }}>{d.noturnas > 0 ? <><i className="ti ti-moon" style={{ marginRight: 3 }} />{fmt(d.noturnas)}</> : fmt(d.noturnas)}</td>
                         <td style={{ textAlign: 'right', fontWeight: 700 }}>{fmt(d.total)}</td>
                         <td style={{ textAlign: 'right' }}>{d.valor != null ? brl(d.valor) : '—'}</td>
                       </tr>
@@ -160,6 +163,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
                           <td colSpan={2} style={{ textAlign: 'right', fontSize: 11, color: l.tipoHora === 'EXTRA' ? 'var(--tw)' : 'var(--ts)' }}>
                             {l.tipoHora === 'EXTRA' ? `Extra ${l.percentualExtra ?? 50}%` : 'Normal'}
                           </td>
+                          <td style={{ textAlign: 'right', fontSize: 11, color: 'var(--tpu)' }}>{l.noturnas > 0 ? fmt(l.noturnas) : ''}</td>
                           <td style={{ textAlign: 'right', fontSize: 11 }}>{fmt(l.horas)}</td>
                           <td style={{ textAlign: 'right', fontSize: 11, color: 'var(--ts)' }}>{l.valor != null ? brl(l.valor) : '—'}</td>
                         </tr>
@@ -175,6 +179,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
                     <td />
                     <td style={{ textAlign: 'right' }}>{fmt(t.normais)}</td>
                     <td style={{ textAlign: 'right' }}>{fmt(t.extras)}</td>
+                    <td style={{ textAlign: 'right' }}>{fmt(t.noturnas)}</td>
                     <td style={{ textAlign: 'right' }}>{fmt(t.total)}</td>
                     <td style={{ textAlign: 'right' }}>{t.valor != null ? brl(t.valor) : '—'}</td>
                   </tr>
@@ -183,7 +188,7 @@ export function RelatorioHoras({ projetos }: { projetos: Projeto[] }) {
             </table>
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--tm)', marginTop: 6 }}>
-            Clique numa data para ver as funções do dia. Sábados, domingos e feriados aparecem destacados. Não há cadastro de feriados: um dia de semana com hora extra de 100% marcada no H/H é tratado como feriado.
+            Clique numa data para ver as funções do dia. As horas noturnas (22h às 05h, adicional de {ADICIONAL_NOTURNO_PERCENTUAL}%) já estão dentro do total. Sábados, domingos e feriados aparecem destacados. Não há cadastro de feriados: um dia de semana com hora extra de 100% marcada no H/H é tratado como feriado.
           </div>
         </>
       )}

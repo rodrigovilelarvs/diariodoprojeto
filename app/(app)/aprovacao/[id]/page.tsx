@@ -13,6 +13,7 @@ import { gerarPdfRdo }  from '@/lib/pdf'
 import { ApiError, mensagemErro } from '@/lib/api'
 import { RdoStatusBadge, Skeleton, Modal } from '@/components/ui'
 import { numeroRdo, fmtData } from '@/lib/format'
+import { ADICIONAL_NOTURNO_PERCENTUAL, horasNoturnas } from '@/lib/homem-hora'
 import { UploadZona } from '@/components/rdos/UploadZona'
 import { NavegacaoRdos } from '@/components/rdos/NavegacaoRdos'
 import { useNovoRdo } from '@/components/rdos/NovoRdoModal'
@@ -233,6 +234,7 @@ export default function AprovacaoPage() {
   const ocorrencias    = rdo.ocorrencias ?? []
   const totalHH        = maoDeObra.reduce((s: number, m) => s + Number(m.totalHH), 0)
   const totalHHExtra   = maoDeObra.filter((m) => m.tipoHora === 'EXTRA').reduce((s: number, m) => s + Number(m.totalHH), 0)
+  const totalHHNoturno = maoDeObra.reduce((s: number, m) => s + horasNoturnas(m.horaEntrada, m.horaSaida, m.quantidade), 0)
   const hhPorCategoriaMO = CATEGORIAS.map(cat => ({
     categoria: cat,
     totalHH:      maoDeObra.filter((m) => (m.categoria ?? 'DIRETA') === cat).reduce((s: number, m) => s + Number(m.totalHH), 0),
@@ -495,6 +497,11 @@ export default function AprovacaoPage() {
                       Normais: {Math.round((totalHH - totalHHExtra) * 100) / 100} · Extras: {Math.round(totalHHExtra * 100) / 100} H/H
                     </span>
                   )}
+                  {ehHH && totalHHNoturno > 0 && (
+                    <span data-testid="pill-noturno" style={{ fontSize:10, color:'var(--tpu)', background:'var(--s2)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--b)' }}>
+                      <i className="ti ti-moon" /> Adicional noturno: {Math.round(totalHHNoturno * 100) / 100} H/H
+                    </span>
+                  )}
                   {hhPorCategoriaMO.map(c => (
                     <span key={c.categoria} style={{ fontSize:10, color:'var(--ta)', background:'var(--bga)', padding:'2px 7px', borderRadius:20, border:'.5px solid var(--ba)' }}>
                       {CATEGORIA_L[c.categoria]}: {c.totalPessoas}p · {c.totalHH}H/H
@@ -522,6 +529,11 @@ export default function AprovacaoPage() {
                         {ehHH && (
                           <div style={{ fontSize:10.5, marginTop:4, fontWeight:600, color: mo.tipoHora === 'EXTRA' ? 'var(--tw)' : 'var(--tm)' }}>
                             {mo.tipoHora === 'EXTRA' ? `Hora extra ${mo.percentualExtra ?? 50}%` : 'Hora normal'}
+                            {horasNoturnas(mo.horaEntrada, mo.horaSaida, mo.quantidade) > 0 && (
+                              <span data-testid="selo-noturno" style={{ marginLeft:8, color:'var(--tpu)' }}>
+                                <i className="ti ti-moon" /> Adicional noturno {ADICIONAL_NOTURNO_PERCENTUAL}%: {horasNoturnas(mo.horaEntrada, mo.horaSaida, mo.quantidade)} H/H
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>

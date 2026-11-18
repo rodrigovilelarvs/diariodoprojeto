@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, resolverAcessoProjeto, podeVerProjeto, podeGerenciarProjeto, podeVerRelatorios, soVeRdosEnviados, STATUS_RDO_VISIVEIS_AO_VISUALIZADOR } from '@/lib/auth'
-import { arredonda2, custoDaLinha, numeroOuNull } from '@/lib/homem-hora'
+import { arredonda2, custoDaLinha, horasNoturnas, numeroOuNull } from '@/lib/homem-hora'
 import { calcDesvio, calcPctPlanejado, calcProgressoPonderado } from '@/lib/rdo-display'
 
 type Params = { params: Promise<{ id: string }> }
@@ -145,14 +145,16 @@ export async function GET(req: NextRequest, { params }: Params) {
   if (projeto.modalidade === 'HOMEM_HORA') {
     const contratado = numeroOuNull(projeto.hhContratado)
     const veValor = podeGerenciar || podeVerRelatorios(auth.ctx)
-    let aprovadas = 0, emAprovacao = 0, normais = 0, extras = 0, valor = 0, semValor = 0, algumValor = false
+    let aprovadas = 0, emAprovacao = 0, normais = 0, extras = 0, noturnas = 0, valor = 0, semValor = 0, algumValor = false
     for (const r of rdos) {
       for (const mo of r.maoDeObra) {
         const horas = Number(mo.totalHH)
         if (r.status === 'APROVADO') {
           aprovadas += horas
           if (mo.tipoHora === 'EXTRA') extras += horas; else normais += horas
-          const custo = custoDaLinha(horas, numeroOuNull(mo.funcaoCadastro?.valorHora), mo.tipoHora, mo.percentualExtra)
+          const noturnasDaLinha = horasNoturnas(mo.horaEntrada, mo.horaSaida, mo.quantidade)
+          noturnas += noturnasDaLinha
+          const custo = custoDaLinha(horas, numeroOuNull(mo.funcaoCadastro?.valorHora), mo.tipoHora, mo.percentualExtra, noturnasDaLinha)
           if (custo == null) semValor += horas; else { valor += custo; algumValor = true }
         } else if (r.status === 'PENDENTE_APROVACAO') {
           emAprovacao += horas
@@ -165,6 +167,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       emAprovacao: arredonda2(emAprovacao),
       normais: arredonda2(normais),
       extras: arredonda2(extras),
+      noturnas: arredonda2(noturnas),
       saldo: contratado == null ? null : arredonda2(contratado - aprovadas),
       valor: veValor && algumValor ? arredonda2(valor) : null,
       semValor: veValor ? arredonda2(semValor) : 0,
